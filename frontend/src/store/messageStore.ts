@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Message } from '../types';
+import type { Message } from '../types';
 
 interface MessageState {
   // State

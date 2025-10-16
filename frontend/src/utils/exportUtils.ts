@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import { format } from 'date-fns';
-import type { Project, ProjectItem, Message, Document, AgentActivity } from '../types';
+import type { Project, Message, Document, AgentActivity } from '../types';
 
 interface ExportData {
   project: Project;

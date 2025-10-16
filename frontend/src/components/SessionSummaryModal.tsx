@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { X, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useSessionStore } from '../store/sessionStore';
 

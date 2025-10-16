@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { agentsApi } from '../services/api';
 import type { Agent } from '../types';
-import { Bot, Activity, CheckCircle, Loader2 } from 'lucide-react';
+import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 
 export const AgentsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();

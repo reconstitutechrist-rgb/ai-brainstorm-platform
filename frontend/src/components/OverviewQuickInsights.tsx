@@ -153,7 +153,7 @@ const OverviewQuickInsights: React.FC<OverviewQuickInsightsProps> = ({
                         )}
                       </div>
                       <div className={`space-y-1 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {lines.map((line, lineIdx) => (
+                        {lines.map((line: string, lineIdx: number) => (
                           <div key={lineIdx} className="flex items-start gap-2">
                             <span className={`${scheme.text} flex-shrink-0 mt-1`}>•</span>
                             <span className="flex-1">{line}</span>

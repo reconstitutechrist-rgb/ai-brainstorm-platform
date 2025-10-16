@@ -5,7 +5,6 @@
  * including projects, messages, documents, and references.
  */
 
-import React from 'react';
 import { UniversalSearch } from './UniversalSearch';
 import { useNavigate } from 'react-router-dom';
 import type { SearchResult } from '../services/searchService';

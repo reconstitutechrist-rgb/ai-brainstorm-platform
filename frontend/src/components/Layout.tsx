@@ -2,15 +2,12 @@ import React from 'react';
 import { FloatingNav } from './FloatingNav';
 import { DarkModeToggle } from './DarkModeToggle';
 import { ParticleBackground } from './ParticleBackground';
-import { useThemeStore } from '../store/themeStore';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { isDarkMode } = useThemeStore();
-
   return (
     <div className="app-background min-h-screen">
       {/* Particle Background */}

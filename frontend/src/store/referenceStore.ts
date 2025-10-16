@@ -19,7 +19,7 @@ interface ReferenceState {
 
   // Helpers
   getReferencesByProject: (projectId: string) => Reference[];
-  getReferencesByType: (type: Reference['type']) => Reference[];
+  getReferencesByType: (type: string) => Reference[];
 }
 
 export const useReferenceStore = create<ReferenceState>((set, get) => ({
@@ -59,6 +59,6 @@ export const useReferenceStore = create<ReferenceState>((set, get) => ({
   },
 
   getReferencesByType: (type) => {
-    return get().references.filter((ref) => ref.type === type);
+    return get().references.filter((ref) => ref.metadata?.type === type);
   },
 }));

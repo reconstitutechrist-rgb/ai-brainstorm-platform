@@ -8,7 +8,6 @@ import {
   X,
   ThumbsUp,
   ThumbsDown,
-  ArrowRight,
   Lightbulb,
   Target,
   Zap

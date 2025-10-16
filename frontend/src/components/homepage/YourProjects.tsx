@@ -69,7 +69,7 @@ export const YourProjects: React.FC = () => {
               <h3 className={`text-xl font-bold mb-2 ${
                 isDarkMode ? 'text-white' : 'text-white'
               }`}>
-                {project.name}
+                {project.title}
               </h3>
 
               {/* Project Description */}

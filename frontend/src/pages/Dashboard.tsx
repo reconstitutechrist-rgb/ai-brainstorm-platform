@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
 import { useUIStore } from '../store/uiStore';
@@ -10,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 export const Dashboard: React.FC = () => {
-  const { isDarkMode } = useThemeStore();
   const { user } = useUserStore();
   const { projects, setProjects, setCurrentProject, loading, setLoading } = useProjectStore();
   const { openCreateProjectModal } = useUIStore();
