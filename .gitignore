@@ -43,3 +43,6 @@ coverage/
 # Misc
 .cache/
 .temp/
+
+# Accidental Windows NUL device files
+nul
