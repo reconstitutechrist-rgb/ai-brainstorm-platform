@@ -1,0 +1,41 @@
+# Auto-detect text files and normalize line endings to LF in repo
+* text=auto eol=lf
+
+# Markdown and documentation should always use LF
+*.md text eol=lf
+
+# Scripts (Linux/macOS execution needs LF)
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Windows batch files should always use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Source code defaults (normalize to LF in repo, Git converts locally if needed)
+*.js  text eol=lf
+*.ts  text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.py  text eol=lf
+*.java text eol=lf
+*.cs  text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.scss text eol=lf
+*.sql text eol=lf
+
+# Binary files (no line ending conversions!)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

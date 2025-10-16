@@ -1,0 +1,193 @@
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useThemeStore } from '../store/themeStore';
+import { useProjectStore } from '../store/projectStore';
+import { useUserStore } from '../store/userStore';
+import { useUIStore } from '../store/uiStore';
+import { Plus, Sparkles, Folder, Clock } from 'lucide-react';
+import { projectsApi } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+
+export const Dashboard: React.FC = () => {
+  const { isDarkMode } = useThemeStore();
+  const { user } = useUserStore();
+  const { projects, setProjects, setCurrentProject, loading, setLoading } = useProjectStore();
+  const { openCreateProjectModal } = useUIStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      // Use actual authenticated user ID or fallback to demo
+      const userId = user?.id || 'demo-user-123';
+      console.log('Loading projects for user:', userId);
+      const response = await projectsApi.getAll(userId);
+      if (response.success) {
+        setProjects(response.projects);
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProjectClick = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setCurrentProject(project);
+      navigate('/chat');
+    }
+  };
+
+  return (
+    <div className="w-full">
+      {/* Hero Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card p-12 mb-8"
+      >
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="p-3 rounded-2xl bg-green-metallic/20 glow-green">
+            <Sparkles className="text-green-metallic" size={36} />
+          </div>
+          <h1 className="text-5xl font-bold text-white">
+            AI Brainstorm Platform
+          </h1>
+        </div>
+        <p className="text-xl text-gray-200 max-w-3xl">
+          Transform your ideas into reality with 18 specialized AI agents working together in perfect harmony.
+        </p>
+      </motion.div>
+
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* New Project Card */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={openCreateProjectModal}
+          className="glass-card p-8 text-left"
+        >
+          <div className="w-14 h-14 rounded-xl gradient-green flex items-center justify-center mb-4 glow-green">
+            <Plus className="text-white" size={28} />
+          </div>
+          <h3 className="text-xl font-semibold mb-2 text-white">
+            New Project
+          </h3>
+          <p className="text-gray-300">
+            Start brainstorming with AI agents
+          </p>
+        </motion.button>
+
+        {/* Stats Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="glass-card p-8"
+        >
+          <div className="w-12 h-12 rounded-xl bg-green-metallic/20 flex items-center justify-center mb-4">
+            <Folder className="text-green-metallic" size={24} />
+          </div>
+          <h3 className="text-xl font-semibold mb-2 text-white">
+            Your Projects
+          </h3>
+          <p className="text-3xl font-bold text-gradient">
+            {projects.length}
+          </p>
+        </motion.div>
+
+        {/* Agent Status Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card p-8"
+        >
+          <h3 className="text-xl font-semibold mb-4 text-white">
+            AI Agents
+          </h3>
+          <div className="flex items-center space-x-2">
+            <div className="status-indicator" />
+            <span className="text-sm font-medium text-gray-300">
+              18 agents online
+            </span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Recent Projects */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="glass-card p-8"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-white">
+          Recent Projects
+        </h2>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block w-8 h-8 border-4 border-green-metallic/30 border-t-green-metallic rounded-full animate-spin" />
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-12">
+            <Folder size={48} className="mx-auto mb-4 text-gray-500" />
+            <p className="text-lg text-gray-300">
+              No projects yet. Create your first project to get started!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.slice(0, 6).map((project, index) => (
+              <motion.button
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleProjectClick(project.id)}
+                className="glass-card-sm text-left"
+              >
+                <h3 className="text-lg font-semibold mb-2 text-white">
+                  {project.title}
+                </h3>
+                {project.description && (
+                  <p className="text-sm mb-3 line-clamp-2 text-gray-300">
+                    {project.description}
+                  </p>
+                )}
+                <div className="flex items-center space-x-4 text-xs">
+                  <span className="flex items-center space-x-1 text-gray-400">
+                    <Clock size={12} />
+                    <span>{format(new Date(project.updated_at), 'MMM d')}</span>
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded ${
+                      project.status === 'decided'
+                        ? 'bg-green-500/20 text-green-400'
+                        : project.status === 'exploring'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {project.status}
+                  </span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+};
