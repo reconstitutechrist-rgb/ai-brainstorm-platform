@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Brainstorm Platform - Visual Canvas Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Existing brand colors */
+            --bg-soft-teal: #B8D8D8;
+            --green-metallic: #1A7F7F;
+            
+            /* Card colors */
+            --card-decided-bg: rgba(34, 197, 94, 0.1);
+            --card-decided-border: #22c55e;
+            --card-decided-shadow: rgba(34, 197, 94, 0.2);
+            
+            --card-exploring-bg: rgba(59, 130, 246, 0.1);
+            --card-exploring-border: #3b82f6;
+            --card-exploring-shadow: rgba(59, 130, 246, 0.2);
+            
+            --card-question-bg: rgba(234, 179, 8, 0.1);
+            --card-question-border: #eab308;
+            --card-question-shadow: rgba(234, 179, 8, 0.2);
+            
+            /* Glass effect */
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #B8D8D8 0%, #9BC4C4 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--green-metallic);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        /* Chat Pane */
+        .chat-pane {
+            flex: 0 0 40%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .session-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: #333;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            animation: messageSlideIn 0.3s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .message-content {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: rgba(26, 127, 127, 0.2);
+            border-left: 3px solid var(--green-metallic);
+        }
+
+        .message.ai .message-content {
+            background: rgba(255, 255, 255, 0.3);
+            border-left: 3px solid #3b82f6;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .input-area input::placeholder {
+            color: #666;
+        }
+
+        .input-area button {
+            padding: 1rem 1.5rem;
+            background: var(--green-metallic);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .input-area button:hover {
+            background: #156666;
+            transform: translateY(-2px);
+        }
+
+        /* Canvas Pane */
+        .canvas-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .canvas-controls h2 {
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .canvas-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .canvas-buttons button {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .canvas-buttons button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        /* Idea Cards */
+        .idea-card {
+            position: absolute;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: move;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardAppear 0.5s ease-out;
+        }
+
+        @keyframes cardAppear {
+            0% {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.9);
+            }
+            60% {
+                transform: translateX(5px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .idea-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .idea-card.dragging {
+            transform: scale(1.05) rotate(2deg);
+            opacity: 0.9;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+            cursor: grabbing;
+        }
+
+        .idea-card.decided {
+            background: var(--card-decided-bg);
+            border: 2px solid var(--card-decided-border);
+            box-shadow: 0 4px 12px var(--card-decided-shadow);
+        }
+
+        .idea-card.exploring {
+            background: var(--card-exploring-bg);
+            border: 2px solid var(--card-exploring-border);
+            box-shadow: 0 4px 12px var(--card-exploring-shadow);
+        }
+
+        .idea-card.question {
+            background: var(--card-question-bg);
+            border: 2px solid var(--card-question-border);
+            box-shadow: 0 4px 12px var(--card-question-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-icon {
+            font-size: 1.25rem;
+        }
+
+        .card-title {
+            flex: 1;
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .card-menu {
+            cursor: pointer;
+            color: #666;
+            font-size: 1.25rem;
+        }
+
+        .card-status {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-content {
+            color: #555;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .tag {
+            padding: 0.25rem 0.75rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        /* Cluster */
+        .cluster {
+            position: absolute;
+            background: rgba(139, 92, 246, 0.1);
+            border: 2px dashed #8b5cf6;
+            border-radius: 20px;
+            padding: 1rem;
+            min-width: 400px;
+            min-height: 200px;
+        }
+
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .cluster-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #8b5cf6;
+        }
+
+        .cluster-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .cluster-controls button {
+            background: rgba(139, 92, 246, 0.2);
+            border: none;
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            color: #8b5cf6;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.875rem;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #333;
+        }
+
+        .stat-icon {
+            font-size: 1.25rem;
+        }
+
+        /* AI Suggestion */
+        .ai-suggestion {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            animation: suggestionSlideUp 0.5s ease-out;
+            border: 2px solid #3b82f6;
+        }
+
+        @keyframes suggestionSlideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .suggestion-content {
+            color: #333;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .suggestion-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .suggestion-buttons button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .suggestion-buttons button.primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .suggestion-buttons button.secondary {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        .suggestion-buttons button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(26, 127, 127, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(26, 127, 127, 0.7);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .chat-pane {
+                flex: 0 0 40%;
+            }
+            
+            .canvas-pane {
+                flex: 1;
+            }
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🧠 AI Brainstorm Platform</h1>
+        <div class="header-right">
+            <div class="user-badge">👤 Demo User</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Chat Pane -->
+        <div class="chat-pane">
+            <div class="session-info">
+                <strong>Session Started:</strong> 2:30 PM<br>
+                <strong>Messages:</strong> <span id="message-count">0</span>
+            </div>
+
+            <div class="messages" id="messages">
+                <!-- Messages will be added here -->
+            </div>
+
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Type your message..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                >
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Canvas Pane -->
+        <div class="canvas-pane">
+            <div class="canvas-controls">
+                <h2>💡 Idea Canvas</h2>
+                <div class="canvas-buttons">
+                    <button onclick="fitToScreen()">🔍 Fit</button>
+                    <button onclick="exportCanvas()">📥 Export</button>
+                </div>
+            </div>
+
+            <div class="canvas-area" id="canvas">
+                <!-- Cards will be added here -->
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat">
+                    <span class="stat-icon">✓</span>
+                    <span><span id="decided-count">0</span> Decided</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-icon">⚡</span>
+                    <span><span id="exploring-count">0</span> Exploring</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-icon">📦</span>
+                    <span><span id="cluster-count">0</span> Clusters</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-icon">🔗</span>
+                    <span><span id="connection-count">0</span> Connections</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let messageCount = 0;
+        let cards = [];
+        let clusters = [];
+        let draggedCard = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        // Sample conversation flows
+        const conversationFlows = [
+            {
+                user: "I want RGB lighting",
+                ai: "You want RGB lighting included.",
+                card: {
+                    title: "RGB Lighting",
+                    type: "decided",
+                    content: "I want RGB lighting",
+                    tags: ["design", "hardware", "decided"],
+                    position: { x: 50, y: 50 }
+                }
+            },
+            {
+                user: "And a transparent case",
+                ai: "You're considering a transparent case as a possibility.",
+                card: {
+                    title: "Transparent Case",
+                    type: "exploring",
+                    content: "And a transparent case",
+                    tags: ["design", "hardware", "exploring"],
+                    position: { x: 50, y: 220 }
+                }
+            },
+            {
+                user: "What about tempered glass?",
+                ai: "You're asking about tempered glass. To clarify: Are you thinking of tempered glass for the side panel or the entire case?",
+                card: {
+                    title: "Tempered Glass Panel",
+                    type: "question",
+                    content: "What about tempered glass?",
+                    tags: ["design", "hardware", "question"],
+                    position: { x: 50, y: 390 }
+                }
+            }
+        ];
+
+        let currentFlowIndex = 0;
+
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                if (currentFlowIndex < conversationFlows.length) {
+                    const flow = conversationFlows[currentFlowIndex];
+                    addMessage('ai', flow.ai);
+                    
+                    // Add card to canvas
+                    setTimeout(() => {
+                        addCard(flow.card);
+                        currentFlowIndex++;
+                        
+                        // Show cluster suggestion after 3 cards
+                        if (currentFlowIndex === 3) {
+                            setTimeout(showClusterSuggestion, 1000);
+                        }
+                    }, 500);
+                } else {
+                    addMessage('ai', "I understand. What else would you like to discuss?");
+                }
+            }, 1000);
+        }
+
+        // Add message to chat
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-label">${role === 'user' ? 'You' : 'AI Assistant'}</div>
+                <div class="message-content">${content}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            messageCount++;
+            document.getElementById('message-count').textContent = messageCount;
+        }
+
+        // Add card to canvas
+        function addCard(cardData) {
+            const canvas = document.getElementById('canvas');
+            const card = document.createElement('div');
+            card.className = `idea-card ${cardData.type}`;
+            card.style.left = cardData.position.x + 'px';
+            card.style.top = cardData.position.y + 'px';
+            
+            const icon = cardData.type === 'decided' ? '✓' : 
+                        cardData.type === 'exploring' ? '?' : '❓';
+            
+            const status = cardData.type === 'decided' ? 'Decided • 100% confidence' :
+                          cardData.type === 'exploring' ? 'Exploring • 60% confidence' :
+                          'Question • Needs answer';
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="card-icon">${icon}</span>
+                    <span class="card-title">${cardData.title}</span>
+                    <span class="card-menu">⋮</span>
+                </div>
+                <div class="card-status">${status}</div>
+                <div class="card-content">"${cardData.content}"</div>
+                <div class="card-tags">
+                    ${cardData.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                </div>
+            `;
+            
+            // Make draggable
+            card.addEventListener('mousedown', startDrag);
+            
+            canvas.appendChild(card);
+            cards.push({ element: card, data: cardData });
+            
+            updateStats();
+        }
+
+        // Drag functionality
+        function startDrag(e) {
+            if (e.target.classList.contains('card-menu')) return;
+            
+            draggedCard = e.currentTarget;
+            draggedCard.classList.add('dragging');
+            
+            const rect = draggedCard.getBoundingClientRect();
+            const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function drag(e) {
+            if (!draggedCard) return;
+            
+            const canvas = document.getElementById('canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            let x = e.clientX - canvasRect.left - dragOffset.x;
+            let y = e.clientY - canvasRect.top - dragOffset.y;
+            
+            // Keep within bounds
+            x = Math.max(0, Math.min(x, canvasRect.width - draggedCard.offsetWidth));
+            y = Math.max(0, Math.min(y, canvasRect.height - draggedCard.offsetHeight));
+            
+            draggedCard.style.left = x + 'px';
+            draggedCard.style.top = y + 'px';
+        }
+
+        function stopDrag() {
+            if (draggedCard) {
+                draggedCard.classList.remove('dragging');
+                draggedCard = null;
+            }
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        // Show cluster suggestion
+        function showClusterSuggestion() {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'ai-suggestion';
+            suggestion.innerHTML = `
+                <div class="suggestion-header">
+                    <span>💡</span>
+                    <span>Pattern Detected</span>
+                </div>
+                <div class="suggestion-content">
+                    I notice you've mentioned 3 design features:<br>
+                    • RGB Lighting<br>
+                    • Transparent Case<br>
+                    • Tempered Glass<br><br>
+                    Would you like me to group these into a "Design Features" cluster?
+                </div>
+                <div class="suggestion-buttons">
+                    <button class="primary" onclick="createCluster()">Yes, Create Cluster</button>
+                    <button class="secondary" onclick="dismissSuggestion()">Not Now</button>
+                </div>
+            `;
+            
+            document.body.appendChild(suggestion);
+        }
+
+        // Create cluster
+        function createCluster() {
+            dismissSuggestion();
+            
+            const canvas = document.getElementById('canvas');
+            const cluster = document.createElement('div');
+            cluster.className = 'cluster';
+            cluster.style.left = '30px';
+            cluster.style.top = '30px';
+            cluster.style.width = '350px';
+            cluster.style.height = '600px';
+            
+            cluster.innerHTML = `
+                <div class="cluster-header">
+                    <div class="cluster-title">
+                        <span>📦</span>
+                        <span>Design Features</span>
+                        <span style="font-size: 0.875rem; color: #666; font-weight: normal;">3 items</span>
+                    </div>
+                    <div class="cluster-controls">
+                        <button>−</button>
+                        <button>×</button>
+                    </div>
+                </div>
+            `;
+            
+            canvas.appendChild(cluster);
+            clusters.push(cluster);
+            
+            updateStats();
+            
+            // Show success message
+            addMessage('ai', '✓ Cluster created! I\'ve grouped your design features together.');
+        }
+
+        // Dismiss suggestion
+        function dismissSuggestion() {
+            const suggestion = document.querySelector('.ai-suggestion');
+            if (suggestion) {
+                suggestion.remove();
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const decidedCount = cards.filter(c => c.data.type === 'decided').length;
+            const exploringCount = cards.filter(c => c.data.type === 'exploring').length;
+            
+            document.getElementById('decided-count').textContent = decidedCount;
+            document.getElementById('exploring-count').textContent = exploringCount;
+            document.getElementById('cluster-count').textContent = clusters.length;
+        }
+
+        // Fit to screen
+        function fitToScreen() {
+            alert('Fit to screen functionality would zoom/pan to show all cards');
+        }
+
+        // Export canvas
+        function exportCanvas() {
+            alert('Export functionality would save canvas as image or JSON');
+        }
+
+        // Initialize with welcome message
+        window.onload = function() {
+            addMessage('ai', 'Welcome! Start brainstorming by typing your ideas. I\'ll help organize them visually on the canvas.');
+        };
+    </script>
+</body>
+</html>
