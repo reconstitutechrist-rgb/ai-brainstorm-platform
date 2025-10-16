@@ -14,7 +14,6 @@ import {
   Eye,
   Download,
   Search,
-  Filter,
   FolderOpen,
   Upload,
   Trash2,
@@ -394,8 +393,6 @@ const DecisionTrailTab: React.FC = () => {
 };
 
 const DecisionTrailItem: React.FC<{ item: any; index: number; isDarkMode: boolean }> = ({ item, index, isDarkMode }) => {
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <div className={`border rounded-xl ${
       isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white/50'

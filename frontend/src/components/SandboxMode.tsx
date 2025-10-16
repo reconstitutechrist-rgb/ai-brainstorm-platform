@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useSandboxStore } from '../store/sandboxStore';
-import { TestTube, X, AlertTriangle } from 'lucide-react';
+import { TestTube, X } from 'lucide-react';
 
 // Sandbox Mode Banner - Shows when in sandbox mode
 export const SandboxMode: React.FC = () => {
@@ -71,7 +71,6 @@ export const SandboxMode: React.FC = () => {
 
 // Sandbox Toggle Button - Floating button to enter sandbox mode
 export const SandboxToggleButton: React.FC = () => {
-  const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
   const { isActive, enterSandbox } = useSandboxStore();
 

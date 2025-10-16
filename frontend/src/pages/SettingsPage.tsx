@@ -1,20 +1,44 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
-import { Settings, Moon, Sun, Bell, Shield, Database, Zap } from 'lucide-react';
+import { Settings, Moon, Sun, Bell, Shield, Zap } from 'lucide-react';
+
+type ToggleSetting = {
+  id: string;
+  label: string;
+  description: string;
+  type: 'toggle';
+  value: boolean;
+  onChange: () => void;
+};
+
+type SelectSetting = {
+  id: string;
+  label: string;
+  description: string;
+  type: 'select';
+  value: string;
+  options: { value: string; label: string }[];
+};
+
+type Setting = ToggleSetting | SelectSetting;
 
 export const SettingsPage: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
 
-  const settingsSections = [
+  const settingsSections: {
+    title: string;
+    icon: any;
+    settings: Setting[];
+  }[] = [
     {
       title: 'Appearance',
       icon: isDarkMode ? Moon : Sun,
       settings: [
         {
-          id: 'theme',
+          id: 'dark-mode',
           label: 'Dark Mode',
-          description: 'Toggle dark mode theme',
+          description: 'Toggle between light and dark themes',
           type: 'toggle',
           value: isDarkMode,
           onChange: toggleDarkMode,
@@ -119,10 +143,8 @@ export const SettingsPage: React.FC = () => {
               className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
             >
               {/* Section Header */}
-              <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-green-metallic/20">
-                <div className="w-10 h-10 rounded-xl bg-green-metallic/20 flex items-center justify-center">
-                  <Icon size={20} className="text-green-metallic" />
-                </div>
+              <div className="flex items-center space-x-3 mb-6">
+                <Icon className="text-green-metallic" size={24} />
                 <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                   {section.title}
                 </h2>
@@ -159,7 +181,7 @@ export const SettingsPage: React.FC = () => {
                       </button>
                     )}
 
-                    {setting.type === 'select' && setting.options && (
+                    {setting.type === 'select' && (
                       <select
                         id={setting.id}
                         value={setting.value}
@@ -184,36 +206,18 @@ export const SettingsPage: React.FC = () => {
         })}
       </div>
 
-      {/* Account Info */}
+      {/* Save Button */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass mt-6`}
+        className="mt-8"
       >
-        <div className="flex items-center space-x-3 mb-4">
-          <Database className="text-green-metallic" size={20} />
-          <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            System Information
-          </h3>
-        </div>
-        <div className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          <div className="flex justify-between">
-            <span>Version:</span>
-            <span className="font-mono">1.0.0</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Active Agents:</span>
-            <span className="font-mono">18/18</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Backend Status:</span>
-            <span className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
-              <span>Connected</span>
-            </span>
-          </div>
-        </div>
+        <button
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-green-metallic to-teal-600 text-white font-bold text-lg hover:shadow-lg transition-all"
+        >
+          Save Settings
+        </button>
       </motion.div>
     </div>
   );

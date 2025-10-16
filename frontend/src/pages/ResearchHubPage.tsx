@@ -10,7 +10,6 @@ import {
   Video,
   File,
   Search,
-  Filter,
   Grid,
   List,
   Download,
@@ -20,14 +19,13 @@ import {
   Info,
   ChevronRight,
   Tag,
-  X,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Reference {
   id: string;
   project_id: string;
-  filename: string;
+  filename?: string;
   url: string;
   analysis_status: 'pending' | 'processing' | 'completed' | 'failed';
   metadata?: {
@@ -178,7 +176,7 @@ const ResearchHubPage: React.FC = () => {
   };
 
   const filteredReferences = references.filter(ref => {
-    const matchesSearch = ref.filename.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = ref.filename?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
     const matchesFilter = filterType === 'all' || ref.metadata?.type === filterType;
     return matchesSearch && matchesFilter;
   });
@@ -388,7 +386,7 @@ const ResearchHubPage: React.FC = () => {
                           <AlertCircle className="text-red-500 flex-shrink-0 mt-1" size={20} />
                           <div className="flex-1">
                             <h3 className="font-bold text-red-500 mb-2">Conflicts Detected</h3>
-                            {selectedReference.metadata.contextualAnalysis.projectAlignment.conflicts.map(
+                            {selectedReference.metadata?.contextualAnalysis.projectAlignment.conflicts.map(
                               (conflict: any, idx: number) => (
                                 <div key={idx} className="mb-4 last:mb-0">
                                   <p className={`font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -435,7 +433,7 @@ const ResearchHubPage: React.FC = () => {
                           <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={20} />
                           <div className="flex-1">
                             <h3 className="font-bold text-green-500 mb-2">Confirmations</h3>
-                            {selectedReference.metadata.contextualAnalysis.projectAlignment.confirmations.map(
+                            {selectedReference.metadata?.contextualAnalysis.projectAlignment.confirmations.map(
                               (confirmation: any, idx: number) => (
                                 <div key={idx} className="mb-2 last:mb-0">
                                   <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -456,7 +454,7 @@ const ResearchHubPage: React.FC = () => {
                           <Info className="text-blue-500 flex-shrink-0 mt-1" size={20} />
                           <div className="flex-1">
                             <h3 className="font-bold text-blue-500 mb-2">New Insights</h3>
-                            {selectedReference.metadata.contextualAnalysis.projectAlignment.newInsights.map(
+                            {selectedReference.metadata?.contextualAnalysis.projectAlignment.newInsights.map(
                               (insight: any, idx: number) => (
                                 <div key={idx} className="mb-2 last:mb-0">
                                   <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
