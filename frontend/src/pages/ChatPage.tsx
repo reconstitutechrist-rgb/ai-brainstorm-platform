@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
@@ -21,7 +21,7 @@ export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { user } = useUserStore();
   const { currentProject } = useProjectStore();
-  const { messages, isTyping, addMessage, addMessages, setMessages, setIsTyping, setCurrentProject: setChatProject } = useChatStore();
+  const { messages, isTyping, addMessage, addMessages, setMessages, setIsTyping } = useChatStore();
   const { trackActivity, loadAllSessionData, sessionSummary } = useSessionStore();
   const { agentWindows, openAgentWindow, closeAgentWindow, minimizeAgentWindow, addAgentQuestion, addUserResponse, markQuestionAnswered } = useAgentStore();
   const [inputMessage, setInputMessage] = useState('');
@@ -31,38 +31,41 @@ export const ChatPage: React.FC = () => {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentProjectIdRef = useRef<string | null>(null);
   const hasShownSummaryRef = useRef(false);
+
+  // Memoize loadMessages to prevent unnecessary reloads
+  const loadMessages = useCallback(async () => {
+    if (!currentProject) return;
+
+    try {
+      const response = await conversationsApi.getMessages(currentProject.id);
+      if (response.success) {
+        setMessages(response.messages);
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  }, [currentProject, setMessages]);
 
   // Load messages and session data when project changes
   useEffect(() => {
     if (currentProject && user) {
-      // Set current project in chat store (will clear messages if different project)
-      setChatProject(currentProject.id);
+      // Check if project actually changed
+      const projectChanged = currentProjectIdRef.current !== currentProject.id;
 
-      // Clear input when switching projects
-      setInputMessage('');
-
-      // Load messages from backend for this project
-      const loadMessages = async () => {
-        try {
-          const response = await conversationsApi.getMessages(currentProject.id);
-          if (response.success) {
-            setMessages(response.messages);
-          }
-        } catch (error) {
-          console.error('Failed to load messages:', error);
-        }
-      };
-
-      loadMessages();
+      if (projectChanged) {
+        currentProjectIdRef.current = currentProject.id;
+        setInputMessage('');
+        setMessages([]); // Clear messages when switching projects
+        loadMessages();
+        hasShownSummaryRef.current = false;
+      }
 
       // Load session data - DISABLED: causing API errors
       // loadAllSessionData(user.id, currentProject.id);
-
-      // Reset summary modal flag when project changes
-      hasShownSummaryRef.current = false;
     }
-  }, [currentProject?.id, user?.id, setChatProject, setMessages, loadAllSessionData]);
+  }, [currentProject?.id, user?.id, loadMessages, setMessages]);
 
   // Show summary modal when session data loads
   useEffect(() => {
@@ -275,6 +278,7 @@ export const ChatPage: React.FC = () => {
           <span>Session History</span>
         </button>
 
+
         <SessionControls
           onSessionStart={() => setIsSessionActive(true)}
           onSessionEnd={() => setIsSessionActive(false)}
@@ -412,6 +416,7 @@ export const ChatPage: React.FC = () => {
         <SessionTrackingPanel />
       </motion.div>
     </div>
+
 
       {/* Upload Modal */}
       <AnimatePresence>

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
 import { useUIStore } from '../store/uiStore';
@@ -9,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 export const Dashboard: React.FC = () => {
+  const { isDarkMode } = useThemeStore();
   const { user } = useUserStore();
   const { projects, setProjects, setCurrentProject, loading, setLoading } = useProjectStore();
   const { openCreateProjectModal } = useUIStore();
@@ -50,17 +52,17 @@ export const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="glass-card p-12 mb-8"
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} p-12 mb-8 rounded-3xl shadow-glass`}
       >
         <div className="flex items-center space-x-4 mb-4">
           <div className="p-3 rounded-2xl bg-green-metallic/20 glow-green">
             <Sparkles className="text-green-metallic" size={36} />
           </div>
-          <h1 className="text-5xl font-bold text-white">
+          <h1 className={`text-5xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             AI Brainstorm Platform
           </h1>
         </div>
-        <p className="text-xl text-gray-200 max-w-3xl">
+        <p className={`text-xl ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} max-w-3xl`}>
           Transform your ideas into reality with 18 specialized AI agents working together in perfect harmony.
         </p>
       </motion.div>
@@ -72,15 +74,15 @@ export const Dashboard: React.FC = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={openCreateProjectModal}
-          className="glass-card p-8 text-left"
+          className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 text-left rounded-2xl shadow-glass`}
         >
           <div className="w-14 h-14 rounded-xl gradient-green flex items-center justify-center mb-4 glow-green">
             <Plus className="text-white" size={28} />
           </div>
-          <h3 className="text-xl font-semibold mb-2 text-white">
+          <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             New Project
           </h3>
-          <p className="text-gray-300">
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
             Start brainstorming with AI agents
           </p>
         </motion.button>
@@ -90,12 +92,12 @@ export const Dashboard: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="glass-card p-8"
+          className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 rounded-2xl shadow-glass`}
         >
           <div className="w-12 h-12 rounded-xl bg-green-metallic/20 flex items-center justify-center mb-4">
             <Folder className="text-green-metallic" size={24} />
           </div>
-          <h3 className="text-xl font-semibold mb-2 text-white">
+          <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             Your Projects
           </h3>
           <p className="text-3xl font-bold text-gradient">
@@ -108,14 +110,14 @@ export const Dashboard: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="glass-card p-8"
+          className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 rounded-2xl shadow-glass`}
         >
-          <h3 className="text-xl font-semibold mb-4 text-white">
+          <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             AI Agents
           </h3>
           <div className="flex items-center space-x-2">
             <div className="status-indicator" />
-            <span className="text-sm font-medium text-gray-300">
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               18 agents online
             </span>
           </div>
@@ -127,9 +129,9 @@ export const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="glass-card p-8"
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 rounded-2xl shadow-glass`}
       >
-        <h2 className="text-2xl font-bold mb-6 text-white">
+        <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Recent Projects
         </h2>
 
@@ -139,8 +141,8 @@ export const Dashboard: React.FC = () => {
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
-            <Folder size={48} className="mx-auto mb-4 text-gray-500" />
-            <p className="text-lg text-gray-300">
+            <Folder size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               No projects yet. Create your first project to get started!
             </p>
           </div>
@@ -154,18 +156,18 @@ export const Dashboard: React.FC = () => {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
                 onClick={() => handleProjectClick(project.id)}
-                className="glass-card-sm text-left"
+                className={`${isDarkMode ? 'glass-dark-subtle' : 'glass-subtle'} p-5 rounded-xl shadow-glass text-left`}
               >
-                <h3 className="text-lg font-semibold mb-2 text-white">
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {project.title}
                 </h3>
                 {project.description && (
-                  <p className="text-sm mb-3 line-clamp-2 text-gray-300">
+                  <p className={`text-sm mb-3 line-clamp-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     {project.description}
                   </p>
                 )}
                 <div className="flex items-center space-x-4 text-xs">
-                  <span className="flex items-center space-x-1 text-gray-400">
+                  <span className={`flex items-center space-x-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     <Clock size={12} />
                     <span>{format(new Date(project.updated_at), 'MMM d')}</span>
                   </span>

@@ -121,13 +121,15 @@ MANDATORY BEHAVIOR FOR CORRECTIONS:
 3. DO NOT ASK ANY QUESTIONS - Your response must end with a period (.) not a question mark (?)
 4. Keep it short - 2-3 sentences maximum
 
-CRITICAL: When being corrected, your ONLY job is to acknowledge and demonstrate correct understanding. NO QUESTIONS ALLOWED.` : `Current project state: ${JSON.stringify(projectState, null, 2)}
+CRITICAL: When being corrected, your ONLY job is to acknowledge and demonstrate correct understanding. NO QUESTIONS ALLOWED.` : ''}
+
+Current project state: ${JSON.stringify(projectState, null, 2)}
 
 YOUR RESPONSE MUST:
 1. Start by reflecting what they said (show you understood)
 2. If something is unclear or missing, ask ONE specific clarifying question
 3. Stay under 4 sentences total
-4. Be natural and conversational`}
+4. Be natural and conversational
 
 FORBIDDEN:
 - Do NOT add suggestions or ideas
