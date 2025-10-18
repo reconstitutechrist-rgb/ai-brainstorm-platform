@@ -13,44 +13,65 @@
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The AI Brainstorm Platform implements a sophisticated multi-agent system for collaborative project ideation and management:
+Multi-Agent AI Project Management Platform
 
-## Core Orchestration Layer (95/100)
-- Coordinates 18 specialized AI agents through dynamic workflows
-- State machine determines optimal agent sequences based on conversation intent
-- Manages parallel agent execution while maintaining decision consistency
-- Handles transitions between decided/exploring/parked states
+## Core Architecture
 
-## Context Management System (90/100)
-- Determines conversation scope per agent type
-- Maintains project state integrity across parallel agent interactions 
-- Implements citation tracking with confidence scoring
-- Manages rollback of invalid state transitions
+The system implements a sophisticated multi-agent orchestration platform with specialized components:
 
-## Conversation Intelligence (85/100) 
-- Complex conversation mode management (exploration, clarification, generation)
-- Dynamic context-aware response generation
-- Intent detection and flow control
-- Idea extraction and evolution tracking
+### Agent Orchestration Layer
+- Coordinates 17 specialized AI agents across 8 distinct workflow types
+- Dynamic workflow selection based on user intent classification
+- Parallel execution management with state preservation
+- Located in `backend/src/agents/orchestrator.ts`
 
-## Sandbox Environment (80/100)
-- Isolated idea exploration environment
-- Direction-based idea generation (innovative, practical, experimental)
-- Safe extraction of refined ideas back to main project
-- Innovation level classification system
+### Intelligence Processing
+- Project analytics and decision tracking system 
+- Conflict detection between AI agent decisions
+- Reference material analysis with project alignment validation
+- Located in `backend/src/agents/contextManager.ts`
 
-## Quality Control Pipeline (75/100)
-- Multi-stage verification system
-- Reference conflict detection
-- Assumption detection and blocking
-- Consistency checking across project artifacts
-- Accuracy auditing with confidence scoring
+### Verification System
+- Multi-stage verification process with assumption detection
+- Citation tracking with source attribution
+- Confidence scoring for verified statements
+- Located in `backend/src/agents/verificationAgent.ts`
 
-Key Integration Points:
-1. Agent orchestration coordinates with conversation management for workflow optimization
-2. Sandbox ideation feeds into main project through verification pipeline
-3. Context management ensures consistency across all subsystems
-4. Quality control integrates with all components for validation
+### State Management
+- Three-state project management (Decided/Exploring/Parked)
+- Citation-based decision tracking
+- Context preservation across state transitions
+- Located in `backend/src/services/agentCoordination.ts`
+
+## Business Workflows
+
+1. Decision Recording
+- Intent detection
+- Assumption verification 
+- Context validation
+- Citation generation
+
+2. Reference Integration
+- Content extraction
+- Relationship mapping
+- Decision support
+
+3. Document Generation
+- Context-aware structure
+- Automatic section generation
+- Citation integration
+
+4. Sandbox Environment
+- Isolated idea exploration
+- Innovation level assessment
+- Directional idea generation modes
+
+5. Session Intelligence
+- Progress tracking
+- Blocker detection
+- Context-aware suggestions
+
+The platform's unique value derives from sophisticated agent orchestration combined with strict verification and contextual awareness across all operations.
 
 $END$
 

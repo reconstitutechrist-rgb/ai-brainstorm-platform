@@ -1,71 +1,86 @@
 ---
-description: Specification for coordinating multiple AI agents in a structured workflow system with state management and dependency handling
+description: Coordinates and manages interactions between specialized AI agents in a complex decision-making system
 ---
 
 
 # agent-orchestration-system
 
-## Core Orchestration Engine
-Importance Score: 95/100
+The system orchestrates 17 specialized AI agents through coordinated workflows:
 
-Path: `backend/src/agents/orchestrator.ts`
+## Core Orchestration Components
 
-Coordinates 17 specialized AI agents through structured workflows:
+1. Agent Controller
+Path: backend/src/agents/orchestrator.ts
+Importance Score: 95
+- Manages parallel execution of agent tasks with dependency resolution
+- Routes conversations through appropriate agent sequences based on intent
+- Maintains context sharing between agent interactions
+- Implements 8 distinct workflow patterns:
+  - Brainstorming
+  - Decision Making
+  - Modification
+  - Exploration
+  - Review
+  - Development
+  - Parking
+  - General Processing
 
-Decision Workflow:
-```
-brainstorming -> verification -> assumptionBlocker -> 
-consistencyGuardian -> recorder -> versionControl
-```
+2. Agent State Management
+Path: backend/src/services/agentCoordination.ts
+Importance Score: 90
+- Three-state project management (Decided/Exploring/Parked)
+- Citation tracking with automatic source attribution
+- State transition validation with verification requirements
+- Decision history tracking with full context preservation
 
-Exploration Workflow:  
-```
-brainstorming -> gapDetection -> clarification ->
-recorder (on gap resolution)
-```
+3. Context Management
+Path: backend/src/agents/contextManager.ts
+Importance Score: 85
+- Maps user input to appropriate workflow types
+- Maintains conversation memory across agent handoffs
+- Implements confidence scoring for intent classification
+- Manages agent-specific context pruning rules
 
-Implements:
-- Dynamic workflow determination based on conversation intent
-- Parallel agent execution for compatible tasks
-- State transitions between decided/exploring/parked items
-- Dependency resolution between agent outputs
-- Citation tracking across agent decisions
+## Agent Categories
 
-## Agent State Management
-Importance Score: 90/100
+1. Core Agents
+- Brainstorming Agent: Generates initial ideas
+- Questioner Agent: Probes for clarification
+- Recorder Agent: Documents decisions
+- Context Manager: Maintains conversation state
 
-Path: `backend/src/services/agentCoordination.ts`
+2. Quality Agents
+- Verification Agent: Validates assumptions
+- Gap Detection: Identifies missing information
+- Clarification Agent: Resolves ambiguities
+- Accuracy Auditor: Checks factual correctness
 
-Manages:
-- Conversation context scoping per agent type
-- Project state integrity across parallel executions
-- Decision confidence scoring
-- State conflict resolution
-- Invalid state transition rollbacks
+3. Support Agents
+- Consistency Guardian: Ensures alignment
+- Translation Agent: Standardizes formats
+- Prioritization Agent: Orders tasks
+- Resource Manager: Tracks dependencies
 
-## Agent Communication Protocol
-Importance Score: 85/100
+4. Meta Agents
+- Integration Orchestrator: Coordinates workflows
+- State Manager: Tracks system status
+- Version Control: Manages changes
+- Documentation Generator: Creates artifacts
 
-Path: `frontend/src/store/agentStore.ts`
+## Workflow Processing
 
-Implements:
-- Question-response workflow coordination
-- Thread management between agents
-- Question priority queueing
-- Window state management based on question status
-- Agent activity synchronization
+1. Decision Recording
+- Intent detection through agent analysis
+- Assumption verification process
+- Context validation checks
+- Citation generation system
+- State updates with verification
 
-## Decision Tracking
-Importance Score: 80/100
-
-Key workflows:
-- Automatic state classification (decided/exploring/parked)
-- Citation chain maintenance
-- Assumption violation detection
-- Contradiction identification
-- Decision confidence scoring
-
-The system maintains strict validation rules between states and requires consensus from verification agents before state transitions are committed.
+2. Reference Integration
+- Content analysis by specialized agents
+- Context mapping to existing decisions
+- Relationship detection between references
+- Integration with decision support system
 
 $END$
 

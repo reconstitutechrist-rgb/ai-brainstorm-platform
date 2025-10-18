@@ -1,71 +1,59 @@
 ---
-description: Specifies the sandbox environment implementation for isolating and refining ideas before extraction into main project
+description: Specifies the technical implementation of the AI sandbox environment for idea generation and refinement workflows
 ---
 
 
 # sandbox-implementation
 
-## Idea State Management 
-Importance Score: 95/100
+## Core Components
 
-The sandbox implements a four-state idea progression system:
-1. mentioned - Initial capture from conversations
-2. exploring - Active refinement and evaluation
-3. refined - Vetted and enhanced ideas
-4. ready_to_extract - Validated for project integration
+1. Idea Generation Workflow
+Path: backend/src/agents/IdeaGeneratorAgent.ts
+Importance: 95/100
 
-Each state transition requires validation by quality control agents.
+- Implements five directional idea generation modes:
+  - Practical: Cost-effective, immediate implementation focus
+  - Premium: High-end, feature-rich solutions 
+  - Innovative: Novel approaches and technologies
+  - Budget: Minimal resource requirements
+  - Experimental: Exploratory concepts
 
-## Idea Generation Pipeline
-Importance Score: 90/100
+2. State Management
+Path: frontend/src/store/sandboxStore.ts
+Importance: 90/100
 
-Located in `backend/src/agents/IdeaGeneratorAgent.ts`:
+- Maintains four progressive idea states:
+  - mentioned: Initial capture of raw concepts
+  - exploring: Active investigation and expansion
+  - refined: Validated and enhanced ideas
+  - ready_to_extract: Finalized for project integration
 
-- Directional idea generation with categories:
-  - Innovative (breakthrough solutions)
-  - Practical (implementation-focused)
-  - Budget (cost-optimized)
-  - Premium (feature-rich)
-  - Experimental (cutting-edge)
+3. Isolation Layer
+Path: backend/src/services/sandboxService.ts
+Importance: 85/100
 
-- Idea refinement workflows:
-  - Context preservation across iterations
-  - Assumption validation
-  - Dependency tracking
-  - Resource requirement analysis
-  - Implementation risk assessment
+- Creates isolated environment for risk-free ideation
+- Maintains separate context from main project state
+- Implements temporary storage for in-progress ideas
+- Handles selective synchronization with project context
 
-## Conversational Interface
-Importance Score: 85/100
+4. Refinement Pipeline
+Path: backend/src/agents/sandbox/refinementAgent.ts
+Importance: 80/100
 
-Located in `backend/src/agents/ConversationalIdeaAgent.ts`:
+- Analyzes idea feasibility and alignment
+- Suggests combinations between related concepts
+- Identifies potential blockers and dependencies
+- Generates enhancement recommendations
 
-- Natural language idea extraction
-- Dynamic mode switching:
-  - Brainstorming
-  - Refinement
-  - Validation
-  - Combination
-- Context-aware response generation
-- Automatic tagging and categorization
+5. Extraction Workflow
+Path: backend/src/services/extractionService.ts
+Importance: 75/100
 
-## Sandbox Isolation
-Importance Score: 80/100
-
-- Complete state isolation from main project
-- Parallel idea versions management
-- Controlled extraction process with validation
-- Reference material integration
-- Version conflict resolution
-
-## Idea Combination Engine
-Importance Score: 75/100
-
-- Smart merging of complementary ideas
-- Conflict detection
-- Synergy identification
-- Resource optimization
-- Implementation feasibility scoring
+- Validates ideas against project constraints
+- Maps sandbox concepts to project structure
+- Handles context preservation during extraction
+- Manages citation and reference tracking
 
 $END$
 

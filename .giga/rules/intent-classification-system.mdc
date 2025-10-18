@@ -1,70 +1,59 @@
 ---
-description: Classifies conversation intents to route queries to appropriate AI agents and determine optimal agent execution patterns.
+description: Handles classification and routing of conversation intents across specialized AI agents
 ---
 
 
 # intent-classification-system
 
-Core system for classifying conversation intents and orchestrating AI agent responses based on detected patterns.
-
-## Intent Classification Engine
+## Core Intent Classification Engine 
 Importance Score: 95/100
 
-Located in `backend/src/agents/conversation.ts`:
+Located in `backend/src/agents/contextManager.ts`:
 
-Primary intents:
-- Brainstorming: Open-ended idea generation
-- Clarification: Question refinement and assumption validation 
-- Verification: Fact-checking and reference validation
-- Development: Technical implementation details
-- Strategic: High-level planning and architecture
+- Eight distinct workflow types:
+  - Brainstorming: Open-ended ideation sessions
+  - Deciding: Evaluation and selection of options
+  - Modifying: Refinement of existing items
+  - Exploring: Research and investigation
+  - Reviewing: Analysis and assessment
+  - Development: Technical implementation details
+  - Parking: Deferral of items for later
+  - General: Default catch-all workflow
 
-Classification triggers:
-- Question structure analysis
-- Keyword pattern matching
-- Context chain evaluation
-- Previous interaction history
-- Reference material relevance
+- Classification signals:
+  - Keyword pattern matching
+  - Context history analysis
+  - User intent markers
+  - Previous workflow state
+  - Agent feedback loops
 
-## Workflow Determination
+## Workflow Orchestration
 Importance Score: 90/100
 
 Located in `backend/src/agents/orchestrator.ts`:
 
-Decision paths:
-```
-EXPLORE_MODE:
-  brainstorm -> clarify -> verify -> develop
+- Dynamic agent selection based on classified intent
+- Conditional execution paths:
+  - Verification required for decisions
+  - Clarification needed for ambiguous input
+  - Review triggered for major changes
+  - Citation checks for factual claims
 
-REFINE_MODE:
-  verify -> clarify -> strategic -> develop
+- State transitions:
+  - Exploring -> Deciding -> Parked
+  - Draft -> Review -> Approved
+  - Question -> Clarified -> Resolved
 
-VALIDATE_MODE:
-  verify -> reference -> clarify -> strategic
-```
-
-State transitions controlled by:
-- Intent confidence scores
-- Question completion status
-- Dependency resolution
-- Context preservation rules
-- Agent availability
-
-## Agent Selection Logic
+## Intent Tracking System
 Importance Score: 85/100
 
-Agent matching based on:
-- Primary intent classification
-- Secondary intent signals
-- Current project phase
-- Previous agent interactions
-- Context requirements
+Located in `backend/src/services/agentCoordination.ts`:
 
-Agent coordination patterns:
-- Sequential for dependent tasks
-- Parallel for compatible intents
-- Fallback chains for low confidence
-- Recovery paths for failed responses
+- Persistent intent history with context preservation
+- Citation requirements based on intent type
+- Confidence scoring for intent matches
+- Intent-specific agent activation rules
+- Cross-session intent continuity handling
 
 $END$
 
