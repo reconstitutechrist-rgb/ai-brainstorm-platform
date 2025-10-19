@@ -55,7 +55,7 @@ JSON OUTPUT: {
   /**
    * Main recording method - combines verification, recording, and versioning
    */
-  async record(data: any, projectState: ProjectState, userMessage?: string, workflowIntent?: string): Promise<AgentResponse> {
+  async record(data: any, projectState: ProjectState, userMessage?: string, workflowIntent?: string, conversationHistory?: any[]): Promise<AgentResponse> {
     this.log(`Processing record request with built-in verification (intent: ${workflowIntent || 'unknown'})`);
 
     // Determine verification strictness based on workflow intent
@@ -79,6 +79,11 @@ JSON OUTPUT: {
 - REJECT IF: Pure question, off-topic, or no actionable content
 - Use judgment - favor recording over rejecting`;
 
+    // Format conversation context for Claude
+    const recentConversation = conversationHistory && conversationHistory.length > 0
+      ? conversationHistory.slice(-10).map((msg: any) => `[${msg.role}]: ${msg.content}`).join('\n')
+      : 'No conversation history available';
+
     const messages = [
       {
         role: 'user',
@@ -88,6 +93,20 @@ WORKFLOW INTENT: ${workflowIntent || 'general'}
 
 ${verificationGuidance}
 
+CONTEXT AWARENESS - CRITICAL:
+If the user message is short like "yes", "I love it", "perfect", "that's the one", "let's do it", etc.,
+you MUST look at the IMMEDIATELY PRECEDING assistant/AI message in the conversation history below.
+The user is approving/confirming what the AI just suggested.
+Record the AI's suggestion as a DECIDED item, NOT just the user's approval phrase.
+
+Example:
+  [assistant]: "We could add a payment system using Stripe..."
+  [user]: "Yes I love it!"
+  → Record: "Add payment system using Stripe" (state: decided)
+
+Recent Conversation (last 10 messages):
+${recentConversation}
+
 Data to analyze: ${JSON.stringify(data)}
 
 Original user message: "${userMessage || 'N/A'}"
@@ -95,9 +114,10 @@ Original user message: "${userMessage || 'N/A'}"
 Current project state: ${JSON.stringify(projectState)}
 
 Step 1: VERIFY - Apply the verification rules above based on the workflow intent
-Step 2: ANALYZE - What state? (decided/exploring/parked) What confidence level?
-Step 3: VERSION - Track this as a new version or modification
-Step 4: CONFIRM - Generate read-back message for user confirmation
+Step 2: CONTEXT - If user is confirming/approving, identify WHAT they're approving from conversation
+Step 3: ANALYZE - What state? (decided/exploring/parked) What confidence level?
+Step 4: VERSION - Track this as a new version or modification
+Step 5: CONFIRM - Generate read-back message for user confirmation
 
 Return ONLY valid JSON matching the system prompt format.`,
       },

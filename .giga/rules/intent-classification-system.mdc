@@ -1,59 +1,51 @@
 ---
-description: Handles classification and routing of conversation intents across specialized AI agents
+description: Documents the conversation intent classification system for routing AI agent workflows and determining appropriate response patterns.
 ---
 
 
 # intent-classification-system
 
-## Core Intent Classification Engine 
+## Core Intent Classification Components
+
+### Intent Classification Workflow
 Importance Score: 95/100
+- Implements specialized multi-agent orchestration based on detected conversation intents
+- Routes conversations through appropriate agent sequences:
+  - Questioner -> Clarification -> Gap Detection
+  - Brainstorming -> Verification -> Assumption Blocker
+  - Reviewer -> Quality Auditor
+- Dynamic workflow determination based on conversation context
+- Parallel vs sequential processing decisions based on intent dependencies
 
-Located in `backend/src/agents/contextManager.ts`:
-
-- Eight distinct workflow types:
-  - Brainstorming: Open-ended ideation sessions
-  - Deciding: Evaluation and selection of options
-  - Modifying: Refinement of existing items
-  - Exploring: Research and investigation
-  - Reviewing: Analysis and assessment
-  - Development: Technical implementation details
-  - Parking: Deferral of items for later
-  - General: Default catch-all workflow
-
-- Classification signals:
-  - Keyword pattern matching
-  - Context history analysis
-  - User intent markers
-  - Previous workflow state
-  - Agent feedback loops
-
-## Workflow Orchestration
+### Conversation State Management
 Importance Score: 90/100
+- Maintains three primary conversation modes:
+  - Exploration (open ideation)
+  - Refinement (idea development)
+  - Decision (formalization)
+- State transitions triggered by detected intent patterns
+- Context preservation across mode switches
+- Progressive idea refinement tracking
 
-Located in `backend/src/agents/orchestrator.ts`:
-
-- Dynamic agent selection based on classified intent
-- Conditional execution paths:
-  - Verification required for decisions
-  - Clarification needed for ambiguous input
-  - Review triggered for major changes
-  - Citation checks for factual claims
-
-- State transitions:
-  - Exploring -> Deciding -> Parked
-  - Draft -> Review -> Approved
-  - Question -> Clarified -> Resolved
-
-## Intent Tracking System
+### Response Pattern Selection 
 Importance Score: 85/100
+- Matches agent response patterns to detected intents:
+  - Questioning patterns for unclear concepts
+  - Clarification sequences for ambiguous ideas
+  - Validation flows for decision points
+- Dynamically adjusts response depth based on conversation mode
+- Enforces consistency in multi-agent response chains
 
-Located in `backend/src/services/agentCoordination.ts`:
+### Document Integration Flow
+Importance Score: 80/100
+- Links conversation intents to relevant documentation:
+  - Reference material connections
+  - Decision record attachments
+  - Context documentation
+- Routes document-related queries to specialized agents
+- Maintains citation tracking through intent transitions
 
-- Persistent intent history with context preservation
-- Citation requirements based on intent type
-- Confidence scoring for intent matches
-- Intent-specific agent activation rules
-- Cross-session intent continuity handling
+The system's core value lies in its sophisticated intent classification that drives agent orchestration, conversation flow, and document integration. The multi-stage classification process ensures appropriate agent selection and response patterns while maintaining contextual awareness across transitions.
 
 $END$
 

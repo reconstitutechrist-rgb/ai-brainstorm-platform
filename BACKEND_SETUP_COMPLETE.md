@@ -123,7 +123,7 @@ All agents are responding within 3-9 seconds, which is normal for AI processing.
 ## Next Steps
 
 Once the SQL fix is applied, your AI brainstorm platform will be fully operational with:
-- 18 AI agents working together
+- 8 AI agents working together
 - Full conversation tracking
 - Reference document integration (PDFs, images)
 - Agent activity monitoring

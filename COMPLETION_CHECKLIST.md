@@ -110,7 +110,7 @@
 ### ✅ Pages
 - [x] Dashboard - Project overview with statistics
 - [x] ChatPage - Real-time AI conversation interface
-- [x] AgentsPage - Directory of all 18 agents
+- [x] AgentsPage - Directory of all 8 agents
 - [x] DocumentsPage - Three-column state view (Decided/Exploring/Parked)
 - [x] SettingsPage - App configuration
 
@@ -250,7 +250,7 @@ Expected: App running on http://localhost:5173
 - [ ] Send a test message
 - [ ] AI agents respond
 - [ ] Check Documents page for state columns
-- [ ] Visit Agents page to see all 18 agents
+- [ ] Visit Agents page to see all 8 agents
 - [ ] Upload a reference file
 - [ ] Check Settings page
 
@@ -285,7 +285,7 @@ Your AI Brainstorm Platform is fully built and ready to run!
 
 ### What You Have:
 ✅ Full-stack TypeScript application
-✅ 18 AI agents powered by Claude Sonnet 4
+✅ 8 AI agents powered by Claude Sonnet 4
 ✅ Multi-agent orchestration system
 ✅ Beautiful glassmorphism UI with dark mode
 ✅ Real-time chat interface

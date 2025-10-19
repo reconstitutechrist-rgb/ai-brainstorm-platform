@@ -10,22 +10,32 @@ import {
   ChatPageHeader,
   ChatContainer,
   ChatPanel,
+  CanvasPanel,
   TrackingPanel,
   ChatHeader,
   ChatMessages,
   ChatInput,
   UploadModal,
 } from '../components/chat';
+import {
+  VisualCanvas,
+  CardCounter,
+  CapacityWarning,
+  ArchiveSidebar,
+} from '../components/canvas';
 import { SessionSummaryModal } from '../components/SessionSummaryModal';
 import { SessionHistoryModal } from '../components/SessionHistoryModal';
 import { SessionTrackingPanel } from '../components/SessionTrackingPanel';
 import { FloatingAgentBubbles } from '../components/FloatingAgentBubbles';
 import { AgentChatWindow } from '../components/AgentChatWindow';
+import { useCardCapacity } from '../hooks/useCardCapacity';
+import { useArchive } from '../hooks/useArchive';
+import { useMemo } from 'react';
 
 export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { user } = useUserStore();
-  const { currentProject } = useProjectStore();
+  const { currentProject, toggleItemArchive } = useProjectStore();
   const { messages, isTyping } = useChatStore();
   const { sessionSummary } = useSessionStore();
   const {
@@ -43,11 +53,28 @@ export const ChatPage: React.FC = () => {
   const [isSessionActive, setIsSessionActive] = useState(true);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const hasShownSummaryRef = useRef(false);
 
   // Custom hooks
   const { sendMessage, isSending } = useChat(currentProject?.id);
   useMessageLoader(currentProject?.id);
+
+  // Canvas-specific hooks
+  const projectItems = currentProject?.items || [];
+
+  // Get active items (decided + exploring, non-archived)
+  const activeItems = useMemo(() => {
+    return projectItems.filter(
+      item => (item.state === 'decided' || item.state === 'exploring') && !item.isArchived
+    );
+  }, [projectItems]);
+
+  // Archive hook
+  const archive = useArchive(projectItems);
+
+  // Capacity tracking
+  const capacity = useCardCapacity(activeItems.length, archive.archivedCards.length);
 
   // Show summary modal when session data loads
   useEffect(() => {
@@ -111,6 +138,26 @@ export const ChatPage: React.FC = () => {
     if (!result.success && result.error) {
       alert('Failed to send your response. Please try again.');
     }
+  };
+
+  // Canvas handlers
+  const handleArchiveCard = (itemId: string) => {
+    toggleItemArchive(itemId);
+  };
+
+  const handleRestoreCard = (itemId: string) => {
+    if (capacity.canAddCard) {
+      toggleItemArchive(itemId);
+    } else {
+      alert('Canvas is at capacity (30 cards). Please archive some cards before restoring.');
+    }
+  };
+
+  const handleWarningAction = (action: string) => {
+    if (action.includes('Archive')) {
+      setIsArchiveOpen(true);
+    }
+    capacity.dismissWarning();
   };
 
   // No project selected state
@@ -182,11 +229,51 @@ export const ChatPage: React.FC = () => {
           />
         </ChatPanel>
 
+        {/* Canvas panel */}
+        <CanvasPanel isDarkMode={isDarkMode}>
+          <div className="p-4">
+            <CardCounter
+              capacityState={capacity.capacityState}
+              isDarkMode={isDarkMode}
+            />
+          </div>
+          <VisualCanvas
+            items={activeItems}
+            isDarkMode={isDarkMode}
+            onArchive={handleArchiveCard}
+          />
+        </CanvasPanel>
+
         {/* Session tracking panel */}
         <TrackingPanel isDarkMode={isDarkMode}>
           <SessionTrackingPanel />
         </TrackingPanel>
       </ChatContainer>
+
+      {/* Capacity Warning */}
+      {capacity.currentWarning && (
+        <CapacityWarning
+          warning={capacity.currentWarning}
+          onDismiss={capacity.dismissWarning}
+          onAction={handleWarningAction}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {/* Archive Sidebar */}
+      <ArchiveSidebar
+        archivedCards={archive.archivedCards}
+        filteredCards={archive.filteredCards}
+        searchQuery={archive.searchQuery}
+        onSearchChange={archive.setSearchQuery}
+        filterType={archive.filterType}
+        onFilterChange={archive.setFilterType}
+        onRestore={handleRestoreCard}
+        onDelete={handleArchiveCard}
+        isOpen={isArchiveOpen}
+        onToggle={() => setIsArchiveOpen(!isArchiveOpen)}
+        isDarkMode={isDarkMode}
+      />
 
       {/* Upload modal */}
       <UploadModal

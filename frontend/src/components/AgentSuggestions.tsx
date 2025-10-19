@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
+import { projectsApi, conversationsApi } from '../services/api';
 import {
   Sparkles,
   X,
@@ -10,17 +11,19 @@ import {
   ThumbsDown,
   Lightbulb,
   Target,
-  Zap
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 
 interface Suggestion {
   id: string;
-  type: 'action' | 'decision' | 'insight';
+  type: 'action' | 'decision' | 'insight' | 'question';
   title: string;
   description: string;
   reasoning: string;
   priority: 'low' | 'medium' | 'high';
   agentType: string;
+  actionData?: any;
 }
 
 export const AgentSuggestions: React.FC = () => {
@@ -47,64 +50,21 @@ export const AgentSuggestions: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Generate project-specific suggestions based on actual project state
-      const projectSuggestions: Suggestion[] = [];
+      // Call the real AI suggestions API
+      const response = await projectsApi.getSuggestions(currentProject.id);
 
-      // Suggestion 1: Based on project status
-      if (currentProject.status === 'exploring') {
-        projectSuggestions.push({
-          id: '1',
-          type: 'action',
-          title: `Continue exploring "${currentProject.title}"`,
-          description: 'Review recent brainstorming progress and make a decision',
-          reasoning: `Project has been in exploring mode. Consider moving to decided phase.`,
-          priority: 'high',
-          agentType: 'decision-tracker'
-        });
-      } else if (currentProject.status === 'decided') {
-        projectSuggestions.push({
-          id: '1',
-          type: 'insight',
-          title: `"${currentProject.title}" is decided`,
-          description: 'Great work! Consider documenting your decision rationale',
-          reasoning: 'Documenting decisions helps with future reference and team alignment',
-          priority: 'medium',
-          agentType: 'documentation-advisor'
-        });
+      if (response.success && response.suggestions) {
+        setSuggestions(response.suggestions);
+        setIsVisible(response.suggestions.length > 0);
+      } else {
+        setSuggestions([]);
+        setIsVisible(false);
       }
-
-      // Suggestion 2: Based on project description
-      if (currentProject.description) {
-        const hasDescription = currentProject.description.length > 20;
-        if (!hasDescription) {
-          projectSuggestions.push({
-            id: '2',
-            type: 'action',
-            title: 'Expand project description',
-            description: 'Add more details to help AI agents understand your goals',
-            reasoning: 'Detailed descriptions enable better AI suggestions and analysis',
-            priority: 'medium',
-            agentType: 'context-analyzer'
-          });
-        }
-      }
-
-      // Suggestion 3: Generic helpful tip
-      projectSuggestions.push({
-        id: '3',
-        type: 'insight',
-        title: 'Engage with AI agents',
-        description: 'Use the chat to brainstorm ideas and explore options for this project',
-        reasoning: '18 specialized agents are ready to help with architecture, features, and decisions',
-        priority: 'low',
-        agentType: 'collaboration-advisor'
-      });
-
-      // Filter to show only top 3 suggestions
-      setSuggestions(projectSuggestions.slice(0, 3));
-      setIsVisible(projectSuggestions.length > 0);
     } catch (error) {
       console.error('Load suggestions error:', error);
+      // Fallback to empty suggestions on error
+      setSuggestions([]);
+      setIsVisible(false);
     } finally {
       setIsLoading(false);
     }
@@ -119,15 +79,36 @@ export const AgentSuggestions: React.FC = () => {
     }
   };
 
-  const handleAccept = (suggestion: Suggestion) => {
-    // In a real implementation, this would trigger the suggested action
-    console.log('Accepted suggestion:', suggestion);
-    handleDismiss(suggestion.id);
+  const handleAccept = async (suggestion: Suggestion) => {
+    if (!currentProject || !user) return;
+
+    try {
+      // If the suggestion has action data with a suggested message, send it to the chat
+      if (suggestion.actionData?.suggestedMessage) {
+        console.log('Sending suggested message:', suggestion.actionData.suggestedMessage);
+
+        // Send the message through the conversation API
+        await conversationsApi.sendMessage(
+          currentProject.id,
+          suggestion.actionData.suggestedMessage,
+          user.id
+        );
+
+        // Refresh suggestions after action
+        setTimeout(() => {
+          loadSuggestions();
+        }, 1000);
+      }
+
+      // Dismiss the suggestion
+      handleDismiss(suggestion.id);
+    } catch (error) {
+      console.error('Error applying suggestion:', error);
+    }
   };
 
   const handleReject = (suggestionId: string) => {
-    // In a real implementation, this would send feedback to improve future suggestions
-    console.log('Rejected suggestion:', suggestionId);
+    // Dismiss the suggestion
     handleDismiss(suggestionId);
   };
 
@@ -158,6 +139,8 @@ export const AgentSuggestions: React.FC = () => {
         return <Lightbulb size={16} />;
       case 'insight':
         return <Zap size={16} />;
+      case 'question':
+        return <HelpCircle size={16} />;
       default:
         return <Sparkles size={16} />;
     }

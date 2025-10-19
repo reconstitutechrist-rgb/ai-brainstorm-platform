@@ -1,3 +1,7 @@
+# === USER INSTRUCTIONS ===
+Central coordinator managing 8 specialized AI agents through configurable workflows. Implements unique business logic for intent-based agent selection, parallel execution chains, and cross-agent context sharing.
+# === END USER INSTRUCTIONS ===
+
 
 # main-overview
 
@@ -13,65 +17,59 @@
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-Multi-Agent AI Project Management Platform
+## Multi-Agent Orchestration Platform
 
-## Core Architecture
+The system implements a sophisticated AI-powered brainstorming platform built around specialized agent coordination and idea management.
 
-The system implements a sophisticated multi-agent orchestration platform with specialized components:
+### Core Business Components
 
-### Agent Orchestration Layer
-- Coordinates 17 specialized AI agents across 8 distinct workflow types
-- Dynamic workflow selection based on user intent classification
-- Parallel execution management with state preservation
-- Located in `backend/src/agents/orchestrator.ts`
+1. Multi-Agent Orchestration System
+`frontend/src/components/homepage/AgentShowcase.tsx`
+- Coordinates 8 specialized AI agents for brainstorming
+- Defines hierarchical agent relationships and roles
+- Manages core, support, and orchestrator agent types
+Importance Score: 85/100
 
-### Intelligence Processing
-- Project analytics and decision tracking system 
-- Conflict detection between AI agent decisions
-- Reference material analysis with project alignment validation
-- Located in `backend/src/agents/contextManager.ts`
+2. Canvas-based Idea Management 
+`frontend/src/components/canvas/VisualCanvas.tsx`
+- Spatial organization of brainstorming items
+- Auto-positioning system for new ideas
+- Three-state management (decided/exploring/parked)
+Importance Score: 80/100
 
-### Verification System
-- Multi-stage verification process with assumption detection
-- Citation tracking with source attribution
-- Confidence scoring for verified statements
-- Located in `backend/src/agents/verificationAgent.ts`
+3. Idea Processing Pipeline
+`frontend/src/components/sandbox/IdeaBoardPanel.tsx`
+- Progressive idea refinement workflow
+- Classification system (mentioned/exploring/refined/ready_to_extract)
+- Innovation level assessment (practical/moderate/experimental)
+Importance Score: 90/100
 
-### State Management
-- Three-state project management (Decided/Exploring/Parked)
-- Citation-based decision tracking
-- Context preservation across state transitions
-- Located in `backend/src/services/agentCoordination.ts`
+### Supporting Business Logic
 
-## Business Workflows
+4. Capacity Management
+`frontend/src/components/canvas/CapacityWarning.tsx`
+- Workspace capacity monitoring
+- Warning level classification (critical/warning/info)
+- Dynamic suggestion generation
+Importance Score: 75/100
 
-1. Decision Recording
-- Intent detection
-- Assumption verification 
-- Context validation
-- Citation generation
+5. Chat Intelligence
+`frontend/src/components/chat/ChatMessages.tsx`
+- Agent-specific message handling
+- Metadata tracking for idea extraction
+- Context-aware response formatting
+Importance Score: 70/100
 
-2. Reference Integration
-- Content extraction
-- Relationship mapping
-- Decision support
+### Business Workflow Integration
 
-3. Document Generation
-- Context-aware structure
-- Automatic section generation
-- Citation integration
+The platform implements a unique approach to brainstorming by combining:
+- Specialized AI agents with distinct roles
+- Spatial organization of ideas
+- Progressive idea refinement stages
+- Capacity-aware workspace management
+- Context-aware chat interactions
 
-4. Sandbox Environment
-- Isolated idea exploration
-- Innovation level assessment
-- Directional idea generation modes
-
-5. Session Intelligence
-- Progress tracking
-- Blocker detection
-- Context-aware suggestions
-
-The platform's unique value derives from sophisticated agent orchestration combined with strict verification and contextual awareness across all operations.
+Each component contributes to a cohesive workflow designed to transform unstructured conversations into organized, actionable project decisions.
 
 $END$
 

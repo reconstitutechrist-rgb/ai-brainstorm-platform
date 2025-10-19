@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
-import { CheckCircle2, Brain, Archive, ChevronDown, ChevronRight, Clock } from 'lucide-react';
+import { CheckCircle2, Brain, Archive, ChevronDown, ChevronRight, Clock, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ProjectItem } from '../types';
 
@@ -22,6 +22,31 @@ export const SessionTrackingPanel: React.FC = () => {
       newExpanded.add(itemId);
     }
     setExpandedItems(newExpanded);
+  };
+
+  // Find related items based on citation timestamp proximity and text similarity
+  const findRelatedItems = (item: ProjectItem): ProjectItem[] => {
+    if (!item.citation) return [];
+
+    return currentProject.items
+      .filter(otherItem => {
+        if (otherItem.id === item.id || !otherItem.citation) return false;
+
+        // Check if citations are within 5 minutes of each other
+        const timeDiff = Math.abs(
+          new Date(item.citation!.timestamp).getTime() -
+          new Date(otherItem.citation.timestamp).getTime()
+        );
+        const fiveMinutes = 5 * 60 * 1000;
+
+        // Check for text similarity (simple word overlap)
+        const itemWords = new Set(item.text.toLowerCase().split(/\s+/));
+        const otherWords = otherItem.text.toLowerCase().split(/\s+/);
+        const commonWords = otherWords.filter(word => itemWords.has(word)).length;
+
+        return timeDiff < fiveMinutes || commonWords >= 3;
+      })
+      .slice(0, 3); // Limit to 3 related items
   };
 
   const tabs = [
@@ -173,6 +198,7 @@ export const SessionTrackingPanel: React.FC = () => {
                   isDarkMode={isDarkMode}
                   isExpanded={expandedItems.has(item.id)}
                   onToggleExpand={() => toggleItemExpansion(item.id)}
+                  relatedItems={findRelatedItems(item)}
                 />
               ))}
             </motion.div>
@@ -191,6 +217,7 @@ interface SessionItemCardProps {
   isDarkMode: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  relatedItems: ProjectItem[];
 }
 
 const SessionItemCard: React.FC<SessionItemCardProps> = ({
@@ -199,7 +226,8 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({
   type,
   isDarkMode,
   isExpanded,
-  onToggleExpand
+  onToggleExpand,
+  relatedItems
 }) => {
   const getTypeColor = () => {
     switch (type) {
@@ -282,6 +310,50 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({
                     Confidence: {Math.round(item.citation.confidence * 100)}%
                   </span>
                 </div>
+
+                {/* Cross-References to Related Items */}
+                {relatedItems.length > 0 && (
+                  <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Link2 size={12} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+                      <p className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Related Decisions ({relatedItems.length}):
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      {relatedItems.map((relatedItem) => {
+                        const stateColor = relatedItem.state === 'decided'
+                          ? 'text-green-400'
+                          : relatedItem.state === 'exploring'
+                          ? 'text-blue-400'
+                          : 'text-yellow-600';
+
+                        return (
+                          <div
+                            key={relatedItem.id}
+                            className={`text-xs p-2 rounded-lg ${
+                              isDarkMode ? 'bg-white/5' : 'bg-gray-100'
+                            }`}
+                          >
+                            <div className="flex items-start space-x-2">
+                              <span className={`${stateColor} flex-shrink-0 mt-0.5`}>•</span>
+                              <div className="flex-1">
+                                <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} line-clamp-2`}>
+                                  {relatedItem.text}
+                                </p>
+                                {relatedItem.citation && (
+                                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                    {format(new Date(relatedItem.citation.timestamp), 'MMM d, h:mm a')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>

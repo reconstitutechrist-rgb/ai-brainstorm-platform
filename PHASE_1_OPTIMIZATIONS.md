@@ -46,7 +46,7 @@ const [projectState, conversationHistory, projectReferences, projectDocuments] =
 
 ## ✅ Optimization 2: Singleton Anthropic Client
 
-**Problem**: Each of 18 agents created its own Anthropic API client, wasting memory.
+**Problem**: Each of 8 agents created its own Anthropic API client, wasting memory.
 
 **Solution**: Share one client instance across all agents using singleton pattern.
 

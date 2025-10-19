@@ -81,6 +81,23 @@ export const projectsApi = {
     );
     return response.data;
   },
+
+  getSuggestions: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      suggestions: Array<{
+        id: string;
+        type: 'action' | 'decision' | 'insight' | 'question';
+        title: string;
+        description: string;
+        reasoning: string;
+        priority: 'high' | 'medium' | 'low';
+        agentType: string;
+        actionData?: any;
+      }>;
+    }>(`/projects/${projectId}/suggestions`);
+    return response.data;
+  },
 };
 
 // Conversations API
@@ -518,6 +535,68 @@ export const generatedDocumentsApi = {
   delete: async (documentId: string) => {
     const response = await api.delete<{ success: boolean; message: string }>(
       `/generated-documents/${documentId}`
+    );
+    return response.data;
+  },
+
+  // VERSION MANAGEMENT
+
+  // Get version history for a document
+  getVersionHistory: async (documentId: string) => {
+    const response = await api.get<{ success: boolean; versions: any[] }>(
+      `/generated-documents/${documentId}/versions`
+    );
+    return response.data;
+  },
+
+  // Get a specific version of a document
+  getVersion: async (documentId: string, versionNumber: number) => {
+    const response = await api.get<{ success: boolean; version: any }>(
+      `/generated-documents/${documentId}/versions/${versionNumber}`
+    );
+    return response.data;
+  },
+
+  // Get diff between two versions
+  getDiff: async (documentId: string, fromVersion: number, toVersion: number) => {
+    const response = await api.get<{ success: boolean; diff: any }>(
+      `/generated-documents/${documentId}/diff?from=${fromVersion}&to=${toVersion}`
+    );
+    return response.data;
+  },
+
+  // Rollback to a specific version
+  rollback: async (documentId: string, versionNumber: number) => {
+    const response = await api.post<{ success: boolean; document: any; message: string }>(
+      `/generated-documents/${documentId}/rollback`,
+      { versionNumber }
+    );
+    return response.data;
+  },
+
+  // Generate AI summary of changes between versions
+  generateChangeSummary: async (documentId: string, fromVersion: number, toVersion: number) => {
+    const response = await api.post<{ success: boolean; summary: string }>(
+      `/generated-documents/${documentId}/change-summary`,
+      { fromVersion, toVersion }
+    );
+    return response.data;
+  },
+
+  // SMART FEATURES
+
+  // Get AI-powered document recommendations for a project
+  getRecommendations: async (projectId: string) => {
+    const response = await api.get<{ success: boolean; recommendations: any[] }>(
+      `/generated-documents/recommendations/${projectId}`
+    );
+    return response.data;
+  },
+
+  // Get quality score for a document
+  getQualityScore: async (documentId: string) => {
+    const response = await api.get<{ success: boolean; qualityScore: any }>(
+      `/generated-documents/${documentId}/quality-score`
     );
     return response.data;
   },

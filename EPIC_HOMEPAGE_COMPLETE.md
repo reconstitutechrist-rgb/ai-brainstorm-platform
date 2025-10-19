@@ -22,7 +22,7 @@ Created a stunning, fully animated homepage that showcases all features of the A
 **2. Homepage Components (7):**
 - `frontend/src/components/homepage/HeroSection.tsx` - Particle system, hero content, CTAs
 - `frontend/src/components/homepage/FeatureShowcase.tsx` - 4 main features with glass cards
-- `frontend/src/components/homepage/AgentShowcase.tsx` - All 18 AI agents in interactive grid
+- `frontend/src/components/homepage/AgentShowcase.tsx` - All 8 AI agents in interactive grid
 - `frontend/src/components/homepage/WorkflowVisualization.tsx` - Animated workflow diagram
 - `frontend/src/components/homepage/CapabilitiesGrid.tsx` - 9 capabilities in 3×3 grid
 - `frontend/src/components/homepage/StatsSection.tsx` - Animated counters with stats
@@ -161,7 +161,7 @@ Created a stunning, fully animated homepage that showcases all features of the A
 ---
 
 ### 3. Agent Showcase ✅
-**All 18 agents in responsive grid (6 columns → 4 → 3 → 2 → 1)**
+**All 8 agents in responsive grid (6 columns → 4 → 3 → 2 → 1)**
 
 **Categorization:**
 - **Core Agents (5)** - Green (#00ffaa)
@@ -190,7 +190,7 @@ Created a stunning, fully animated homepage that showcases all features of the A
 **Steps:**
 1. **User Input** - "Share your ideas naturally"
 2. **Orchestrator** - "AI decides which workflow"
-3. **Agent Execution** - "18 agents collaborate"
+3. **Agent Execution** - "8 agents collaborate"
 4. **Record Decisions** - "Save with full citations"
 5. **Actionable Plan** - "Ready to implement"
 
@@ -680,7 +680,7 @@ frontend/src/
 **Status**: ✅ **COMPLETE AND READY TO USE**
 
 All code has been implemented, tested via hot reload, and is now live. The homepage showcases:
-- ✅ All 18 AI agents
+- ✅ All 8 AI agents
 - ✅ All major features (Sandbox, Intelligence Hub, Research Hub)
 - ✅ Full capabilities overview
 - ✅ Animated particle system

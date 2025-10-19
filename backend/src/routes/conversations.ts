@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { AgentCoordinationService } from '../services/agentCoordination';
+import { EmbeddingService } from '../services/embeddingService';
 
 const router = Router();
 const coordinationService = new AgentCoordinationService();
+const embeddingService = new EmbeddingService(supabase);
 
 // Helper to send SSE events
 function sendSSE(res: Response, event: string, data: any) {
@@ -52,6 +54,11 @@ router.post('/:projectId/message-stream', async (req: Request, res: Response) =>
 
       sendSSE(res, 'user-message-saved', { message: userMessage });
 
+      // Generate embedding for user message asynchronously (don't await)
+      embeddingService.generateAndStoreMessageEmbedding(userMessage.id, message).catch(err => {
+        console.error('Failed to generate embedding for user message:', err);
+      });
+
       // Process through agent system with streaming updates
       sendSSE(res, 'agent-processing', { status: 'Classifying intent...' });
 
@@ -86,6 +93,11 @@ router.post('/:projectId/message-stream', async (req: Request, res: Response) =>
 
         if (!error && agentMsg) {
           agentMessages.push(agentMsg);
+
+          // Generate embedding for agent message asynchronously
+          embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, response.message).catch(err => {
+            console.error('Failed to generate embedding for agent message:', err);
+          });
         }
       }
 
@@ -310,6 +322,31 @@ router.delete('/:projectId/messages', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Clear conversation error:', error);
     res.status(500).json({ success: false, error: 'Failed to clear conversation' });
+  }
+});
+
+/**
+ * Generate embeddings for all messages in a project
+ * This is useful for backfilling embeddings for existing messages
+ */
+router.post('/:projectId/generate-embeddings', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    console.log(`Starting embedding generation for project ${projectId}...`);
+    const processedCount = await embeddingService.generateMissingEmbeddings(projectId);
+
+    res.json({
+      success: true,
+      message: `Generated embeddings for ${processedCount} messages`,
+      processedCount,
+    });
+  } catch (error: any) {
+    console.error('Generate embeddings error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate embeddings',
+    });
   }
 });
 

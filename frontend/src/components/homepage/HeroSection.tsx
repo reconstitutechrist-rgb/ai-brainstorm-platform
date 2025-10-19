@@ -143,7 +143,7 @@ export const HeroSection: React.FC = () => {
             }`}
             style={{ color: isDarkMode ? undefined : 'rgba(255, 255, 255, 0.9)' }}
           >
-            18 Specialized AI Agents Working in Perfect Harmony
+            8 Specialized AI Agents Working in Perfect Harmony
           </motion.p>
 
           {/* CTA Button */}
@@ -171,7 +171,7 @@ export const HeroSection: React.FC = () => {
           >
             <div className="status-badge">
               <div className="status-indicator" />
-              <span>18 Agents Online</span>
+              <span>8 Agents Online</span>
             </div>
             <div className="status-badge">
               <Shield size={16} />

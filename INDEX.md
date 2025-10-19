@@ -47,7 +47,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 ### 5. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
 **Detailed technical summary**
 - Complete component checklist
-- All 18 AI agents described
+- All 8 AI agents described
 - Package dependencies
 - File structure
 - Known issues

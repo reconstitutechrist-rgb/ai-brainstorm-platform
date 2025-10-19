@@ -1,48 +1,40 @@
 ---
-description: Specification for the conversation state management system including state transitions, context handling, and cache rules
+description: Rules for managing conversation state, context transitions and caching across AI agent interactions
 ---
 
 
 # conversation-state-model
 
-## Three-State Decision System
-The conversation model implements a strict three-state decision tracking system:
-- DECIDED: Verified decisions with citations and context
-- EXPLORING: Active discussion topics requiring resolution
-- PARKED: Temporarily suspended topics for later review
+The conversation state management system implements a sophisticated three-state decision tracking model with intelligent context pruning.
 
-State transitions require specific conditions:
-- EXPLORING → DECIDED: Requires verification agent approval and citations
-- EXPLORING → PARKED: Requires explicit parking command or timeout
-- PARKED → EXPLORING: Requires manual unpacking or agent suggestion
+Core Components:
 
-## Context Pruning Rules
-Context management follows strict pruning guidelines:
-- Retain last 3 state transitions per topic
-- Keep full context for DECIDED items
-- Prune EXPLORING contexts older than 24 hours
-- Maintain citation links across pruning operations
-- Preserve agent verification chains for decisions
+1. Three-State Decision System (Importance: 90/100)
+- States: decided/exploring/parked
+- Tracking of state transitions with reasoning capture
+- Citation mapping between related decisions
+- Confidence scoring for state changes
+- Automatic state suggestions based on conversation context
 
-## Cache Invalidation
-Response caching implements domain-specific invalidation:
-- Clear on state transitions
-- Invalidate when citations change
-- Reset on context updates
-- Preserve across PARKED state
-- Maintain per-agent cache segments
+2. Context Pruning Rules (Importance: 85/100) 
+- Agent-specific context retention policies
+- Task-based context preservation
+- Adaptive pruning based on conversation importance
+- Decision-focused pruning for consistency validation
 
-## Persistence Model
-- Conversation state stored in atomic blocks
-- Each block contains:
-  - Current state
-  - Transition history
-  - Agent verifications
-  - Citations
-  - Context snapshot
-- Blocks linked via citation graph
+3. Cache Invalidation System (Importance: 80/100)
+- Dynamic TTL calculations per agent type
+- Token-based cache expiration 
+- Context-aware cache refresh triggers
+- Progressive cache pruning based on memory usage
 
-The system prioritizes decision integrity over conversation fluidity, implementing strict verification requirements before state transitions can occur.
+4. State Transition Workflows (Importance: 75/100)
+- Citation tracking for decision changes
+- Version control on state modifications
+- Conflict detection across state changes
+- Automatic state recommendations
+
+The system maintains conversation coherence through intelligent context management while optimizing memory usage through sophisticated pruning algorithms. Each state transition is tracked with full citation history and confidence scoring.
 
 $END$
 

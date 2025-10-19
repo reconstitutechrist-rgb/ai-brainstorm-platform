@@ -121,4 +121,225 @@ router.delete('/:documentId', async (req, res) => {
   }
 });
 
+// ============================================
+// VERSION MANAGEMENT ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/generated-documents/:documentId/versions
+ * Get version history for a document
+ */
+router.get('/:documentId/versions', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const versions = await service.getVersionHistory(documentId);
+
+    res.json({
+      success: true,
+      versions,
+    });
+  } catch (error: any) {
+    console.error('Get version history error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch version history',
+    });
+  }
+});
+
+/**
+ * GET /api/generated-documents/:documentId/versions/:versionNumber
+ * Get a specific version of a document
+ */
+router.get('/:documentId/versions/:versionNumber', async (req, res) => {
+  try {
+    const { documentId, versionNumber } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const version = await service.getVersion(documentId, parseInt(versionNumber, 10));
+
+    if (!version) {
+      return res.status(404).json({
+        success: false,
+        message: 'Version not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      version,
+    });
+  } catch (error: any) {
+    console.error('Get version error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch version',
+    });
+  }
+});
+
+/**
+ * GET /api/generated-documents/:documentId/diff
+ * Get diff between two versions
+ * Query params: from (version number), to (version number)
+ */
+router.get('/:documentId/diff', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both "from" and "to" version numbers are required',
+      });
+    }
+
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const diff = await service.getVersionDiff(documentId, parseInt(from as string, 10), parseInt(to as string, 10));
+
+    res.json({
+      success: true,
+      diff,
+    });
+  } catch (error: any) {
+    console.error('Get diff error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate diff',
+    });
+  }
+});
+
+/**
+ * POST /api/generated-documents/:documentId/rollback
+ * Rollback to a specific version
+ * Body: { versionNumber: number }
+ */
+router.post('/:documentId/rollback', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { versionNumber } = req.body;
+
+    if (!versionNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Version number is required',
+      });
+    }
+
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const document = await service.rollbackToVersion(documentId, versionNumber, req.user?.id);
+
+    res.json({
+      success: true,
+      document,
+      message: `Rolled back to version ${versionNumber}`,
+    });
+  } catch (error: any) {
+    console.error('Rollback error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to rollback document',
+    });
+  }
+});
+
+/**
+ * POST /api/generated-documents/:documentId/change-summary
+ * Generate AI summary of changes between versions
+ * Body: { fromVersion: number, toVersion: number }
+ */
+router.post('/:documentId/change-summary', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { fromVersion, toVersion } = req.body;
+
+    if (!fromVersion || !toVersion) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both fromVersion and toVersion are required',
+      });
+    }
+
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const summary = await service.generateChangeSummary(documentId, fromVersion, toVersion);
+
+    res.json({
+      success: true,
+      summary,
+    });
+  } catch (error: any) {
+    console.error('Generate change summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate change summary',
+    });
+  }
+});
+
+// ============================================
+// SMART FEATURES ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/generated-documents/recommendations/:projectId
+ * Get AI-powered document recommendations for a project
+ */
+router.get('/recommendations/:projectId', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const recommendations = await service.getRecommendations(projectId);
+
+    res.json({
+      success: true,
+      recommendations,
+    });
+  } catch (error: any) {
+    console.error('Get recommendations error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get document recommendations',
+    });
+  }
+});
+
+/**
+ * GET /api/generated-documents/:documentId/quality-score
+ * Get quality score for a specific document
+ */
+router.get('/:documentId/quality-score', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const qualityScore = await service.calculateQualityScore(documentId);
+
+    res.json({
+      success: true,
+      qualityScore,
+    });
+  } catch (error: any) {
+    console.error('Calculate quality score error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to calculate quality score',
+    });
+  }
+});
+
 export default router;

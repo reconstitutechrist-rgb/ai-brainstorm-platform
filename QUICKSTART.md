@@ -211,7 +211,7 @@ Your AI Brainstorm Platform is now running with:
 2. **Create a Project** - Click "New Project"
 3. **Start Chatting** - Share ideas with AI agents
 4. **Upload References** - Add images, videos, PDFs
-5. **View Agents** - See all 18 agents working
+5. **View Agents** - See all 8 agents working
 6. **Check Documents** - Review decided/exploring/parked items
 7. **Customize Settings** - Toggle dark mode, configure agents
 

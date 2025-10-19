@@ -6,7 +6,7 @@ import { useThemeStore } from '../../store/themeStore';
 const workflowSteps = [
   { icon: User, label: 'User Input', description: 'Share your ideas naturally' },
   { icon: Network, label: 'Orchestrator', description: 'AI decides which workflow' },
-  { icon: FileCheck, label: 'Agent Execution', description: '18 agents collaborate' },
+  { icon: FileCheck, label: 'Agent Execution', description: '8 agents collaborate' },
   { icon: FileText, label: 'Record Decisions', description: 'Save with full citations' },
   { icon: CheckCircle, label: 'Actionable Plan', description: 'Ready to implement' },
 ];

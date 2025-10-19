@@ -435,11 +435,16 @@ const GeneratedDocsTab: React.FC = () => {
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [qualityScores, setQualityScores] = useState<Map<string, any>>(new Map());
 
   useEffect(() => {
     if (currentProject) {
       loadDocuments();
+      loadRecommendations();
     }
   }, [currentProject]);
 
@@ -453,6 +458,16 @@ const GeneratedDocsTab: React.FC = () => {
       if (response.documents.length > 0 && !selectedDoc) {
         setSelectedDoc(response.documents[0]);
       }
+
+      // Load quality scores for all documents
+      response.documents.forEach(async (doc: any) => {
+        try {
+          const scoreResponse = await generatedDocumentsApi.getQualityScore(doc.id);
+          setQualityScores(prev => new Map(prev).set(doc.id, scoreResponse.qualityScore));
+        } catch (error) {
+          console.error(`Failed to load quality score for ${doc.id}:`, error);
+        }
+      });
     } catch (error) {
       console.error('Load documents error:', error);
     } finally {
@@ -460,15 +475,42 @@ const GeneratedDocsTab: React.FC = () => {
     }
   };
 
+  const loadRecommendations = async () => {
+    if (!currentProject) return;
+
+    setLoadingRecommendations(true);
+    try {
+      const response = await generatedDocumentsApi.getRecommendations(currentProject.id);
+      setRecommendations(response.recommendations);
+    } catch (error) {
+      console.error('Load recommendations error:', error);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
+
   const regenerateDocuments = async () => {
     if (!currentProject) return;
 
     setGenerating(true);
+    setGeneratingProgress('Preparing to generate documents...');
+
     try {
-      await generatedDocumentsApi.generate(currentProject.id);
+      setGeneratingProgress('Analyzing project context...');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UI feedback
+
+      setGeneratingProgress('Generating all documents with AI...');
+      const response = await generatedDocumentsApi.generate(currentProject.id);
+
+      setGeneratingProgress('Loading updated documents...');
       await loadDocuments();
+
+      setGeneratingProgress(`Successfully generated ${response.documents?.length || 11} documents!`);
+      setTimeout(() => setGeneratingProgress(''), 3000);
     } catch (error) {
       console.error('Regenerate error:', error);
+      setGeneratingProgress('Error generating documents. Please try again.');
+      setTimeout(() => setGeneratingProgress(''), 3000);
     } finally {
       setGenerating(false);
     }
@@ -511,24 +553,113 @@ const GeneratedDocsTab: React.FC = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Document List Sidebar */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 space-y-4">
+        {/* Regenerate All Button */}
         <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              Documents
-            </h3>
-            <button
-              onClick={regenerateDocuments}
-              disabled={generating}
-              className="p-2 rounded-lg hover:bg-green-metallic/20 transition-colors"
-              title="Regenerate all"
+          <button
+            onClick={regenerateDocuments}
+            disabled={generating}
+            className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-medium transition-all ${
+              generating
+                ? 'bg-green-metallic/50 cursor-not-allowed'
+                : 'bg-green-metallic hover:bg-green-metallic/90 shadow-lg hover:shadow-xl'
+            } text-white`}
+          >
+            <Sparkles size={18} className={generating ? 'animate-pulse' : ''} />
+            <span>{generating ? 'Generating...' : 'Regenerate All Docs'}</span>
+            {generating && <Loader2 size={16} className="animate-spin" />}
+          </button>
+
+          {/* Progress Indicator */}
+          {generatingProgress && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mt-3 p-3 rounded-lg ${
+                isDarkMode ? 'bg-green-metallic/10' : 'bg-green-metallic/20'
+              }`}
             >
-              <RefreshCw size={16} className={`text-green-metallic ${generating ? 'animate-spin' : ''}`} />
-            </button>
+              <div className="flex items-center space-x-2">
+                {generating ? (
+                  <Loader2 size={14} className="text-green-metallic animate-spin flex-shrink-0" />
+                ) : (
+                  <Check size={14} className="text-green-metallic flex-shrink-0" />
+                )}
+                <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {generatingProgress}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          <div className={`mt-3 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'} text-center`}>
+            {documents.length} / 11 documents generated
           </div>
+        </div>
+
+        {/* Recommendations Panel */}
+        {recommendations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass border-2 border-green-metallic/30`}
+          >
+            <div className="flex items-center space-x-2 mb-3">
+              <Sparkles size={16} className="text-green-metallic" />
+              <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Recommended Docs
+              </h3>
+            </div>
+            <p className={`text-xs mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              AI suggests generating these documents based on your project state
+            </p>
+            <div className="space-y-2">
+              {recommendations.map((rec, index) => {
+                const priorityColors = {
+                  high: 'bg-red-500/20 text-red-400 border-red-500/50',
+                  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+                  low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+                };
+                return (
+                  <div
+                    key={index}
+                    className={`p-3 rounded-xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'}`}
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColors[rec.priority as keyof typeof priorityColors]}`}>
+                        {rec.priority.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                      {rec.document_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </div>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                      {rec.reason}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                      💡 {rec.estimated_value}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Document List */}
+        <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass`}>
+          <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            Available Documents
+          </h3>
           <div className="space-y-2">
             {documentTypes.map((docType) => {
               const doc = documents.find(d => d.document_type === docType.type);
+              const qualityScore = doc ? qualityScores.get(doc.id) : null;
+              const getScoreColor = (score: number) => {
+                if (score >= 80) return 'bg-green-500/20 text-green-400 border-green-500/50';
+                if (score >= 60) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+                return 'bg-red-500/20 text-red-400 border-red-500/50';
+              };
               return (
                 <button
                   key={docType.type}
@@ -542,8 +673,19 @@ const GeneratedDocsTab: React.FC = () => {
                       : 'hover:bg-gray-100 text-gray-700'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <div className="font-medium text-sm">{docType.label}</div>
-                  <div className={`text-xs mt-1 ${
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium text-sm">{docType.label}</div>
+                    {qualityScore && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded border ${
+                        selectedDoc?.document_type === docType.type
+                          ? 'bg-white/20 text-white border-white/40'
+                          : getScoreColor(qualityScore.overall_score)
+                      }`}>
+                        {qualityScore.overall_score}
+                      </span>
+                    )}
+                  </div>
+                  <div className={`text-xs ${
                     selectedDoc?.document_type === docType.type
                       ? 'text-white/80'
                       : isDarkMode
@@ -565,13 +707,13 @@ const GeneratedDocsTab: React.FC = () => {
           {selectedDoc && (
             <>
               <div className="p-6 border-b border-green-metallic/20">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                       {selectedDoc.title}
                     </h2>
                     <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Last updated: {format(new Date(selectedDoc.updated_at), 'MMM d, yyyy h:mm a')}
+                      Last updated: {format(new Date(selectedDoc.updated_at), 'MMM d, yyyy h:mm a')} • Version {selectedDoc.version}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -599,6 +741,56 @@ const GeneratedDocsTab: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Quality Score Panel */}
+                {qualityScores.get(selectedDoc.id) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Document Quality Score
+                      </h3>
+                      <div className="text-2xl font-bold text-green-metallic">
+                        {qualityScores.get(selectedDoc.id)?.overall_score}/100
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+                      {[
+                        { label: 'Complete', value: qualityScores.get(selectedDoc.id)?.completeness },
+                        { label: 'Consistent', value: qualityScores.get(selectedDoc.id)?.consistency },
+                        { label: 'Citations', value: qualityScores.get(selectedDoc.id)?.citation_coverage },
+                        { label: 'Readable', value: qualityScores.get(selectedDoc.id)?.readability },
+                        { label: 'Confidence', value: qualityScores.get(selectedDoc.id)?.confidence },
+                      ].map((metric) => (
+                        <div key={metric.label} className="text-center">
+                          <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {metric.label}
+                          </div>
+                          <div className={`text-lg font-bold ${
+                            metric.value >= 80 ? 'text-green-500' :
+                            metric.value >= 60 ? 'text-yellow-500' :
+                            'text-red-500'
+                          }`}>
+                            {metric.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {qualityScores.get(selectedDoc.id)?.issues?.length > 0 && (
+                      <div className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'} mb-2`}>
+                        <strong>Issues:</strong> {qualityScores.get(selectedDoc.id)?.issues.join(', ')}
+                      </div>
+                    )}
+                    {qualityScores.get(selectedDoc.id)?.suggestions?.length > 0 && (
+                      <div className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                        <strong>Suggestions:</strong> {qualityScores.get(selectedDoc.id)?.suggestions.join(', ')}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
 
               <div className="p-6 max-h-[600px] overflow-y-auto scrollbar-thin">

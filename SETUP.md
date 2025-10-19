@@ -259,7 +259,7 @@ Once your app is running:
 2. **Try Different Intents** - Test all 8 workflow types (brainstorming, deciding, modifying, etc.)
 3. **Upload References** - Add images, PDFs, or product links for AI analysis
 4. **Check the Documents Page** - See the three-column state system (Decided/Exploring/Parked)
-5. **Review Agent Activity** - Visit the Agents page to see all 18 agents and their roles
+5. **Review Agent Activity** - Visit the Agents page to see all 8 agents and their roles
 6. **Customize Settings** - Configure preferences on the Settings page
 
 ## Production Deployment

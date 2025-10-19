@@ -136,7 +136,7 @@ After running the SQL fix:
 ### ✅ Working:
 - Backend server running on http://localhost:3001
 - Frontend server running
-- All 18 AI agents initialized
+- All 8 AI agents initialized
 - Database connections working
 - Document awareness in conversations
 - Review agent generating conversation scores

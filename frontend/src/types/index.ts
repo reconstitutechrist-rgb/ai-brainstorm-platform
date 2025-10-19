@@ -20,6 +20,13 @@ export interface ProjectItem {
     timestamp: string;
     confidence: number;
   };
+  // Canvas-specific fields (optional for backward compatibility)
+  position?: { x: number; y: number };  // Canvas position
+  tags?: string[];                       // For filtering/search
+  confidence?: number;                   // 0-100, from AI
+  clusterId?: string;                    // For grouping
+  isArchived?: boolean;                  // Archive flag
+  archivedAt?: string;                   // Archive timestamp (ISO string)
 }
 
 // Message types

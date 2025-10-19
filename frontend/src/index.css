@@ -464,6 +464,68 @@ button, a, input, textarea, select {
 }
 
 /* ===================================
+   CANVAS ANIMATIONS
+   =================================== */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out;
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Canvas card glow effects */
+@keyframes card-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 255, 170, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 255, 170, 0.6);
+  }
+}
+
+.canvas-card-dragging {
+  animation: card-glow 1.5s ease-in-out infinite;
+}
+
+/* ===================================
    PRINT STYLES
    =================================== */
 @media print {

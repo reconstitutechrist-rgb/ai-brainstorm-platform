@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-A sophisticated full-stack AI brainstorming platform featuring **18 specialized AI agents** that work together orchestrating complex workflows to transform ideas into actionable plans. Built with Claude Sonnet 4, TypeScript, React, and Node.js.
+A sophisticated full-stack AI brainstorming platform featuring **8 specialized AI agents** that work together orchestrating complex workflows to transform ideas into actionable plans. Built with Claude Sonnet 4, TypeScript, React, and Node.js.
 
 ---
 
@@ -56,7 +56,7 @@ A sophisticated full-stack AI brainstorming platform featuring **18 specialized 
 - ✅ **Dashboard** - Project overview and stats
 - ✅ **ChatPage** - Real-time conversation with AI agents
 - ✅ **DocumentsPage** - Three-column state view (Decided/Exploring/Parked)
-- ✅ **AgentsPage** - Directory of all 18 agents with filtering
+- ✅ **AgentsPage** - Directory of all 8 agents with filtering
 - ✅ **SettingsPage** - App configuration and preferences
 
 #### Components
@@ -232,7 +232,7 @@ VITE_API_URL=http://localhost:3001/api
 
 - **Total Files Created**: 50+
 - **Lines of Code**: ~10,000+
-- **AI Agents**: 18 (17 agents + 1 orchestrator)
+- **AI Agents**: 8 (7 agents + 1 orchestrator)
 - **API Endpoints**: 17
 - **React Components**: 15+
 - **Zustand Stores**: 7
@@ -265,7 +265,7 @@ The settings configuration needs proper TypeScript discriminated unions.
 
 ## 🎓 What You Learned
 
-1. **Multi-Agent Architecture** - Orchestrating 18 AI agents
+1. **Multi-Agent Architecture** - Orchestrating 8 AI agents
 2. **Claude API Integration** - Using Anthropic's SDK
 3. **State Management** - Zustand for complex state
 4. **Real-time Chat** - WebSocket-like message handling
@@ -300,7 +300,7 @@ The settings configuration needs proper TypeScript discriminated unions.
 ## 🎊 Conclusion
 
 You've successfully built a **production-ready** AI brainstorming platform with:
-- ✅ 18 specialized AI agents
+- ✅ 8 specialized AI agents
 - ✅ Complete frontend and backend
 - ✅ Beautiful glassmorphism UI
 - ✅ Multi-agent orchestration

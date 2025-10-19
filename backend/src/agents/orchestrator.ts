@@ -416,7 +416,7 @@ export class IntegrationOrchestrator {
         }
         // Default behavior: Record the user's message to project state (with workflow intent for context-aware verification)
         console.log(`[Orchestrator] Using default record method with intent: ${workflow.intent}`);
-        return await agent.record({ message: userMessage }, projectState, userMessage, workflow.intent);
+        return await agent.record({ message: userMessage }, projectState, userMessage, workflow.intent, conversationHistory);
 
       case 'trackChange':
         return await agent.trackChange(

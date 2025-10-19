@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, HelpCircle, FileText, Settings, Briefcase,
-  CheckCircle, AlertTriangle, MessageCircle, Target, Shield,
-  GitBranch, Languages, ListOrdered, GitCommit, Search,
-  FolderOpen, Network
+  Sparkles, FileText, Settings, Briefcase,
+  CheckCircle, Target, Search, Network
 } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 
@@ -16,31 +14,19 @@ interface Agent {
 }
 
 const agents: Agent[] = [
-  // Core Agents (5)
-  { name: 'Brainstorming', icon: Sparkles, description: 'Reflects and organizes user ideas naturally', category: 'core' },
-  { name: 'Questioner', icon: HelpCircle, description: 'Asks strategic clarifying questions', category: 'core' },
-  { name: 'Recorder', icon: FileText, description: 'Documents decisions with full context', category: 'core' },
-  { name: 'Context Manager', icon: Settings, description: 'Classifies intent and manages state', category: 'core' },
-  { name: 'Development', icon: Briefcase, description: 'Research and vendor recommendations', category: 'core' },
+  // Core Agents (4 Consolidated)
+  { name: 'Conversation Agent', icon: Sparkles, description: 'Unified brainstorming, gap detection, clarification, and questioning', category: 'core' },
+  { name: 'Persistence Manager', icon: FileText, description: 'Records decisions with verification and version control', category: 'core' },
+  { name: 'Quality Auditor', icon: CheckCircle, description: 'Comprehensive verification, assumption blocking, and consistency checks', category: 'core' },
+  { name: 'Strategic Planner', icon: Briefcase, description: 'Translates vision to specs, vendor research, and prioritization', category: 'core' },
 
-  // Quality Agents (6)
-  { name: 'Verification', icon: CheckCircle, description: 'Gatekeeps against assumptions', category: 'quality' },
-  { name: 'Gap Detection', icon: AlertTriangle, description: 'Identifies missing information', category: 'quality' },
-  { name: 'Clarification', icon: MessageCircle, description: 'Asks targeted questions', category: 'quality' },
-  { name: 'Accuracy Auditor', icon: Target, description: 'Continuous accuracy validation', category: 'quality' },
-  { name: 'Assumption Blocker', icon: Shield, description: 'Zero tolerance for assumptions', category: 'quality' },
-  { name: 'Reference Analysis', icon: Search, description: 'Analyzes uploaded files', category: 'quality' },
-
-  // Support Agents (6)
-  { name: 'Consistency Guardian', icon: GitBranch, description: 'Detects contradictions', category: 'support' },
-  { name: 'Translation', icon: Languages, description: 'Converts vision to technical specs', category: 'support' },
-  { name: 'Prioritization', icon: ListOrdered, description: 'Sequences decisions logically', category: 'support' },
-  { name: 'Version Control', icon: GitCommit, description: 'Tracks changes with reasoning', category: 'support' },
-  { name: 'Reviewer', icon: Search, description: 'Comprehensive QA validation', category: 'support' },
-  { name: 'Resource Manager', icon: FolderOpen, description: 'Organizes references', category: 'support' },
+  // Support Agents (3)
+  { name: 'Context Manager', icon: Settings, description: 'Intent classification and state management (9 modes)', category: 'support' },
+  { name: 'Reference Analysis', icon: Search, description: 'Analyzes uploaded files (images, PDFs, videos, URLs)', category: 'support' },
+  { name: 'Reviewer', icon: Target, description: 'Comprehensive QA on conversations and documents', category: 'support' },
 
   // Orchestrator (1)
-  { name: 'Orchestrator', icon: Network, description: 'Coordinates all 17 agents seamlessly', category: 'orchestrator' },
+  { name: 'Orchestrator', icon: Network, description: 'Coordinates all 7 agents with parallel workflows', category: 'orchestrator' },
 ];
 
 const categoryColors = {
@@ -80,7 +66,7 @@ export const AgentShowcase: React.FC = () => {
         className="text-center mb-16"
       >
         <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-white'}`}>
-          Meet the <span className="text-gradient">18 AI Agents</span>
+          Meet the <span className="text-gradient">8 AI Agents</span>
         </h2>
         <p className={`text-xl ${isDarkMode ? 'text-gray-300' : 'text-gray-200'}`}>
           Each agent is a specialist working together to transform your ideas
@@ -91,15 +77,11 @@ export const AgentShowcase: React.FC = () => {
       <div className="flex flex-wrap justify-center gap-4 mb-12">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ background: categoryColors.core.text }} />
-          <span className={isDarkMode ? 'text-gray-300' : 'text-gray-200'}>Core (5)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded" style={{ background: categoryColors.quality.text }} />
-          <span className={isDarkMode ? 'text-gray-300' : 'text-gray-200'}>Quality (6)</span>
+          <span className={isDarkMode ? 'text-gray-300' : 'text-gray-200'}>Core (4)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ background: categoryColors.support.text }} />
-          <span className={isDarkMode ? 'text-gray-300' : 'text-gray-200'}>Support (6)</span>
+          <span className={isDarkMode ? 'text-gray-300' : 'text-gray-200'}>Support (3)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ background: categoryColors.orchestrator.text }} />

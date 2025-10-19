@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
-import { Download, FileText, Table, FileJson, Package, AlertCircle } from 'lucide-react';
-import { conversationsApi, documentsApi, agentsApi } from '../services/api';
+import { Download, FileText, Table, FileJson, Package, AlertCircle, FileCode, GitBranch, File } from 'lucide-react';
+import { conversationsApi, documentsApi, agentsApi, generatedDocumentsApi } from '../services/api';
 import {
   exportToPDF,
   exportToExcel,
   exportToJSON,
-  exportCompletePackage
+  exportCompletePackage,
+  exportToMarkdown,
+  exportToADR,
+  exportToDOCX
 } from '../utils/exportUtils';
 
 export const ExportSystem: React.FC = () => {
@@ -41,6 +44,27 @@ export const ExportSystem: React.FC = () => {
       action: () => handleExportJSON()
     },
     {
+      id: 'markdown',
+      name: 'Markdown Document',
+      icon: FileCode,
+      description: 'Markdown with YAML frontmatter',
+      action: () => handleExportMarkdown()
+    },
+    {
+      id: 'adr',
+      name: 'ADR Records',
+      icon: GitBranch,
+      description: 'Architecture Decision Records',
+      action: () => handleExportADR()
+    },
+    {
+      id: 'docx',
+      name: 'Word Document',
+      icon: File,
+      description: 'Professional DOCX format',
+      action: () => handleExportDOCX()
+    },
+    {
       id: 'package',
       name: 'Complete Package',
       icon: Package,
@@ -56,11 +80,12 @@ export const ExportSystem: React.FC = () => {
 
     setExportStatus('Fetching project data...');
 
-    // Fetch all related data
-    const [messagesResponse, documentsResponse, agentActivityResponse] = await Promise.all([
+    // Fetch all related data including generated documents
+    const [messagesResponse, documentsResponse, agentActivityResponse, generatedDocsResponse] = await Promise.all([
       conversationsApi.getMessages(currentProject.id).catch(() => ({ success: true, messages: [] })),
       documentsApi.getByProject(currentProject.id).catch(() => ({ success: true, documents: [] })),
       agentsApi.getActivity(currentProject.id, 50).catch(() => ({ success: true, activity: [] })),
+      generatedDocumentsApi.getByProject(currentProject.id).catch(() => ({ success: true, documents: [] })),
     ]);
 
     return {
@@ -68,6 +93,7 @@ export const ExportSystem: React.FC = () => {
       messages: messagesResponse.messages || [],
       documents: documentsResponse.documents || [],
       agentActivities: agentActivityResponse.activity || [],
+      generatedDocuments: generatedDocsResponse.documents || [],
     };
   };
 
@@ -129,6 +155,69 @@ export const ExportSystem: React.FC = () => {
     } catch (err) {
       console.error('JSON export error:', err);
       setError(err instanceof Error ? err.message : 'Failed to export JSON');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportMarkdown = async () => {
+    try {
+      setExporting(true);
+      setError(null);
+      setExportStatus('Preparing Markdown export...');
+
+      const data = await fetchExportData();
+
+      setExportStatus('Generating Markdown file...');
+      exportToMarkdown(data);
+
+      setExportStatus('Markdown exported successfully!');
+      setTimeout(() => setExportStatus(''), 3000);
+    } catch (err) {
+      console.error('Markdown export error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to export Markdown');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportADR = async () => {
+    try {
+      setExporting(true);
+      setError(null);
+      setExportStatus('Preparing ADR export...');
+
+      const data = await fetchExportData();
+
+      setExportStatus('Generating ADR file...');
+      exportToADR(data);
+
+      setExportStatus('ADR exported successfully!');
+      setTimeout(() => setExportStatus(''), 3000);
+    } catch (err) {
+      console.error('ADR export error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to export ADR');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    try {
+      setExporting(true);
+      setError(null);
+      setExportStatus('Preparing Word document...');
+
+      const data = await fetchExportData();
+
+      setExportStatus('Generating DOCX file...');
+      await exportToDOCX(data);
+
+      setExportStatus('Word document exported successfully!');
+      setTimeout(() => setExportStatus(''), 3000);
+    } catch (err) {
+      console.error('DOCX export error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to export Word document');
     } finally {
       setExporting(false);
     }

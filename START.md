@@ -48,7 +48,7 @@ http://localhost:5173
 ## That's It!
 
 Your AI Brainstorm Platform is now running with:
-- ✅ 18 AI agents ready
+- ✅ 8 AI agents ready
 - ✅ Claude Sonnet 4 integration
 - ✅ Real-time chat interface
 - ✅ File upload & analysis

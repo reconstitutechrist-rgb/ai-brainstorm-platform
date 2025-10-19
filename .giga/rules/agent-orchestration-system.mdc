@@ -1,86 +1,98 @@
 ---
-description: Coordinates and manages interactions between specialized AI agents in a complex decision-making system
+description: Documentation and implementation details for multi-agent AI orchestration system with specialized roles and workflows
 ---
 
 
 # agent-orchestration-system
 
-The system orchestrates 17 specialized AI agents through coordinated workflows:
+The 17-agent orchestration system implements a sophisticated AI collaboration framework with specialized roles and controlled interaction patterns.
 
-## Core Orchestration Components
+## Core Agent Types (Importance: 95/100)
 
-1. Agent Controller
-Path: backend/src/agents/orchestrator.ts
-Importance Score: 95
-- Manages parallel execution of agent tasks with dependency resolution
-- Routes conversations through appropriate agent sequences based on intent
-- Maintains context sharing between agent interactions
-- Implements 8 distinct workflow patterns:
-  - Brainstorming
-  - Decision Making
-  - Modification
-  - Exploration
-  - Review
-  - Development
-  - Parking
-  - General Processing
+1. Orchestrator Agents
+- Workflow coordination and agent task distribution 
+- Dynamic routing based on conversation intent
+- State management across agent handoffs
+- Context preservation between interactions
 
-2. Agent State Management
-Path: backend/src/services/agentCoordination.ts
-Importance Score: 90
-- Three-state project management (Decided/Exploring/Parked)
-- Citation tracking with automatic source attribution
-- State transition validation with verification requirements
-- Decision history tracking with full context preservation
-
-3. Context Management
-Path: backend/src/agents/contextManager.ts
-Importance Score: 85
-- Maps user input to appropriate workflow types
-- Maintains conversation memory across agent handoffs
-- Implements confidence scoring for intent classification
-- Manages agent-specific context pruning rules
-
-## Agent Categories
-
-1. Core Agents
-- Brainstorming Agent: Generates initial ideas
-- Questioner Agent: Probes for clarification
-- Recorder Agent: Documents decisions
-- Context Manager: Maintains conversation state
-
-2. Quality Agents
-- Verification Agent: Validates assumptions
-- Gap Detection: Identifies missing information
-- Clarification Agent: Resolves ambiguities
-- Accuracy Auditor: Checks factual correctness
+2. Core Processing Agents
+- Question Generation Agent
+- Gap Detection Agent  
+- Verification Agent
+- Assumption Detection Agent
+- Implementation Planning Agent
+- Quality Control Agent
 
 3. Support Agents
-- Consistency Guardian: Ensures alignment
-- Translation Agent: Standardizes formats
-- Prioritization Agent: Orders tasks
-- Resource Manager: Tracks dependencies
+- Reference Analysis Agent
+- Citation Tracking Agent
+- Context Management Agent
+- Capacity Monitoring Agent
+- State Persistence Agent
 
-4. Meta Agents
-- Integration Orchestrator: Coordinates workflows
-- State Manager: Tracks system status
-- Version Control: Manages changes
-- Documentation Generator: Creates artifacts
+## Agent Dependencies
 
-## Workflow Processing
+Hierarchical Structure:
+```
+Orchestrator
+├── Core Agents
+│   ├── Question Generator
+│   ├── Gap Detector 
+│   └── Verifier
+├── Support Agents
+│   ├── Reference Analyzer
+│   └── Context Manager
+└── Quality Control
+    ├── Assumption Detector
+    └── Implementation Planner
+```
 
-1. Decision Recording
-- Intent detection through agent analysis
-- Assumption verification process
-- Context validation checks
-- Citation generation system
-- State updates with verification
+## Workflow Patterns (Importance: 90/100)
 
-2. Reference Integration
-- Content analysis by specialized agents
-- Context mapping to existing decisions
-- Relationship detection between references
-- Integration with decision support system
+1. Exploration Workflow
+- Question Generator → Gap Detector → Verifier
+- Context preservation between transitions
+- Assumption detection gates
+
+2. Decision Workflow  
+- Verifier → Implementation Planner → Quality Control
+- Reference validation requirements
+- State transition rules
+
+3. Research Workflow
+- Reference Analyzer → Gap Detector → Question Generator
+- Citation tracking integration
+- Context enrichment paths
+
+## State Management (Importance: 85/100)
+
+Three primary states:
+1. Exploring
+- Active agent processing
+- Context accumulation
+- Citation gathering
+
+2. Decided
+- Verification complete
+- Implementation plan created
+- Dependencies mapped
+
+3. Parked
+- Temporary state suspension
+- Context preservation
+- Reactivation rules
+
+## Agent Communication Protocol
+
+1. Synchronous Patterns
+- Direct agent-to-agent handoffs
+- Context preservation requirements
+- State validation gates
+
+2. Asynchronous Patterns  
+- Parallel processing workflows
+- Non-blocking transitions
+- State reconciliation rules
 
 $END$
 

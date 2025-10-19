@@ -7,7 +7,7 @@ interface ChatContainerProps {
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({ children }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {children}
     </div>
   );
@@ -25,6 +25,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, clas
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       className={`lg:col-span-2 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[calc(100vh-20rem)] flex flex-col ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+export const CanvasPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, className = '' }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`lg:col-span-2 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[calc(100vh-20rem)] overflow-hidden ${className}`}
     >
       {children}
     </motion.div>

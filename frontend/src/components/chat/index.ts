@@ -5,4 +5,4 @@ export { MessageBubble } from './MessageBubble';
 export { TypingIndicator } from './TypingIndicator';
 export { UploadModal } from './UploadModal';
 export { ChatPageHeader } from './ChatPageHeader';
-export { ChatContainer, ChatPanel, TrackingPanel } from './ChatContainer';
+export { ChatContainer, ChatPanel, CanvasPanel, TrackingPanel } from './ChatContainer';

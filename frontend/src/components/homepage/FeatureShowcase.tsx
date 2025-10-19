@@ -19,7 +19,7 @@ export const FeatureShowcase: React.FC = () => {
   const features: Feature[] = [
     {
       icon: <MessageSquare size={64} strokeWidth={1.5} />,
-      title: '18 AI Agents',
+      title: '8 AI Agents',
       description: 'Collaborate with specialized AI agents that work together to brainstorm, verify, and refine your ideas with zero assumptions.',
       path: '/agents',
       gradient: 'linear-gradient(135deg, #00ffaa 0%, #1affcc 100%)',

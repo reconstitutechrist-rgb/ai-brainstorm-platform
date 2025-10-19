@@ -26,7 +26,7 @@ export const Homepage: React.FC = () => {
       {/* Feature Showcase - 4 Main Features */}
       <FeatureShowcase />
 
-      {/* Agent Showcase - 18 Agents Grid */}
+      {/* Agent Showcase - 8 Agents Grid */}
       <AgentShowcase />
 
       {/* Workflow Visualization - How it Works */}

@@ -171,7 +171,7 @@ export function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-8">
-          Powered by 18 specialized AI agents working together
+          Powered by 8 specialized AI agents working together
         </p>
       </div>
     </div>

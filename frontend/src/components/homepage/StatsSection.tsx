@@ -9,7 +9,7 @@ interface Stat {
 }
 
 const stats: Stat[] = [
-  { value: 18, label: 'AI Agents' },
+  { value: 8, label: 'AI Agents' },
   { value: 8, label: 'Workflows' },
   { value: 15, label: 'Doc Types', suffix: '+' },
   { value: 100, label: 'Accuracy', suffix: '%' },

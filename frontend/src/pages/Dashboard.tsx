@@ -63,7 +63,7 @@ export const Dashboard: React.FC = () => {
           </h1>
         </div>
         <p className={`text-xl ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} max-w-3xl`}>
-          Transform your ideas into reality with 18 specialized AI agents working together in perfect harmony.
+          Transform your ideas into reality with 8 specialized AI agents working together in perfect harmony.
         </p>
       </motion.div>
 
@@ -118,7 +118,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center space-x-2">
             <div className="status-indicator" />
             <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              18 agents online
+              8 agents online
             </span>
           </div>
         </motion.div>

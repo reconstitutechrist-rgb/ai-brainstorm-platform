@@ -82,7 +82,7 @@ export const AgentsPage: React.FC = () => {
               AI Agents
             </h1>
             <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              18 specialized agents working together to perfect your ideas
+              8 specialized agents working together to perfect your ideas
             </p>
           </div>
 

@@ -8,7 +8,7 @@
 
 ## 🎉 Executive Summary
 
-Your AI Brainstorm Platform is **100% complete** and ready for immediate use. All 18 AI agents are implemented, the full-stack application is built, and comprehensive documentation is provided.
+Your AI Brainstorm Platform is **100% complete** and ready for immediate use. All 8 AI agents are implemented, the full-stack application is built, and comprehensive documentation is provided.
 
 ---
 
@@ -47,21 +47,16 @@ All agents inherit from `BaseAgent` and integrate with Claude Sonnet 4:
 1. **ContextManagerAgent** - Classifies user intent into 8 workflow types
 2. **BrainstormingAgent** - Provides reflection and strategic insights
 3. **RecorderAgent** - Documents decisions with citations
-4. **QuestionerAgent** - Generates strategic follow-up questions
-5. **DevelopmentAgent** - Researches vendors and technical solutions
-6. **VerificationAgent** - Gates assumptions and validates claims
-7. **GapDetectionAgent** - Identifies missing critical information
-8. **ClarificationAgent** - Asks targeted clarifying questions
-9. **AccuracyAuditorAgent** - Continuously validates accuracy
-10. **AssumptionBlockerAgent** - Zero-tolerance assumption scanning
-11. **ReferenceAnalysisAgent** - Analyzes uploaded files and products
-12. **ConsistencyGuardianAgent** - Detects contradictions
-13. **TranslationAgent** - Converts vision to technical specs
-14. **PrioritizationAgent** - Sequences tasks optimally
-15. **VersionControlAgent** - Tracks all state changes
-16. **ReviewerAgent** - Quality assurance across conversations
-17. **ResourceManagerAgent** - Organizes references and resources
-18. **IntegrationOrchestrator** - Coordinates all agent workflows
+4. **ConversationAgent** - Unified brainstorming, gap detection, clarification, and questioning (consolidated)
+5. **PersistenceManagerAgent** - Records decisions with verification and version control (consolidated)
+6. **QualityAuditorAgent** - Comprehensive verification, assumption blocking, and consistency checks (consolidated)
+7. **StrategicPlannerAgent** - Translates vision to specs, vendor research, and prioritization (consolidated)
+8. **ReferenceAnalysisAgent** - Analyzes uploaded files (images, PDFs, videos, URLs)
+9. **ReviewerAgent** - Comprehensive QA on conversations and documents
+10. **ResourceManagerAgent** - Organizes references and resources
+11. **IntegrationOrchestrator** - Coordinates all 7 agents with parallel workflows
+
+Note: The system has been optimized from 17 individual agents to 8 total agents (4 consolidated core + 3 support + 1 orchestrator) for improved performance and reduced API calls.
 
 #### API Endpoints
 ```
@@ -96,7 +91,7 @@ GET    /api/agents/:agentName
 #### Pages
 1. **Dashboard** - Project overview with statistics and recent activity
 2. **ChatPage** - Real-time AI conversation interface with typing indicators
-3. **AgentsPage** - Directory of all 18 agents with descriptions
+3. **AgentsPage** - Directory of all 8 agents with descriptions
 4. **DocumentsPage** - Three-column state view (Decided/Exploring/Parked)
 5. **SettingsPage** - App configuration and preferences
 
@@ -422,7 +417,7 @@ Every decision records:
 ## 🎊 Congratulations!
 
 You now have a fully functional AI Brainstorm Platform with:
-- ✅ 18 specialized AI agents
+- ✅ 8 specialized AI agents
 - ✅ Multi-agent orchestration
 - ✅ Beautiful glassmorphism UI
 - ✅ Real-time chat interface
@@ -438,7 +433,7 @@ You now have a fully functional AI Brainstorm Platform with:
 ## 📝 Project Timeline
 
 - **Initial Setup**: Backend configuration and dependencies
-- **Agent Development**: 18 AI agents implemented
+- **Agent Development**: 8 AI agents implemented
 - **Backend API**: Complete REST API with 12 endpoints
 - **Frontend Setup**: Vite + React + Tailwind configuration
 - **State Management**: 6 Zustand stores
