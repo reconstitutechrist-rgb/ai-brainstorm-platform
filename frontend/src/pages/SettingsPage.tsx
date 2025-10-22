@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { Settings, Moon, Sun, Bell, Shield, Database, Zap } from 'lucide-react';
+import '../styles/homepage.css';
 
 type ToggleSetting = {
   id: string;
@@ -25,6 +26,14 @@ type Setting = ToggleSetting | SelectSetting;
 
 export const SettingsPage: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   const settingsSections: { title: string; icon: any; settings: Setting[] }[] = [
     {
@@ -107,7 +116,7 @@ export const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen max-w-4xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

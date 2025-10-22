@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
 import { CanvasCard } from './CanvasCard';
+import { ClusterContainer } from './ClusterContainer';
 import { useProjectStore } from '../../store/projectStore';
 import { calculateAutoPosition } from '../../hooks/useCanvasSync';
 
@@ -16,7 +17,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   isDarkMode,
   onArchive,
 }) => {
-  const { updateItemPosition, updateItemFields } = useProjectStore();
+  const { currentProject, updateItemPosition, updateItemFields } = useProjectStore();
 
   // Auto-position items that don't have a position
   useEffect(() => {
@@ -35,6 +36,38 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   const handleStateChange = (itemId: string, newState: ProjectItem['state']) => {
     updateItemFields(itemId, { state: newState });
   };
+
+  // Group items by cluster
+  const { clusteredItems, unclusteredItems } = useMemo(() => {
+    const clusters = currentProject?.clusters || [];
+
+    if (clusters.length === 0) {
+      return {
+        clusteredItems: new Map<string, ProjectItem[]>(),
+        unclusteredItems: items,
+      };
+    }
+
+    const grouped = new Map<string, ProjectItem[]>();
+    const unclustered: ProjectItem[] = [];
+
+    items.forEach((item) => {
+      if (item.clusterId) {
+        const existing = grouped.get(item.clusterId) || [];
+        grouped.set(item.clusterId, [...existing, item]);
+      } else {
+        unclustered.push(item);
+      }
+    });
+
+    return {
+      clusteredItems: grouped,
+      unclusteredItems: unclustered,
+    };
+  }, [items, currentProject?.clusters]);
+
+  // Get cluster metadata
+  const clusters = currentProject?.clusters || [];
 
   return (
     <div className="relative w-full h-full overflow-auto scrollbar-thin">
@@ -75,16 +108,49 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
             </div>
           </div>
         ) : (
-          items.map((item) => (
-            <CanvasCard
-              key={item.id}
-              item={item}
-              isDarkMode={isDarkMode}
-              onArchive={onArchive}
-              onPositionChange={handlePositionChange}
-              onStateChange={handleStateChange}
-            />
-          ))
+          <>
+            {/* Render Clustered Items */}
+            {clusters.map((cluster) => {
+              const clusterItems = clusteredItems.get(cluster.id) || [];
+
+              if (clusterItems.length === 0) return null;
+
+              return (
+                <ClusterContainer
+                  key={cluster.id}
+                  clusterId={cluster.id}
+                  name={cluster.name}
+                  color={cluster.color}
+                  position={cluster.position}
+                  cardCount={clusterItems.length}
+                  isDarkMode={isDarkMode}
+                >
+                  {clusterItems.map((item) => (
+                    <CanvasCard
+                      key={item.id}
+                      item={item}
+                      isDarkMode={isDarkMode}
+                      onArchive={onArchive}
+                      onPositionChange={handlePositionChange}
+                      onStateChange={handleStateChange}
+                    />
+                  ))}
+                </ClusterContainer>
+              );
+            })}
+
+            {/* Render Unclustered Items */}
+            {unclusteredItems.map((item) => (
+              <CanvasCard
+                key={item.id}
+                item={item}
+                isDarkMode={isDarkMode}
+                onArchive={onArchive}
+                onPositionChange={handlePositionChange}
+                onStateChange={handleStateChange}
+              />
+            ))}
+          </>
         )}
       </motion.div>
     </div>

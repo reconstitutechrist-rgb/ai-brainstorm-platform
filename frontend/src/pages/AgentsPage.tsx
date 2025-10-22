@@ -4,6 +4,7 @@ import { useThemeStore } from '../store/themeStore';
 import { agentsApi } from '../services/api';
 import type { Agent } from '../types';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
+import '../styles/homepage.css';
 
 export const AgentsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -11,6 +12,14 @@ export const AgentsPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   useEffect(() => {
     loadAgents();
@@ -69,7 +78,7 @@ export const AgentsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

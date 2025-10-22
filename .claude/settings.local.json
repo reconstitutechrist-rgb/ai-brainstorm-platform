@@ -5,7 +5,16 @@
       "Bash(npm audit fix:*)",
       "Bash(npm run lint)",
       "Bash(npm run dev:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(curl -v http://localhost:3001/health)",
+      "Bash(curl -s \"http://localhost:3001/api/projects/user/3ab4df68-94af-4e34-9269-fb7aada73589\")",
+      "Bash(npx ts-node:*)",
+      "Bash(taskkill //F //PID 30872)",
+      "Bash(curl:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(taskkill //F //PID 1084)",
+      "Bash(taskkill //F //PID 40604)"
     ],
     "deny": [],
     "ask": []

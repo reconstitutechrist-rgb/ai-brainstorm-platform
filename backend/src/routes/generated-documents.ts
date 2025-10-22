@@ -97,6 +97,47 @@ router.post('/generate', async (req, res) => {
 });
 
 /**
+ * POST /api/generated-documents/generate-from-research
+ * Generate a document from research query results (Phase 3.1)
+ * Body: { researchQueryId: string, documentType: string, userId?: string }
+ */
+router.post('/generate-from-research', async (req, res) => {
+  try {
+    const { researchQueryId, documentType, userId } = req.body;
+
+    if (!researchQueryId || !documentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Research query ID and document type are required',
+      });
+    }
+
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    console.log(`[GeneratedDocs] Generating ${documentType} from research query ${researchQueryId}`);
+
+    const document = await service.generateFromResearch(
+      researchQueryId,
+      documentType,
+      userId || req.user?.id
+    );
+
+    res.json({
+      success: true,
+      document,
+      message: 'Document generated from research successfully',
+    });
+  } catch (error: any) {
+    console.error('Generate document from research error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate document from research',
+    });
+  }
+});
+
+/**
  * DELETE /api/generated-documents/:documentId
  * Delete a generated document
  */
@@ -338,6 +379,65 @@ router.get('/:documentId/quality-score', async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to calculate quality score',
+    });
+  }
+});
+
+// ============================================
+// RE-EXAMINATION SYSTEM ENDPOINTS (Phase 3.1)
+// ============================================
+
+/**
+ * GET /api/generated-documents/:documentId/check-reexamination
+ * Check if a document needs re-examination based on project changes
+ */
+router.get('/:documentId/check-reexamination', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const result = await service.checkIfNeedsReexamination(documentId);
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error('Check reexamination error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to check if document needs re-examination',
+    });
+  }
+});
+
+/**
+ * POST /api/generated-documents/:documentId/reexamine
+ * Re-examine and regenerate a document with current project data
+ * Body: { userId?: string }
+ */
+router.post('/:documentId/reexamine', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { userId } = req.body;
+    const supabase = getSupabaseClient(req.user?.access_token);
+    const service = new GeneratedDocumentsService(supabase);
+
+    const result = await service.reexamineDocument(documentId, userId || req.user?.id);
+
+    res.json({
+      success: true,
+      document: result.document,
+      changes: result.changes,
+      previousVersion: result.previousVersion,
+      message: `Document re-examined successfully. Updated to version ${result.document.version}.`,
+    });
+  } catch (error: any) {
+    console.error('Reexamine document error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to re-examine document',
     });
   }
 });

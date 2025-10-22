@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { sessionService } from '../services/sessionService';
+import { supabase } from '../services/supabase';
 
 const router = express.Router();
 
@@ -66,6 +67,49 @@ router.post('/end', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to end session'
+    });
+  }
+});
+
+/**
+ * GET /api/sessions/history/:projectId
+ * Get session history for a project
+ */
+router.get('/history/:projectId', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        error: 'projectId is required'
+      });
+    }
+
+    // Fetch all sessions for this project, ordered by most recent first
+    const { data: sessions, error } = await supabase
+      .from('user_sessions')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('session_start', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching session history:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch session history'
+      });
+    }
+
+    res.json({
+      success: true,
+      sessions: sessions || []
+    });
+  } catch (error) {
+    console.error('Error getting session history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get session history'
     });
   }
 });
@@ -238,3 +282,4 @@ router.get('/blockers/:projectId', async (req: Request, res: Response) => {
 });
 
 export default router;
+// Trigger restart

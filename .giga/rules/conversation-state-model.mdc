@@ -1,40 +1,46 @@
 ---
-description: Rules for managing conversation state, context transitions and caching across AI agent interactions
+description: Defines core rules and patterns for managing conversation state, context transitions, and cache invalidation in AI agent interactions.
 ---
 
 
 # conversation-state-model
 
-The conversation state management system implements a sophisticated three-state decision tracking model with intelligent context pruning.
+The conversation state management system implements a three-state decision model with contextual pruning and caching rules.
 
-Core Components:
+## State Transition System
+Importance Score: 85
 
-1. Three-State Decision System (Importance: 90/100)
-- States: decided/exploring/parked
-- Tracking of state transitions with reasoning capture
-- Citation mapping between related decisions
-- Confidence scoring for state changes
-- Automatic state suggestions based on conversation context
+- Three primary states: exploring, decided, parked
+- State transitions based on agent consensus and user confirmation
+- Automatic state promotion when confidence threshold reached
+- Context preservation during state changes
 
-2. Context Pruning Rules (Importance: 85/100) 
-- Agent-specific context retention policies
-- Task-based context preservation
-- Adaptive pruning based on conversation importance
-- Decision-focused pruning for consistency validation
+## Context Pruning Rules
+Importance Score: 80
 
-3. Cache Invalidation System (Importance: 80/100)
-- Dynamic TTL calculations per agent type
-- Token-based cache expiration 
-- Context-aware cache refresh triggers
-- Progressive cache pruning based on memory usage
+- Agent-specific retention policies for conversation history
+- Critical decision context preserved across sessions
+- Automatic pruning of exploratory threads after decisions
+- Domain-aware message filtering by relevance
 
-4. State Transition Workflows (Importance: 75/100)
-- Citation tracking for decision changes
-- Version control on state modifications
-- Conflict detection across state changes
-- Automatic state recommendations
+## Cache Invalidation Logic 
+Importance Score: 75
 
-The system maintains conversation coherence through intelligent context management while optimizing memory usage through sophisticated pruning algorithms. Each state transition is tracked with full citation history and confidence scoring.
+- State-aware caching with agent-specific TTLs
+- Cache invalidation triggers:
+  - State transitions
+  - Related decision changes
+  - New contradicting evidence
+  - Context shifts
+- Preservation of decision-critical context
+
+## Session Context Management
+Importance Score: 70
+
+- Project-based context isolation
+- Cross-session context inheritance
+- Automatic context merging for related decisions
+- Priority-based context retention
 
 $END$
 

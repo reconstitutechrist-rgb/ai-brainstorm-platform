@@ -61,6 +61,8 @@ export interface Reference {
   url: string; // URL to file in Supabase Storage (column name is 'url' not 'file_url')
   filename?: string;
   analysis_status: 'pending' | 'processing' | 'completed' | 'failed';
+  tags?: string[]; // Tags for organizing references (e.g., 'competitor', 'requirement', 'design')
+  is_favorite?: boolean; // Whether this reference is pinned/favorited
   metadata?: Record<string, any>; // Contains: type, analysis, description, mimeType, storagePath, fileSize
   created_at: string;
   updated_at: string;
@@ -75,7 +77,7 @@ export interface AgentResponse {
 }
 
 export interface IntentClassification {
-  type: 'brainstorming' | 'deciding' | 'modifying' | 'questioning' | 'exploring' | 'parking' | 'reviewing' | 'development' | 'general';
+  type: 'brainstorming' | 'deciding' | 'modifying' | 'questioning' | 'exploring' | 'parking' | 'reviewing' | 'development' | 'document_research' | 'general';
   confidence: number;
   stateChange?: StateChange;
   conflicts?: string[];
@@ -159,6 +161,11 @@ export interface SessionSummary {
   itemsExploring: number; // Current exploring items
   itemsParked: number; // Current parked items
   totalDecided: number; // Total decided items
+  // Add current counts for live display (not delta from last session)
+  currentDecided: number; // Total decided items in project right now
+  currentExploring: number; // Total exploring items in project right now
+  currentParked: number; // Total parked items in project right now
+  totalItems: number; // Total items across all states
   pendingQuestions: number;
   suggestedNextSteps: SuggestedStep[];
   activeBlockers: Blocker[];

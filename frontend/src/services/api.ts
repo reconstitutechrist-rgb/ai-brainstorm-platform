@@ -164,6 +164,42 @@ export const referencesApi = {
     return response.data;
   },
 
+  // Batch upload multiple files
+  uploadBatch: async (projectId: string, userId: string, files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    formData.append('projectId', projectId);
+    formData.append('userId', userId);
+
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+      results: Array<{
+        success: boolean;
+        filename: string;
+        reference?: Reference;
+        error?: string;
+      }>;
+      summary: {
+        total: number;
+        succeeded: number;
+        failed: number;
+      };
+    }>(
+      '/references/upload-batch',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 300000, // 5 minutes for batch uploads
+      }
+    );
+    return response.data;
+  },
+
   getByProject: async (projectId: string) => {
     const response = await api.get<{ success: boolean; references: Reference[] }>(
       `/references/project/${projectId}`
@@ -181,6 +217,32 @@ export const referencesApi = {
   delete: async (referenceId: string) => {
     const response = await api.delete<{ success: boolean; message: string }>(
       `/references/${referenceId}`
+    );
+    return response.data;
+  },
+
+  // Retrigger analysis for a reference
+  retriggerAnalysis: async (referenceId: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(
+      `/references/${referenceId}/retrigger-analysis`
+    );
+    return response.data;
+  },
+
+  // Update reference tags
+  updateTags: async (referenceId: string, tags: string[]) => {
+    const response = await api.patch<{ success: boolean; reference: Reference }>(
+      `/references/${referenceId}/tags`,
+      { tags }
+    );
+    return response.data;
+  },
+
+  // Toggle favorite status
+  toggleFavorite: async (referenceId: string, is_favorite: boolean) => {
+    const response = await api.patch<{ success: boolean; reference: Reference }>(
+      `/references/${referenceId}/favorite`,
+      { is_favorite }
     );
     return response.data;
   },
@@ -211,6 +273,65 @@ export const referencesApi = {
       '/references/resolve-conflict',
       data
     );
+    return response.data;
+  },
+
+  // Phase 4.2: Analyze reference with project context (Mode 2)
+  analyzeWithContext: async (referenceId: string, projectId: string) => {
+    const response = await api.post<{
+      success: boolean;
+      contextAnalysis: {
+        conflicts: Array<{
+          decidedItem: string;
+          referenceContent: string;
+          severity: 'critical' | 'high' | 'medium';
+        }>;
+        confirmations: Array<{
+          decidedItem: string;
+          referenceSupport: string;
+        }>;
+        newInsights: Array<{
+          insight: string;
+          relevance: 'high' | 'medium' | 'low';
+        }>;
+      };
+      message: string;
+    }>(`/references/${referenceId}/analyze-with-context`, { projectId });
+    return response.data;
+  },
+
+  // Phase 4.2: Analyze reference with template (Mode 3)
+  analyzeWithTemplate: async (referenceId: string, templateId: string) => {
+    const response = await api.post<{
+      success: boolean;
+      templateAnalysis: {
+        templateInfo: {
+          id: string;
+          name: string;
+          type: string;
+        };
+        outputFormat: string;
+        structuredData: any;
+        result: string;
+      };
+      message: string;
+    }>(`/references/${referenceId}/analyze-with-template`, { templateId });
+    return response.data;
+  },
+
+  // Get available analysis templates
+  getAnalysisTemplates: async () => {
+    const response = await api.get<{
+      success: boolean;
+      templates: Array<{
+        id: string;
+        name: string;
+        description: string;
+        type: string;
+        fields: any[];
+      }>;
+      count: number;
+    }>('/analysis-templates');
     return response.data;
   },
 };
@@ -388,6 +509,14 @@ export const sessionsApi = {
     );
     return response.data;
   },
+
+  // Get session history for a project
+  getHistory: async (projectId: string) => {
+    const response = await api.get<{ success: boolean; sessions: UserSession[] }>(
+      `/sessions/history/${projectId}`
+    );
+    return response.data;
+  },
 };
 
 // Sandbox API
@@ -531,6 +660,15 @@ export const generatedDocumentsApi = {
     return response.data;
   },
 
+  // Generate a document from research query results (Phase 3.1)
+  generateFromResearch: async (researchQueryId: string, documentType: string, userId?: string) => {
+    const response = await api.post<{ success: boolean; document: any; message: string }>(
+      '/generated-documents/generate-from-research',
+      { researchQueryId, documentType, userId }
+    );
+    return response.data;
+  },
+
   // Delete a generated document
   delete: async (documentId: string) => {
     const response = await api.delete<{ success: boolean; message: string }>(
@@ -598,6 +736,199 @@ export const generatedDocumentsApi = {
     const response = await api.get<{ success: boolean; qualityScore: any }>(
       `/generated-documents/${documentId}/quality-score`
     );
+    return response.data;
+  },
+};
+
+// Canvas API
+export const canvasApi = {
+  // Apply clustering to canvas
+  applyClustering: async (projectId: string, clusters: any[]) => {
+    const response = await api.post<{ success: boolean; project: Project; message: string }>(
+      `/canvas/${projectId}/cluster`,
+      { clusters }
+    );
+    return response.data;
+  },
+
+  // Archive cards
+  archiveCards: async (projectId: string, cardIds: string[]) => {
+    const response = await api.post<{ success: boolean; project: Project; message: string }>(
+      `/canvas/${projectId}/archive`,
+      { cardIds }
+    );
+    return response.data;
+  },
+
+  // Optimize layout
+  optimizeLayout: async (projectId: string, layout: 'grid' | 'flow' | 'circular' = 'grid') => {
+    const response = await api.post<{ success: boolean; project: Project; message: string }>(
+      `/canvas/${projectId}/optimize-layout`,
+      { layout }
+    );
+    return response.data;
+  },
+};
+
+// Research API
+export const researchApi = {
+  submitQuery: async (data: {
+    query: string;
+    projectId: string;
+    userId: string;
+    maxSources?: number;
+    saveResults?: boolean;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      queryId: string;
+      message: string;
+    }>('/research/query', data);
+    return response.data;
+  },
+
+  getQuery: async (queryId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      query: any;
+      documents: any[];
+    }>(`/research/query/${queryId}`);
+    return response.data;
+  },
+
+  getProjectQueries: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      queries: any[];
+    }>(`/research/project/${projectId}/queries`);
+    return response.data;
+  },
+
+  deleteQuery: async (queryId: string) => {
+    const response = await api.delete<{
+      success: boolean;
+      message: string;
+    }>(`/research/query/${queryId}`);
+    return response.data;
+  },
+};
+
+// Document Research API (Phase 3.1)
+export const documentResearchApi = {
+  startSession: async (data: {
+    projectId: string;
+    userId: string;
+    initialMessage?: string;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      sessionId: string;
+      response?: string;
+      discovery?: any;
+    }>('/research/document-research/start', data);
+    return response.data;
+  },
+
+  sendMessage: async (data: {
+    sessionId: string;
+    message: string;
+    projectId: string;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      response: string;
+      discovery: any;
+    }>('/research/document-research/chat', data);
+    return response.data;
+  },
+
+  generateDocument: async (data: {
+    sessionId: string;
+    templateId: string;
+    projectId: string;
+    userId: string;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      document: any;
+      autoFillResult: any;
+      message: string;
+    }>('/research/document-research/generate', data);
+    return response.data;
+  },
+
+  getSession: async (sessionId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      session: any;
+    }>(`/research/document-research/session/${sessionId}`);
+    return response.data;
+  },
+
+  getProjectSessions: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      sessions: any[];
+    }>(`/research/document-research/project/${projectId}/sessions`);
+    return response.data;
+  },
+};
+
+// Unified Research API (Phase 3.3)
+export const unifiedResearchApi = {
+  /**
+   * Start a unified research query
+   * Searches across web + documents with intelligent source selection
+   */
+  submitQuery: async (data: {
+    query: string;
+    projectId: string;
+    userId: string;
+    sources?: 'web' | 'documents' | 'all' | 'auto';
+    intent?: 'research' | 'document_discovery' | 'gap_analysis';
+    maxWebSources?: number;
+    maxDocumentSources?: number;
+    saveResults?: boolean;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      queryId: string;
+      message: string;
+    }>('/research/unified', data);
+    return response.data;
+  },
+
+  /**
+   * Get unified research query status and results
+   */
+  getQuery: async (queryId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      query: any;
+      documents: any[];
+    }>(`/research/query/${queryId}`);
+    return response.data;
+  },
+
+  /**
+   * Get all unified research queries for a project
+   */
+  getProjectQueries: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      queries: any[];
+    }>(`/research/project/${projectId}/queries`);
+    return response.data;
+  },
+
+  /**
+   * Delete a unified research query
+   */
+  deleteQuery: async (queryId: string) => {
+    const response = await api.delete<{
+      success: boolean;
+      message: string;
+    }>(`/research/query/${queryId}`);
     return response.data;
   },
 };

@@ -1,9 +1,11 @@
 import { BaseAgent } from './base';
 import { AgentResponse, ProjectState } from '../types';
+import { CanvasAnalysisService, OrganizationSuggestion } from '../services/canvasAnalysisService';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Suggestion {
   id: string;
-  type: 'action' | 'decision' | 'insight' | 'question';
+  type: 'action' | 'decision' | 'insight' | 'question' | 'canvas-organize' | 'canvas-layout' | 'canvas-cleanup';
   title: string;
   description: string;
   reasoning: string;
@@ -13,7 +15,9 @@ export interface Suggestion {
 }
 
 export class SuggestionAgent extends BaseAgent {
-  constructor() {
+  private canvasAnalysisService?: CanvasAnalysisService;
+
+  constructor(supabase?: SupabaseClient) {
     const systemPrompt = `You are the Suggestion Agent - you provide intelligent, contextual suggestions to help users make progress on their projects.
 
 YOUR PURPOSE:
@@ -24,6 +28,9 @@ SUGGESTION TYPES:
 2. "decision" - Pending decisions that need to be made
 3. "insight" - Observations about the project that could be valuable
 4. "question" - Important questions that haven't been answered yet
+5. "canvas-organize" - Suggestions to cluster or organize canvas cards
+6. "canvas-layout" - Suggestions to optimize canvas layout
+7. "canvas-cleanup" - Suggestions to archive or clean up canvas
 
 PRIORITY LEVELS:
 - "high": Critical for project success, blocking progress, or time-sensitive
@@ -61,12 +68,18 @@ QUALITY CRITERIA:
 - Focus on unblocking progress and moving the project forward`;
 
     super('SuggestionAgent', systemPrompt);
+
+    // Initialize canvas analysis service if supabase client is provided
+    if (supabase) {
+      this.canvasAnalysisService = new CanvasAnalysisService(supabase);
+    }
   }
 
   async generateSuggestions(
     projectState: ProjectState,
     conversationHistory: any[],
-    recentActivity?: string
+    recentActivity?: string,
+    projectId?: string
   ): Promise<Suggestion[]> {
     this.log('Generating contextual suggestions');
 
@@ -75,6 +88,27 @@ QUALITY CRITERIA:
     const exploringCount = projectState.exploring?.length || 0;
     const parkedCount = projectState.parked?.length || 0;
     const totalItems = decidedCount + exploringCount + parkedCount;
+
+    // Generate canvas organization suggestions if available
+    let canvasSuggestions: Suggestion[] = [];
+    if (this.canvasAnalysisService && projectId) {
+      try {
+        const orgSuggestions = await this.canvasAnalysisService.generateOrganizationSuggestions(projectId);
+        canvasSuggestions = orgSuggestions.map((org: OrganizationSuggestion) => ({
+          id: org.id,
+          type: org.type,
+          title: org.title,
+          description: org.description,
+          reasoning: org.reasoning,
+          priority: org.priority,
+          agentType: 'canvas-organization',
+          actionData: org.actionData,
+        }));
+        this.log(`Generated ${canvasSuggestions.length} canvas organization suggestions`);
+      } catch (error) {
+        this.log(`Error generating canvas suggestions: ${error}`);
+      }
+    }
 
     // Get recent conversation context (last 10 messages)
     const recentConversation = conversationHistory.slice(-10);
@@ -120,9 +154,14 @@ Return ONLY valid JSON array matching your system prompt format.`,
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const suggestions: Suggestion[] = JSON.parse(cleanResponse);
 
-    this.log(`Generated ${suggestions.length} suggestions`);
+    this.log(`Generated ${suggestions.length} AI suggestions`);
 
-    return suggestions;
+    // Combine AI suggestions with canvas organization suggestions
+    const allSuggestions = [...canvasSuggestions, ...suggestions];
+
+    this.log(`Total suggestions: ${allSuggestions.length} (${canvasSuggestions.length} canvas + ${suggestions.length} AI)`);
+
+    return allSuggestions;
   }
 
   /**

@@ -6,6 +6,7 @@ import { ChatInterface } from '../components/sandbox/ChatInterface';
 import { IdeaBoardPanel } from '../components/sandbox/IdeaBoardPanel';
 import { sandboxApi } from '../services/api';
 import { TestTube, Save, Trash2, AlertTriangle } from 'lucide-react';
+import '../styles/homepage.css';
 
 export const ConversationalSandbox: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -18,6 +19,14 @@ export const ConversationalSandbox: React.FC = () => {
   const [selectedIdeaIds, setSelectedIdeaIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [conversationMode, setConversationMode] = useState('exploration');
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   useEffect(() => {
     if (currentProject) {
@@ -206,7 +215,7 @@ export const ConversationalSandbox: React.FC = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col">
+    <div className="min-h-screen h-[calc(100vh-120px)] flex flex-col">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

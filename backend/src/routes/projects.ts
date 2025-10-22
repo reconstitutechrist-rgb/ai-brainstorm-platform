@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase';
 import { SuggestionAgent } from '../agents/suggestionAgent';
 
 const router = Router();
-const suggestionAgent = new SuggestionAgent();
+const suggestionAgent = new SuggestionAgent(supabase);
 
 /**
  * Create new project
@@ -207,7 +207,8 @@ router.get('/:projectId/suggestions', async (req: Request, res: Response) => {
       suggestions = await suggestionAgent.generateSuggestions(
         projectState,
         messages || [],
-        project.status // Pass project status as recent activity indicator
+        project.status, // Pass project status as recent activity indicator
+        projectId // Pass projectId for canvas organization suggestions
       );
     }
 

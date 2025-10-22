@@ -16,19 +16,33 @@ export class PersistenceManagerAgent extends BaseAgent {
   constructor() {
     const systemPrompt = `Persistence Manager - unified recording, verification, and version control.
 
-RECORDING SIGNALS:
-- Decided: "Let's go with", "I like that", "Perfect", "That's the one"
-- Exploring: "What if", "Maybe", "Thinking about", "Could we"
-- Modify: "Change to", "Instead of X do Y"
-- Park: "Come back to", "Maybe later", "Pin that"
+RECORDING SIGNALS (Expanded):
+- DECIDED (Strong commitment):
+  * Affirmative: "I want", "I need", "We need", "Let's use", "Let's go with", "Let's add"
+  * Approval: "I like that", "Perfect", "Exactly", "Yes", "Definitely", "Absolutely", "That's the one", "Love it"
+  * Selection: "I choose", "We'll use", "Go with", "Pick", "Select"
+
+- EXPLORING (Considering options):
+  * Tentative: "What if", "Maybe", "Could we", "Thinking about", "Consider"
+  * Questions: "Should we", "Would it work", "How about"
+
+- MODIFY (Changing previous decision):
+  * Change: "Change to", "Instead of X do Y", "Actually", "Switch to"
+
+- PARK (Save for later):
+  * Defer: "Come back to", "Maybe later", "Pin that", "For later", "Not now"
 
 VERIFICATION RULES:
-- APPROVE IF: User explicitly stated, no interpretation needed, 100% clear, no conflicts
-- REJECT IF: Any assumption, ambiguity, vague details, potential conflicts
-- Be strict. When in doubt, reject.
+- APPROVE IF: User explicitly stated intent, clear direction, specific feature/requirement mentioned
+- REJECT IF: Pure question with no substance, completely off-topic, or just acknowledgment with no context
+- Be BALANCED. Favor recording ideas over rejecting them, especially for "decided" and "exploring" intents.
+
+CONTEXT-AWARE APPROVAL:
+If user says "yes", "love it", "perfect", etc., look at the IMMEDIATELY PRECEDING AI message.
+The user is approving what the AI suggested. Record the AI's suggestion as DECIDED.
 
 PROCESS:
-1. Verify data (strict gatekeeper)
+1. Verify data (balanced gatekeeper - favor recording)
 2. If approved: Analyze intent and state classification
 3. If recording: Track version automatically
 4. Generate confirmation message for user
@@ -70,14 +84,19 @@ JSON OUTPUT: {
 - It's better to record and track ideas than to lose them
 - Only REJECT if: Completely off-topic, pure question with no substance, or system message`
       : isStrictIntent
-      ? `STRICT VERIFICATION (Decision/Modification Mode):
-- APPROVE IF: User explicitly stated, no interpretation needed, 100% clear, no conflicts
-- REJECT IF: Any assumption, ambiguity, vague details, potential conflicts
-- Be strict. When in doubt, reject.`
+      ? `BALANCED VERIFICATION (Decision/Modification Mode):
+- APPROVE IF: User stated intent, direction, or preference clearly
+- Look for decision signals: "I want", "We need", "Let's use", "I like", "Yes", "Perfect"
+- RECORD AS "decided" when user shows strong commitment or approval
+- RECORD AS "exploring" if still considering options
+- REJECT ONLY IF: Completely off-topic, pure question, or acknowledgment without context
+- Favor recording decisions - better to track than lose them`
       : `BALANCED VERIFICATION (General Mode):
-- APPROVE IF: Reasonably clear intent or idea expressed
-- REJECT IF: Pure question, off-topic, or no actionable content
-- Use judgment - favor recording over rejecting`;
+- APPROVE IF: User expressed intent, idea, preference, or requirement
+- Extract and record specific features, needs, or decisions mentioned
+- Be PERMISSIVE - capture valuable information even if casual
+- REJECT ONLY IF: Pure question, off-topic, or no actionable content
+- Favor recording over rejecting`;
 
     // Format conversation context for Claude
     const recentConversation = conversationHistory && conversationHistory.length > 0

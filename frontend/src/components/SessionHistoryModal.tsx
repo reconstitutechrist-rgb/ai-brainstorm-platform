@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
+import { sessionsApi } from '../services/api';
 import { X, Calendar, Clock, TrendingUp, ChevronDown, ChevronRight, CheckCircle2, Brain, Archive } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import type { UserSession, ProjectState } from '../types';
+import type { UserSession } from '../types';
 
 interface SessionHistoryModalProps {
   isOpen: boolean;
@@ -30,14 +31,13 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
   const loadSessionHistory = async () => {
     setLoading(true);
     try {
-      // TODO: Implement API call to fetch session history
-      // const response = await sessionsApi.getHistory(projectId);
-      // setSessions(response.sessions);
-
-      // For now, using mock data
-      setSessions([]);
+      const response = await sessionsApi.getHistory(projectId);
+      if (response.success) {
+        setSessions(response.sessions);
+      }
     } catch (error) {
       console.error('Failed to load session history:', error);
+      setSessions([]);
     } finally {
       setLoading(false);
     }

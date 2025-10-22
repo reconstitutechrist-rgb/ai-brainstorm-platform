@@ -112,6 +112,18 @@ export class SessionService {
       // Get analytics data for suggested steps and blockers
       const analytics = await this.getOrCreateAnalytics(userId, projectId);
 
+      // Get current project for live item counts
+      const { data: project } = await supabase
+        .from('projects')
+        .select('items')
+        .eq('id', projectId)
+        .single();
+
+      const currentItems = project?.items || [];
+      const currentDecided = currentItems.filter((i: any) => i.state === 'decided').length;
+      const currentExploring = currentItems.filter((i: any) => i.state === 'exploring').length;
+      const currentParked = currentItems.filter((i: any) => i.state === 'parked').length;
+
       // Combine data
       const summary: SessionSummary = {
         lastSession: data.lastsession || 'first session',
@@ -119,6 +131,11 @@ export class SessionService {
         itemsExploring: data.itemsexploring || 0,
         itemsParked: data.itemsparked || 0,
         totalDecided: data.totaldecided || 0,
+        // Add current live counts (not deltas)
+        currentDecided,
+        currentExploring,
+        currentParked,
+        totalItems: currentItems.length,
         pendingQuestions: analytics?.pending_questions || 0,
         suggestedNextSteps: analytics?.suggested_next_steps || [],
         activeBlockers: analytics?.active_blockers || []

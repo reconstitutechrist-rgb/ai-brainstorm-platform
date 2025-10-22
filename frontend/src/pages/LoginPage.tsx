@@ -1,11 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
 import { Brain, Mail, Lock, AlertCircle } from 'lucide-react';
+import '../styles/homepage.css';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { signInWithEmail, signUpWithEmail } = useUserStore();
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -56,7 +65,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">

@@ -1,9 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+// Initialize OpenAI only if API key is provided
+const openai = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key-here'
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // Model configuration
 const EMBEDDING_MODEL = 'text-embedding-3-small';
@@ -67,6 +68,10 @@ export class EmbeddingService {
    * Uses caching to avoid redundant API calls
    */
   async generateEmbedding(text: string): Promise<EmbeddingResult> {
+    if (!openai) {
+      throw new Error('OpenAI API key not configured. Embeddings feature is disabled.');
+    }
+
     // Check cache first
     const cached = embeddingCache.get(text);
     if (cached) {
@@ -268,5 +273,209 @@ export class EmbeddingService {
    */
   clearCache(): void {
     embeddingCache.clear();
+  }
+
+  /**
+   * Generate and store embedding for a reference
+   */
+  async generateAndStoreReferenceEmbedding(referenceId: string, content: string): Promise<void> {
+    if (!content || content.trim().length === 0) {
+      console.log(`[Embedding] Skipping reference ${referenceId} - no content`);
+      return;
+    }
+
+    const result = await this.generateEmbedding(content);
+
+    await this.supabase
+      .from('references')
+      .update({
+        embedding: JSON.stringify(result.embedding),
+        embedding_model: result.model,
+        embedding_generated_at: new Date().toISOString(),
+      })
+      .eq('id', referenceId);
+
+    console.log(`[Embedding] Generated embedding for reference ${referenceId}`);
+  }
+
+  /**
+   * Generate and store embedding for a generated document
+   */
+  async generateAndStoreDocumentEmbedding(documentId: string, content: string): Promise<void> {
+    if (!content || content.trim().length === 0) {
+      console.log(`[Embedding] Skipping document ${documentId} - no content`);
+      return;
+    }
+
+    const result = await this.generateEmbedding(content);
+
+    await this.supabase
+      .from('generated_documents')
+      .update({
+        embedding: JSON.stringify(result.embedding),
+        embedding_model: result.model,
+        embedding_generated_at: new Date().toISOString(),
+      })
+      .eq('id', documentId);
+
+    console.log(`[Embedding] Generated embedding for document ${documentId}`);
+  }
+
+  /**
+   * Generate embeddings for all references without embeddings in a project
+   */
+  async generateMissingReferenceEmbeddings(projectId: string): Promise<number> {
+    console.log(`[Embedding] Generating missing reference embeddings for project ${projectId}...`);
+
+    // Fetch references without embeddings
+    const { data: references, error } = await this.supabase
+      .from('references')
+      .select('id, metadata')
+      .eq('project_id', projectId)
+      .is('embedding', null);
+
+    if (error || !references) {
+      throw new Error(`Failed to fetch references: ${error?.message}`);
+    }
+
+    console.log(`[Embedding] Found ${references.length} references without embeddings`);
+
+    let processedCount = 0;
+    let skippedCount = 0;
+
+    // Process in batches of 50 to avoid rate limits
+    const batchSize = 50;
+    for (let i = 0; i < references.length; i += batchSize) {
+      const batch = references.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (reference) => {
+          try {
+            // Extract content from metadata
+            const content =
+              reference.metadata?.extractedContent ||
+              reference.metadata?.analysis ||
+              '';
+
+            if (content && content.trim().length > 0) {
+              await this.generateAndStoreReferenceEmbedding(reference.id, content);
+              processedCount++;
+            } else {
+              console.log(`[Embedding] Skipping reference ${reference.id} - no content`);
+              skippedCount++;
+            }
+          } catch (err) {
+            console.error(`[Embedding] Failed for reference ${reference.id}:`, err);
+          }
+        })
+      );
+
+      console.log(`[Embedding] Processed ${Math.min(i + batchSize, references.length)}/${references.length} references`);
+    }
+
+    console.log(`[Embedding] Completed: ${processedCount} processed, ${skippedCount} skipped`);
+    return processedCount;
+  }
+
+  /**
+   * Generate embeddings for all generated_documents without embeddings in a project
+   */
+  async generateMissingDocumentEmbeddings(projectId: string): Promise<number> {
+    console.log(`[Embedding] Generating missing document embeddings for project ${projectId}...`);
+
+    // Fetch documents without embeddings
+    const { data: documents, error } = await this.supabase
+      .from('generated_documents')
+      .select('id, content')
+      .eq('project_id', projectId)
+      .is('embedding', null);
+
+    if (error || !documents) {
+      throw new Error(`Failed to fetch documents: ${error?.message}`);
+    }
+
+    console.log(`[Embedding] Found ${documents.length} documents without embeddings`);
+
+    let processedCount = 0;
+    let skippedCount = 0;
+
+    // Process in batches of 50
+    const batchSize = 50;
+    for (let i = 0; i < documents.length; i += batchSize) {
+      const batch = documents.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (document) => {
+          try {
+            if (document.content && document.content.trim().length > 0) {
+              await this.generateAndStoreDocumentEmbedding(document.id, document.content);
+              processedCount++;
+            } else {
+              console.log(`[Embedding] Skipping document ${document.id} - no content`);
+              skippedCount++;
+            }
+          } catch (err) {
+            console.error(`[Embedding] Failed for document ${document.id}:`, err);
+          }
+        })
+      );
+
+      console.log(`[Embedding] Processed ${Math.min(i + batchSize, documents.length)}/${documents.length} documents`);
+    }
+
+    console.log(`[Embedding] Completed: ${processedCount} processed, ${skippedCount} skipped`);
+    return processedCount;
+  }
+}
+
+/**
+ * Standalone function for unified semantic search across references and generated_documents
+ * Used by UnifiedResearchAgent
+ */
+export async function searchSemanticSimilarity(
+  query: string,
+  projectId: string,
+  maxResults: number = 10,
+  supabaseClient?: SupabaseClient
+): Promise<Array<{
+  id: string;
+  type: 'reference' | 'generated_document';
+  filename: string;
+  content: string;
+  score: number;
+}>> {
+  // Use provided client or import from supabase service
+  const client = supabaseClient || (await import('./supabase')).supabase;
+
+  // Create temporary embedding service instance
+  const embeddingService = new EmbeddingService(client);
+
+  try {
+    // Generate embedding for query
+    const queryEmbedding = await embeddingService.generateEmbedding(query);
+
+    // Call PostgreSQL function for unified search
+    const { data, error } = await client.rpc('search_semantic_similarity', {
+      query_embedding: JSON.stringify(queryEmbedding.embedding),
+      project_id_filter: projectId,
+      similarity_threshold: 0.6, // Lower threshold for broader results
+      max_results: maxResults,
+    });
+
+    if (error) {
+      throw new Error(`Failed to search semantic similarity: ${error.message}`);
+    }
+
+    // Transform results to expected format
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      type: item.type as 'reference' | 'generated_document',
+      filename: item.filename,
+      content: item.content,
+      score: item.similarity,
+    }));
+  } catch (error: any) {
+    console.error('[searchSemanticSimilarity] Error:', error);
+    throw error;
   }
 }

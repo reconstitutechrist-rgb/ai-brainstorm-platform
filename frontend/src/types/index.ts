@@ -6,8 +6,17 @@ export interface Project {
   description: string;
   status: 'decided' | 'exploring' | 'parked';
   items: ProjectItem[];
+  clusters?: ClusterMetadata[]; // Canvas cluster metadata
   created_at: string;
   updated_at: string;
+}
+
+export interface ClusterMetadata {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
+  position: { x: number; y: number };
 }
 
 export interface ProjectItem {
@@ -53,6 +62,8 @@ export interface Reference {
   filename: string;
   type?: string; // Type of reference (image, video, document, etc.)
   analysis_status: 'pending' | 'processing' | 'completed' | 'failed';
+  tags?: string[]; // Tags for organizing references (e.g., 'competitor', 'requirement', 'design')
+  is_favorite?: boolean; // Whether this reference is pinned/favorited
   metadata?: {
     type?: 'image' | 'video' | 'document' | 'product';
     analysis?: string; // AI-generated analysis
@@ -154,6 +165,11 @@ export interface SessionSummary {
   itemsExploring: number;
   itemsParked: number;
   totalDecided: number;
+  // Add current counts for live display (not delta from last session)
+  currentDecided: number;
+  currentExploring: number;
+  currentParked: number;
+  totalItems: number;
   pendingQuestions: number;
   suggestedNextSteps: SuggestedStep[];
   activeBlockers: Blocker[];

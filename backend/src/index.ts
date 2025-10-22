@@ -12,6 +12,10 @@ import documentRoutes from './routes/documents';
 import generatedDocumentsRoutes from './routes/generated-documents';
 import sessionRoutes from './routes/sessions';
 import sandboxRoutes from './routes/sandbox';
+import canvasRoutes from './routes/canvas';
+import researchRoutes from './routes/research';
+import analysisChatRoutes from './routes/analysis-chat';
+import analysisTemplatesRoutes from './routes/analysis-templates';
 import { testConnection } from './services/supabase';
 
 const app: Express = express();
@@ -45,6 +49,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/generated-documents', generatedDocumentsRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/sandbox', sandboxRoutes);
+app.use('/api/canvas', canvasRoutes);
+app.use('/api/research', researchRoutes);
+app.use('/api/analysis', analysisChatRoutes); // Phase 4.1
+app.use('/api/analysis-templates', analysisTemplatesRoutes); // Phase 4.2
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -107,3 +115,5 @@ async function startServer() {
 }
 
 startServer();
+// Force restart
+// cache cleared

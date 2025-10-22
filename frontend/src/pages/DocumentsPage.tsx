@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { FileText, CheckCircle, Clock, Archive, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+import '../styles/homepage.css';
 
 export const DocumentsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
   const [selectedState, setSelectedState] = useState<'decided' | 'exploring' | 'parked'>('decided');
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   if (!currentProject) {
     return (
@@ -57,7 +66,7 @@ export const DocumentsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

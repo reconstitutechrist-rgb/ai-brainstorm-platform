@@ -1,13 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
 import { useUIStore } from '../store/uiStore';
-import { Plus, Sparkles, Folder, Clock } from 'lucide-react';
+import { Plus, Sparkles, Folder, Clock, Trash2 } from 'lucide-react';
 import { projectsApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import '../styles/homepage.css';
 
 export const Dashboard: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -15,6 +16,17 @@ export const Dashboard: React.FC = () => {
   const { projects, setProjects, setCurrentProject, loading, setLoading } = useProjectStore();
   const { openCreateProjectModal } = useUIStore();
   const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   useEffect(() => {
     loadProjects();
@@ -45,8 +57,34 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setDeleting(true);
+    try {
+      await projectsApi.delete(projectToDelete);
+
+      // Remove project from list
+      setProjects(projects.filter(p => p.id !== projectToDelete));
+
+      // Hide confirmation dialog
+      setShowDeleteConfirm(false);
+      setProjectToDelete(null);
+    } catch (error) {
+      console.error('Delete project error:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmDelete = (projectId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent project card click
+    setProjectToDelete(projectId);
+    setShowDeleteConfirm(true);
+  };
+
   return (
-    <div className="w-full">
+    <div className="min-h-screen">
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -149,16 +187,27 @@ export const Dashboard: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.slice(0, 6).map((project, index) => (
-              <motion.button
+              <motion.div
                 key={project.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
+                className={`${isDarkMode ? 'glass-dark-subtle' : 'glass-subtle'} p-5 rounded-xl shadow-glass text-left relative group cursor-pointer`}
                 onClick={() => handleProjectClick(project.id)}
-                className={`${isDarkMode ? 'glass-dark-subtle' : 'glass-subtle'} p-5 rounded-xl shadow-glass text-left`}
               >
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {/* Delete button - appears on hover */}
+                <button
+                  onClick={(e) => confirmDelete(project.id, e)}
+                  className={`absolute top-3 right-3 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 ${
+                    isDarkMode ? 'hover:bg-red-500/20 text-gray-400 hover:text-red-500' : 'hover:bg-red-500/20 text-gray-600 hover:text-red-500'
+                  }`}
+                  title="Delete project"
+                >
+                  <Trash2 size={18} />
+                </button>
+
+                <h3 className={`text-lg font-semibold mb-2 pr-10 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {project.title}
                 </h3>
                 {project.description && (
@@ -183,11 +232,70 @@ export const Dashboard: React.FC = () => {
                     {project.status}
                   </span>
                 </div>
-              </motion.button>
+              </motion.div>
             ))}
           </div>
         )}
       </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && projectToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 max-w-md w-full shadow-glass`}
+          >
+            <div className="flex items-start gap-4 mb-6">
+              <div className="p-3 rounded-full bg-red-500/20">
+                <Trash2 className="text-red-500" size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Delete Project
+                </h3>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Are you sure you want to delete "{projects.find(p => p.id === projectToDelete)?.title}"? This action cannot be undone and will delete all associated conversations, messages, and data.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setProjectToDelete(null);
+                }}
+                disabled={deleting}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  isDarkMode
+                    ? 'hover:bg-white/10 text-gray-300'
+                    : 'hover:bg-gray-100 text-gray-700'
+                } disabled:opacity-50`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    <span>Delete Project</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

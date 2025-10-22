@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
+import '../styles/homepage.css';
 import {
   TestTube,
   Sparkles,
@@ -24,6 +25,14 @@ export const SandboxPage: React.FC = () => {
   const [selectedIdeas, setSelectedIdeas] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [direction, setDirection] = useState<'innovative' | 'practical' | 'budget' | 'premium' | 'experimental'>('innovative');
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
 
   useEffect(() => {
     if (currentProject) {
@@ -155,7 +164,7 @@ export const SandboxPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

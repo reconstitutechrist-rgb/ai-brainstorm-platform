@@ -1,19 +1,25 @@
 import { BaseAgent } from './base';
 import { AgentResponse } from '../types';
+import {
+  AnalysisTemplate,
+  getTemplateById,
+  getAllTemplates,
+} from '../config/analysis-templates';
 
 export class ReferenceAnalysisAgent extends BaseAgent {
   constructor() {
     const systemPrompt = `You are the Reference Analysis Agent.
 
 YOUR PURPOSE:
-Analyze uploaded images, videos, PDFs, URLs, and product references to extract relevant information for the user's project. Extract STRUCTURED data that can be compared against project decisions to detect conflicts, confirmations, and new insights.
+Analyze uploaded images, videos, PDFs, Word documents, URLs, and product references to extract relevant information for the user's project. Extract STRUCTURED data presented in a professional, readable markdown format.
 
 ANALYSIS CAPABILITIES:
 1. IMAGE ANALYSIS: Design elements, colors, layout, style, composition
 2. VIDEO ANALYSIS: Key frames, features, functionality, user interactions
 3. PDF ANALYSIS: Extract key information, specifications, requirements
-4. URL ANALYSIS: Competitor features, design patterns, functionality
-5. PRODUCT ANALYSIS: Features, specs, pricing, pros/cons
+4. WORD DOCUMENTS: Extract full text content, requirements, specifications
+5. URL ANALYSIS: Competitor features, design patterns, functionality
+6. PRODUCT ANALYSIS: Features, specs, pricing, pros/cons
 
 ENHANCED EXTRACTION:
 Extract structured requirements, constraints, and preferences:
@@ -24,39 +30,96 @@ Extract structured requirements, constraints, and preferences:
 - BUSINESS RULES: Policies, workflows, processes
 - TECHNICAL SPECS: APIs, platforms, technologies, performance requirements
 
-ANALYSIS OUTPUT:
-{
-  "summary": "brief overview",
-  "keyFeatures": ["list", "of", "features"],
-  "extractedRequirements": [
-    {"type": "feature|constraint|preference", "text": "requirement description", "confidence": 0-100}
-  ],
-  "designElements": {
-    "colors": ["#hex1", "#hex2"],
-    "typography": ["font1", "font2"],
-    "layout": "description",
-    "style": "description"
-  },
-  "technicalSpecs": {
-    "platforms": ["platform1", "platform2"],
-    "technologies": ["tech1", "tech2"],
-    "performance": ["requirement1", "requirement2"]
-  },
-  "businessRules": ["rule1", "rule2"],
-  "relevantInsights": ["insight 1", "insight 2"],
-  "applicableIdeas": ["idea 1", "idea 2"],
-  "questions": ["clarifying question 1"]
-}
+ANALYSIS OUTPUT FORMAT (PROFESSIONAL MARKDOWN):
 
-GUIDELINES:
-- Be objective and descriptive
-- Extract SPECIFIC values (exact hex codes, font names, dimensions)
-- Categorize each finding (requirement/constraint/preference)
-- Assign confidence scores (0-100) to extracted items
-- Focus on what's relevant to user's project
-- Identify patterns and best practices
-- Suggest how insights could be applied
-- Never make assumptions about user's intent`;
+# 📄 [Document Title/Type] Analysis
+
+## 📋 Executive Summary
+[2-3 sentence overview of the document's purpose and key content]
+
+## ⭐ Key Features
+- Feature 1
+- Feature 2
+- Feature 3
+
+## 📌 Requirements & Specifications
+
+### 🎯 Core Features (High Confidence ≥80%)
+| Feature | Confidence | Priority |
+|---------|-----------|----------|
+| Feature description | 95% | High |
+| Feature description | 85% | Medium |
+
+### ⚠️ Constraints & Limitations
+- **Technical:** Constraint description
+- **Timeline:** Constraint description
+- **Budget:** Constraint description
+
+### 💡 User Preferences
+- Preference 1 *(Confidence: 85%)*
+- Preference 2 *(Confidence: 70%)*
+
+## 🎨 Design Elements
+${`
+**Color Palette:** \`#hex1\`, \`#hex2\`, \`#hex3\`
+**Typography:** Font Family 1, Font Family 2
+**Layout Style:** Description of layout approach
+**Visual Style:** Description of design style
+`}
+
+## 🔧 Technical Specifications
+
+**Target Platforms:**
+- Platform 1
+- Platform 2
+
+**Technologies & Tools:**
+- Technology 1 (purpose)
+- Technology 2 (purpose)
+
+**Performance Requirements:**
+- Requirement 1
+- Requirement 2
+
+## 📏 Business Rules & Workflows
+1. **Rule Category:** Rule description
+2. **Process Flow:** Process description
+3. **Policy:** Policy description
+
+## 💡 Key Insights & Analysis
+
+> **Insight 1:** Detailed explanation of important finding or pattern
+
+> **Insight 2:** Detailed explanation of strategic consideration
+
+> **Insight 3:** Detailed explanation of opportunity or risk
+
+## 🚀 Actionable Recommendations
+- [ ] Recommendation 1 with specific action
+- [ ] Recommendation 2 with specific action
+- [ ] Recommendation 3 with specific action
+
+## ❓ Questions to Consider
+1. Strategic question about approach or implementation?
+2. Clarifying question about requirements or constraints?
+3. Decision-point question about trade-offs?
+
+---
+*Analysis completed with [extraction method]. Confidence levels indicate certainty of extracted information.*
+
+FORMATTING GUIDELINES:
+- Use emojis sparingly for visual hierarchy (section headers only)
+- Use tables for structured data with confidence scores
+- Use blockquotes (>) for key insights
+- Use checkboxes (- [ ]) for actionable items
+- Use inline code backticks for technical terms, hex codes, file names
+- Use bold (**text**) for emphasis on key terms
+- Use italic (*text*) for confidence scores and metadata
+- Keep sections concise but informative
+- Omit sections that have no relevant data
+- Be specific and actionable, not generic
+- Extract exact values (colors, fonts, dimensions) when available
+- Assign realistic confidence scores based on clarity of information`;
 
     super('ReferenceAnalysisAgent', systemPrompt);
   }
@@ -64,14 +127,51 @@ GUIDELINES:
   async analyze(referenceType: string, referenceData: any): Promise<AgentResponse> {
     this.log(`Analyzing ${referenceType} reference`);
 
+    // Check if we have extracted content
+    const hasExtractedContent = Boolean(referenceData.extractedContent?.length);
+    const contentType = referenceData.contentType || 'text';
+
+    this.log(`Has extracted content: ${hasExtractedContent}, Content type: ${contentType}, Length: ${referenceData.extractedContent?.length || 0}`);
+
+    let analysisPrompt = '';
+
+    if (hasExtractedContent && contentType === 'text') {
+      // Use extracted text content for analysis
+      const contentPreview = referenceData.extractedContent.length > 8000
+        ? referenceData.extractedContent.substring(0, 8000) + '\n\n[Content truncated...]'
+        : referenceData.extractedContent;
+
+      analysisPrompt = `Analyze this ${referenceType} document and extract relevant information.
+
+DOCUMENT CONTENT:
+${contentPreview}
+
+Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in your system prompt. Use tables for requirements with confidence scores, blockquotes for key insights, and checkboxes for actionable recommendations.
+
+Extract specific, actionable information including:
+- Requirements, constraints, and preferences with confidence scores
+- Design elements with exact values (hex codes, font names, dimensions)
+- Technical specifications and performance requirements
+- Business rules and workflows
+- Strategic insights and recommendations
+
+Focus on making the analysis professional, scannable, and immediately useful for project planning.`;
+    } else {
+      // Fallback for cases without extracted content (images, videos, or old uploads)
+      analysisPrompt = `Analyze this ${referenceType} reference.
+
+Reference type: ${referenceType}
+URL: ${referenceData.url}
+
+Note: Content extraction was not available for this file. Please provide general guidance on what information should be extracted from a ${referenceType} file for project planning purposes.
+
+Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in your system prompt, but mark confidence scores as low (20-40) due to lack of actual content. Focus on providing actionable guidance for what to look for in this type of reference.`;
+    }
+
     const messages = [
       {
         role: 'user',
-        content: `Analyze this ${referenceType} reference and extract relevant information.
-
-Reference data: ${JSON.stringify(referenceData)}
-
-Return structured JSON analysis following the ANALYSIS OUTPUT format in your system prompt. Include extractedRequirements with confidence scores, specific design elements with exact values (hex codes, font names), and technical specifications.`,
+        content: analysisPrompt,
       },
     ];
 
@@ -84,6 +184,8 @@ Return structured JSON analysis following the ANALYSIS OUTPUT format in your sys
       metadata: {
         analysisCompleted: true,
         referenceType,
+        hadExtractedContent: hasExtractedContent,
+        contentType,
       },
     };
   }
@@ -150,5 +252,127 @@ Return JSON:
         hasNewInsights: false,
       },
     };
+  }
+
+  /**
+   * Phase 4.2: Analyze with specialized template
+   * Uses template-specific fields and extraction hints for structured output
+   */
+  async analyzeWithTemplate(
+    referenceType: string,
+    referenceData: any,
+    templateId: string
+  ): Promise<AgentResponse> {
+    this.log(`Analyzing ${referenceType} reference with template: ${templateId}`);
+
+    // Get the template
+    const template = getTemplateById(templateId);
+    if (!template) {
+      throw new Error(`Template not found: ${templateId}`);
+    }
+
+    this.log(`Using template: ${template.name} (${template.type})`);
+
+    // Build extraction instructions from template fields
+    const fieldInstructions = template.fields
+      .map(field => {
+        const required = field.required ? '**REQUIRED**' : 'Optional';
+        return `### ${field.label} (${required})
+${field.description}
+Type: ${field.type}
+${field.extractionHint ? `Hint: ${field.extractionHint}` : ''}`;
+      })
+      .join('\n\n');
+
+    // Check if we have extracted content
+    const hasExtractedContent = Boolean(referenceData.extractedContent?.length);
+    const contentPreview = hasExtractedContent
+      ? referenceData.extractedContent.length > 8000
+        ? referenceData.extractedContent.substring(0, 8000) + '\n\n[Content truncated...]'
+        : referenceData.extractedContent
+      : `No extracted content available for ${referenceType}`;
+
+    // Build the analysis prompt using template's system prompt
+    const analysisPrompt = `${template.systemPrompt}
+
+DOCUMENT CONTENT:
+${contentPreview}
+
+EXTRACTION REQUIREMENTS:
+${fieldInstructions}
+
+OUTPUT FORMAT: ${template.outputFormat}
+
+${template.outputFormat === 'structured_json'
+  ? `Return a JSON object with these fields:
+{
+  ${template.fields.map(f => `"${f.id}": ${f.type === 'list' ? '[]' : f.type === 'table' ? '{}' : '""'}`).join(',\n  ')}
+}
+
+Each field should contain the extracted information according to its type and extraction hints.`
+  : template.outputFormat === 'markdown'
+  ? `Return a well-formatted markdown document with sections for each field.`
+  : `Return a table format with rows for each data point.`}
+
+IMPORTANT:
+- Extract information ONLY from the provided content
+- Use confidence scores for uncertain information
+- Mark required fields that couldn't be extracted as "Not found in content"
+- Be specific and actionable
+- Follow the template's extraction hints precisely`;
+
+    const messages = [
+      {
+        role: 'user',
+        content: analysisPrompt,
+      },
+    ];
+
+    const response = await this.callClaude(messages, 3000);
+
+    // Parse structured JSON if that's the output format
+    let parsedData: any = null;
+    if (template.outputFormat === 'structured_json') {
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedData = JSON.parse(jsonMatch[0]);
+        }
+      } catch (error) {
+        this.log(`Failed to parse JSON response: ${error}`);
+      }
+    }
+
+    return {
+      agent: this.name,
+      message: response,
+      showToUser: true,
+      metadata: {
+        analysisCompleted: true,
+        referenceType,
+        templateUsed: {
+          id: template.id,
+          name: template.name,
+          type: template.type,
+        },
+        hadExtractedContent: hasExtractedContent,
+        outputFormat: template.outputFormat,
+        structuredData: parsedData,
+      },
+    };
+  }
+
+  /**
+   * Get all available analysis templates
+   */
+  getAvailableTemplates(): AnalysisTemplate[] {
+    return getAllTemplates();
+  }
+
+  /**
+   * Get a specific template by ID
+   */
+  getTemplate(templateId: string): AnalysisTemplate | null {
+    return getTemplateById(templateId);
   }
 }

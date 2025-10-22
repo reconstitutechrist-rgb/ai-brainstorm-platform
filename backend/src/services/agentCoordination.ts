@@ -208,6 +208,8 @@ export class AgentCoordinationService {
     responses: AgentResponse[],
     userMessage: string
   ): Promise<any> {
+    console.log(`[Coordination] Processing state updates for ${responses.length} responses`);
+
     const updates: any = {
       itemsAdded: [],
       itemsModified: [],
@@ -216,7 +218,14 @@ export class AgentCoordinationService {
 
     // Check for recorder agent responses with metadata
     for (const response of responses) {
-      if (response && response.agent && response.agent.includes('RecorderAgent') && response.metadata) {
+      if (response && response.agent && (response.agent.includes('RecorderAgent') || response.agent.includes('PersistenceManagerAgent'))) {
+        console.log(`[Coordination] Found ${response.agent} response, checking metadata...`);
+        console.log(`[Coordination] Metadata:`, JSON.stringify(response.metadata, null, 2));
+
+        if (!response.metadata) {
+          console.log(`[Coordination] ⚠️  ${response.agent} has NO metadata - skipping`);
+          continue;
+        }
         // Check for batch recording from review (new format)
         if (response.metadata.itemsToRecord && Array.isArray(response.metadata.itemsToRecord)) {
           console.log(`[Coordination] Processing ${response.metadata.itemsToRecord.length} items from review`);
@@ -269,6 +278,13 @@ export class AgentCoordinationService {
         }
         // Check for single item recording (original format)
         else if (response.metadata.shouldRecord && response.metadata.item) {
+          console.log(`[Coordination] ✅ Single item recording triggered`);
+          console.log(`[Coordination]   - verified: ${response.metadata.verified}`);
+          console.log(`[Coordination]   - shouldRecord: ${response.metadata.shouldRecord}`);
+          console.log(`[Coordination]   - state: ${response.metadata.state}`);
+          console.log(`[Coordination]   - item: ${response.metadata.item}`);
+          console.log(`[Coordination]   - confidence: ${response.metadata.confidence}`);
+
           const { shouldRecord, state, item } = response.metadata;
 
           // Add new item to project
@@ -284,6 +300,8 @@ export class AgentCoordinationService {
             },
           };
 
+          console.log(`[Coordination] Creating new item:`, JSON.stringify(newItem, null, 2));
+
           // Get current items
           const { data: project } = await supabase
             .from('projects')
@@ -294,8 +312,10 @@ export class AgentCoordinationService {
           const currentItems = project?.items || [];
           const updatedItems = [...currentItems, newItem];
 
+          console.log(`[Coordination] Current items count: ${currentItems.length}, new count: ${updatedItems.length}`);
+
           // Update project
-          await supabase
+          const { error: updateError } = await supabase
             .from('projects')
             .update({
               items: updatedItems,
@@ -303,11 +323,23 @@ export class AgentCoordinationService {
             })
             .eq('id', projectId);
 
-          updates.itemsAdded.push(newItem);
+          if (updateError) {
+            console.error(`[Coordination] ❌ Error saving item to project:`, updateError);
+          } else {
+            console.log(`[Coordination] ✅ Successfully saved item to project ${projectId}`);
+            updates.itemsAdded.push(newItem);
+          }
+        } else {
+          // Log when recorder metadata doesn't have the expected fields
+          console.log(`[Coordination] ⚠️  ${response.agent} metadata missing shouldRecord or item fields`);
+          console.log(`[Coordination]   - shouldRecord: ${response.metadata.shouldRecord}`);
+          console.log(`[Coordination]   - item: ${response.metadata.item ? 'exists' : 'missing'}`);
+          console.log(`[Coordination]   - verified: ${response.metadata.verified}`);
         }
       }
     }
 
+    console.log(`[Coordination] State updates complete: ${updates.itemsAdded.length} added, ${updates.itemsModified.length} modified, ${updates.itemsMoved.length} moved`);
     return updates;
   }
 

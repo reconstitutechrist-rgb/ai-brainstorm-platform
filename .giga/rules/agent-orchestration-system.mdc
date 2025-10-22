@@ -1,98 +1,69 @@
 ---
-description: Documentation and implementation details for multi-agent AI orchestration system with specialized roles and workflows
+description: Defines orchestration patterns and workflows for a 17-agent AI system with specialized roles and dependencies
 ---
 
 
 # agent-orchestration-system
 
-The 17-agent orchestration system implements a sophisticated AI collaboration framework with specialized roles and controlled interaction patterns.
+## Core Agent Orchestration Structure
+Importance Score: 95/100
 
-## Core Agent Types (Importance: 95/100)
+### Agent Categories & Roles
+- Core Agents (5)
+  - Research Coordinator: Manages document analysis and synthesis
+  - Context Manager: Maintains conversation state and intent 
+  - Decision Recorder: Validates and persists key decisions
+  - Quality Auditor: Verifies assumptions and consistency
+  - Strategic Planner: Handles technical translation and priorities
 
-1. Orchestrator Agents
-- Workflow coordination and agent task distribution 
-- Dynamic routing based on conversation intent
-- State management across agent handoffs
-- Context preservation between interactions
+- Support Agents (8)
+  - Reference Analyzer: Document parsing and extraction
+  - Gap Detector: Identifies missing information
+  - Assumption Validator: Flags unproven statements
+  - Citation Checker: Verifies source claims
+  - Consistency Monitor: Cross-reference validation
+  - Implementation Scorer: Complexity assessment
+  - Priority Manager: Dependency analysis
+  - Format Converter: Data standardization
 
-2. Core Processing Agents
-- Question Generation Agent
-- Gap Detection Agent  
-- Verification Agent
-- Assumption Detection Agent
-- Implementation Planning Agent
-- Quality Control Agent
+- Orchestrator Agents (4)
+  - Workflow Director: Routes conversations based on intent
+  - Parallel Coordinator: Manages concurrent agent execution
+  - Context Pruner: Optimizes conversation state
+  - State Manager: Handles agent lifecycle transitions
 
-3. Support Agents
-- Reference Analysis Agent
-- Citation Tracking Agent
-- Context Management Agent
-- Capacity Monitoring Agent
-- State Persistence Agent
+### State Management
+- Agent States
+  - IDLE: Available for new tasks
+  - ACTIVE: Currently processing
+  - BLOCKED: Waiting on dependencies
+  - FAILED: Error condition
+  - COMPLETED: Task finished
 
-## Agent Dependencies
+### Dependencies
+- Hierarchical Structure
+  - Level 1: Orchestrator agents
+  - Level 2: Core agents 
+  - Level 3: Support agents
+  - Strict dependency order enforcement
 
-Hierarchical Structure:
-```
-Orchestrator
-├── Core Agents
-│   ├── Question Generator
-│   ├── Gap Detector 
-│   └── Verifier
-├── Support Agents
-│   ├── Reference Analyzer
-│   └── Context Manager
-└── Quality Control
-    ├── Assumption Detector
-    └── Implementation Planner
-```
+### Workflow Patterns
+- Sequential Processing
+  1. Intent Classification
+  2. Core Agent Assignment
+  3. Support Agent Distribution
+  4. Result Consolidation
 
-## Workflow Patterns (Importance: 90/100)
+- Parallel Execution
+  - Compatible agents run concurrently
+  - Automatic deadlock prevention
+  - Resource allocation based on priority
 
-1. Exploration Workflow
-- Question Generator → Gap Detector → Verifier
-- Context preservation between transitions
-- Assumption detection gates
-
-2. Decision Workflow  
-- Verifier → Implementation Planner → Quality Control
-- Reference validation requirements
-- State transition rules
-
-3. Research Workflow
-- Reference Analyzer → Gap Detector → Question Generator
-- Citation tracking integration
-- Context enrichment paths
-
-## State Management (Importance: 85/100)
-
-Three primary states:
-1. Exploring
-- Active agent processing
-- Context accumulation
-- Citation gathering
-
-2. Decided
-- Verification complete
-- Implementation plan created
-- Dependencies mapped
-
-3. Parked
-- Temporary state suspension
-- Context preservation
-- Reactivation rules
-
-## Agent Communication Protocol
-
-1. Synchronous Patterns
-- Direct agent-to-agent handoffs
-- Context preservation requirements
-- State validation gates
-
-2. Asynchronous Patterns  
-- Parallel processing workflows
-- Non-blocking transitions
-- State reconciliation rules
+### Communication Protocols
+- Inter-agent messaging system
+- Context preservation across transitions
+- State synchronization mechanism
+- Failure recovery patterns
 
 $END$
 

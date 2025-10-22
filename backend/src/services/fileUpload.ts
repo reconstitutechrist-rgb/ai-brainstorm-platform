@@ -4,6 +4,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import sharp from 'sharp';
+import mammoth from 'mammoth';
+import { PDFExtract } from 'pdf.js-extract';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -155,5 +157,111 @@ export class FileUploadService {
       ...ALLOWED_MIME_TYPES.document,
     ];
     return allAllowedTypes.includes(mimeType);
+  }
+
+  /**
+   * Extract content from uploaded file
+   * Returns extracted text for documents, or file path for images/videos
+   */
+  async extractContent(
+    file: Express.Multer.File
+  ): Promise<{ content: string; contentType: 'text' | 'image' | 'video' }> {
+    const category = this.getFileCategory(file.mimetype);
+
+    try {
+      switch (category) {
+        case 'image':
+          // For images, we'll pass the buffer directly to Claude's vision API
+          return {
+            content: file.path, // Return temp file path for images
+            contentType: 'image',
+          };
+
+        case 'video':
+          // For videos, return path (video analysis would be a future feature)
+          return {
+            content: file.path,
+            contentType: 'video',
+          };
+
+        case 'document':
+          // Extract text from documents
+          const extractedText = await this.extractTextFromDocument(file);
+          return {
+            content: extractedText,
+            contentType: 'text',
+          };
+
+        default:
+          throw new Error(`Unsupported file category: ${category}`);
+      }
+    } catch (error) {
+      console.error('[FileUpload] Content extraction error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract text content from document files
+   */
+  private async extractTextFromDocument(file: Express.Multer.File): Promise<string> {
+    const fileBuffer = await fs.readFile(file.path);
+
+    try {
+      // PDF extraction using pdf.js-extract
+      if (file.mimetype === 'application/pdf') {
+        console.log(`[FileUpload] Extracting text from PDF: ${file.originalname}`);
+        const pdfExtract = new PDFExtract();
+        const data = await pdfExtract.extractBuffer(fileBuffer);
+
+        // Combine text from all pages
+        const text = data.pages
+          .map(page => page.content.map(item => item.str).join(' '))
+          .join('\n\n');
+
+        console.log(`[FileUpload] Extracted ${text.length} characters from PDF`);
+        return text || `[PDF Document: ${file.originalname}]\n\nNo extractable text found in this PDF.`;
+      }
+
+      // Word document extraction using mammoth
+      if (
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.mimetype === 'application/msword'
+      ) {
+        console.log(`[FileUpload] Extracting text from Word document: ${file.originalname}`);
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
+        const text = result.value;
+        console.log(`[FileUpload] Extracted ${text.length} characters from Word document`);
+
+        if (result.messages.length > 0) {
+          console.log(`[FileUpload] Mammoth warnings:`, result.messages);
+        }
+
+        return text || `[Word Document: ${file.originalname}]\n\nNo extractable text found in this document.`;
+      }
+
+      // Plain text files
+      if (file.mimetype === 'text/plain' || file.mimetype === 'text/markdown') {
+        console.log(`[FileUpload] Reading text file: ${file.originalname}`);
+        const text = fileBuffer.toString('utf-8');
+        console.log(`[FileUpload] Read ${text.length} characters from text file`);
+        return text;
+      }
+
+      // CSV files
+      if (file.mimetype === 'text/csv') {
+        console.log(`[FileUpload] Reading CSV file: ${file.originalname}`);
+        const text = fileBuffer.toString('utf-8');
+        console.log(`[FileUpload] Read ${text.length} characters from CSV file`);
+        return text;
+      }
+
+      // For other document types (Excel, PowerPoint), return a placeholder
+      console.log(`[FileUpload] Document type ${file.mimetype} not yet supported for text extraction`);
+      return `[Document: ${file.originalname}]\n\nContent extraction for ${file.mimetype} files is not yet implemented. Supported formats: PDF, Word (.docx/.doc), Text, Markdown, CSV.`;
+    } catch (error) {
+      console.error(`[FileUpload] Text extraction error for ${file.originalname}:`, error);
+      return `[Document: ${file.originalname}]\n\nError extracting text from this document. The file has been uploaded successfully but content analysis may be limited.`;
+    }
   }
 }

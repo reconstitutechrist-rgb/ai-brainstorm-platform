@@ -5,6 +5,7 @@ import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
 import { documentsApi, agentsApi, generatedDocumentsApi } from '../services/api';
 import type { Document, DocumentFolder } from '../types';
+import '../styles/homepage.css';
 import {
   Database,
   Activity,
@@ -36,6 +37,14 @@ export const ProjectIntelligenceHub: React.FC = () => {
   const { currentProject } = useProjectStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'decisions' | 'generated-docs' | 'user-docs' | 'search'>('overview');
 
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
+
   if (!currentProject) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -62,7 +71,7 @@ export const ProjectIntelligenceHub: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -426,7 +435,7 @@ const DecisionTrailItem: React.FC<{ item: any; index: number; isDarkMode: boolea
 };
 
 // ============================================
-// GENERATED DOCS TAB (NEW)
+// GENERATED DOCS TAB (NEW) - Smart File System
 // ============================================
 const GeneratedDocsTab: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -438,8 +447,11 @@ const GeneratedDocsTab: React.FC = () => {
   const [generatingProgress, setGeneratingProgress] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [qualityScores, setQualityScores] = useState<Map<string, any>>(new Map());
+
+  // Smart folder system state
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['complete', 'incomplete']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (currentProject) {
@@ -454,7 +466,7 @@ const GeneratedDocsTab: React.FC = () => {
     setLoading(true);
     try {
       const response = await generatedDocumentsApi.getByProject(currentProject.id);
-      setDocuments(response.documents);
+      setDocuments(response.documents || []);
       if (response.documents.length > 0 && !selectedDoc) {
         setSelectedDoc(response.documents[0]);
       }
@@ -478,16 +490,76 @@ const GeneratedDocsTab: React.FC = () => {
   const loadRecommendations = async () => {
     if (!currentProject) return;
 
-    setLoadingRecommendations(true);
     try {
       const response = await generatedDocumentsApi.getRecommendations(currentProject.id);
       setRecommendations(response.recommendations);
     } catch (error) {
       console.error('Load recommendations error:', error);
-    } finally {
-      setLoadingRecommendations(false);
     }
   };
+
+  // Toggle folder expansion
+  const toggleFolder = (folder: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folder)) {
+        next.delete(folder);
+      } else {
+        next.add(folder);
+      }
+      return next;
+    });
+  };
+
+  // Toggle category expansion
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryKey)) {
+        next.delete(categoryKey);
+      } else {
+        next.add(categoryKey);
+      }
+      return next;
+    });
+  };
+
+  // Organize documents by completion and category
+  const organizeDocuments = () => {
+    const completeDocsMap: Record<string, any[]> = {
+      software_technical: [],
+      business: [],
+      development: [],
+    };
+    const incompleteDocsMap: Record<string, any[]> = {
+      software_technical: [],
+      business: [],
+      development: [],
+    };
+
+    documents.forEach((doc) => {
+      const completionPercent = doc.completion_percent ?? 0;
+      const category = doc.folder_category || 'development'; // Default to development if not set
+
+      if (completionPercent === 100) {
+        if (completeDocsMap[category]) {
+          completeDocsMap[category].push(doc);
+        }
+      } else {
+        if (incompleteDocsMap[category]) {
+          incompleteDocsMap[category].push(doc);
+        }
+      }
+    });
+
+    return { completeDocsMap, incompleteDocsMap };
+  };
+
+  const { completeDocsMap, incompleteDocsMap } = organizeDocuments();
+
+  // Count documents in each category
+  const completeCount = Object.values(completeDocsMap).flat().length;
+  const incompleteCount = Object.values(incompleteDocsMap).flat().length;
 
   const regenerateDocuments = async () => {
     if (!currentProject) return;
@@ -550,9 +622,16 @@ const GeneratedDocsTab: React.FC = () => {
     { type: 'vendor_comparison', label: '🔍 Vendor Comparison', description: 'Vendor options' },
   ];
 
+  // Category labels
+  const categoryLabels: Record<string, string> = {
+    software_technical: '⚙️ Software & Technical',
+    business: '💼 Business',
+    development: '👨‍💻 Development',
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Document List Sidebar */}
+      {/* Smart Folder Sidebar */}
       <div className="lg:col-span-1 space-y-4">
         {/* Regenerate All Button */}
         <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass`}>
@@ -593,110 +672,188 @@ const GeneratedDocsTab: React.FC = () => {
           )}
 
           <div className={`mt-3 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'} text-center`}>
-            {documents.length} / 11 documents generated
+            {documents.length} documents • {completeCount} complete • {incompleteCount} incomplete
           </div>
         </div>
 
-        {/* Recommendations Panel */}
-        {recommendations.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass border-2 border-green-metallic/30`}
-          >
-            <div className="flex items-center space-x-2 mb-3">
-              <Sparkles size={16} className="text-green-metallic" />
-              <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                Recommended Docs
-              </h3>
-            </div>
-            <p className={`text-xs mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              AI suggests generating these documents based on your project state
-            </p>
-            <div className="space-y-2">
-              {recommendations.map((rec, index) => {
-                const priorityColors = {
-                  high: 'bg-red-500/20 text-red-400 border-red-500/50',
-                  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-                  low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-                };
-                return (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'}`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColors[rec.priority as keyof typeof priorityColors]}`}>
-                        {rec.priority.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                      {rec.document_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                    </div>
-                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                      {rec.reason}
-                    </p>
-                    <p className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                      💡 {rec.estimated_value}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Document List */}
-        <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass`}>
+        {/* Smart Folder Structure */}
+        <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass max-h-[calc(100vh-400px)] overflow-y-auto scrollbar-thin`}>
           <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            Available Documents
+            Smart Folders
           </h3>
           <div className="space-y-2">
-            {documentTypes.map((docType) => {
-              const doc = documents.find(d => d.document_type === docType.type);
-              const qualityScore = doc ? qualityScores.get(doc.id) : null;
-              const getScoreColor = (score: number) => {
-                if (score >= 80) return 'bg-green-500/20 text-green-400 border-green-500/50';
-                if (score >= 60) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-                return 'bg-red-500/20 text-red-400 border-red-500/50';
-              };
-              return (
-                <button
-                  key={docType.type}
-                  onClick={() => setSelectedDoc(doc)}
-                  disabled={!doc}
-                  className={`w-full text-left p-3 rounded-xl transition-all ${
-                    selectedDoc?.document_type === docType.type
-                      ? 'bg-green-metallic text-white'
-                      : isDarkMode
-                      ? 'hover:bg-white/10 text-gray-300'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="font-medium text-sm">{docType.label}</div>
-                    {qualityScore && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded border ${
-                        selectedDoc?.document_type === docType.type
-                          ? 'bg-white/20 text-white border-white/40'
-                          : getScoreColor(qualityScore.overall_score)
-                      }`}>
-                        {qualityScore.overall_score}
-                      </span>
-                    )}
-                  </div>
-                  <div className={`text-xs ${
-                    selectedDoc?.document_type === docType.type
-                      ? 'text-white/80'
-                      : isDarkMode
-                      ? 'text-gray-500'
-                      : 'text-gray-500'
-                  }`}>
-                    {docType.description}
-                  </div>
-                </button>
-              );
-            })}
+            {/* Complete Folder */}
+            <div>
+              <button
+                onClick={() => toggleFolder('complete')}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                  isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FolderOpen size={18} className="text-green-400" />
+                  <span className="text-sm font-medium">Complete (100%)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                    {completeCount}
+                  </span>
+                  <span className={`transform transition-transform ${expandedFolders.has('complete') ? 'rotate-90' : ''}`}>
+                    ▶
+                  </span>
+                </div>
+              </button>
+
+              {/* Complete Categories */}
+              {expandedFolders.has('complete') && (
+                <div className="ml-6 mt-2 space-y-2">
+                  {Object.entries(completeDocsMap).map(([category, docs]) => {
+                    if (docs.length === 0) return null;
+                    const categoryKey = `complete-${category}`;
+                    return (
+                      <div key={categoryKey}>
+                        <button
+                          onClick={() => toggleCategory(categoryKey)}
+                          className={`w-full flex items-center justify-between p-2 rounded-lg transition-all text-sm ${
+                            isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                            {categoryLabels[category]}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs opacity-60">{docs.length}</span>
+                            <span className={`transform transition-transform text-xs ${expandedCategories.has(categoryKey) ? 'rotate-90' : ''}`}>
+                              ▶
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Documents in category */}
+                        {expandedCategories.has(categoryKey) && (
+                          <div className="ml-4 mt-1 space-y-1">
+                            {docs.map((doc) => (
+                              <button
+                                key={doc.id}
+                                onClick={() => setSelectedDoc(doc)}
+                                className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
+                                  selectedDoc?.id === doc.id
+                                    ? 'bg-green-metallic text-white'
+                                    : isDarkMode
+                                    ? 'hover:bg-white/10 text-gray-400'
+                                    : 'hover:bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="truncate">{doc.title}</span>
+                                  <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                                    selectedDoc?.id === doc.id
+                                      ? 'bg-white/20 text-white'
+                                      : 'bg-green-500/20 text-green-400'
+                                  }`}>
+                                    100%
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Incomplete Folder */}
+            <div>
+              <button
+                onClick={() => toggleFolder('incomplete')}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                  isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FolderOpen size={18} className="text-yellow-400" />
+                  <span className="text-sm font-medium">Incomplete (&lt;100%)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                    {incompleteCount}
+                  </span>
+                  <span className={`transform transition-transform ${expandedFolders.has('incomplete') ? 'rotate-90' : ''}`}>
+                    ▶
+                  </span>
+                </div>
+              </button>
+
+              {/* Incomplete Categories */}
+              {expandedFolders.has('incomplete') && (
+                <div className="ml-6 mt-2 space-y-2">
+                  {Object.entries(incompleteDocsMap).map(([category, docs]) => {
+                    if (docs.length === 0) return null;
+                    const categoryKey = `incomplete-${category}`;
+                    return (
+                      <div key={categoryKey}>
+                        <button
+                          onClick={() => toggleCategory(categoryKey)}
+                          className={`w-full flex items-center justify-between p-2 rounded-lg transition-all text-sm ${
+                            isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                            {categoryLabels[category]}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs opacity-60">{docs.length}</span>
+                            <span className={`transform transition-transform text-xs ${expandedCategories.has(categoryKey) ? 'rotate-90' : ''}`}>
+                              ▶
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Documents in category */}
+                        {expandedCategories.has(categoryKey) && (
+                          <div className="ml-4 mt-1 space-y-1">
+                            {docs.map((doc) => {
+                              const completionPercent = doc.completion_percent ?? 0;
+                              const completionColor =
+                                completionPercent >= 75 ? 'text-green-400 bg-green-500/20' :
+                                completionPercent >= 50 ? 'text-yellow-400 bg-yellow-500/20' :
+                                'text-red-400 bg-red-500/20';
+                              return (
+                                <button
+                                  key={doc.id}
+                                  onClick={() => setSelectedDoc(doc)}
+                                  className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
+                                    selectedDoc?.id === doc.id
+                                      ? 'bg-green-metallic text-white'
+                                      : isDarkMode
+                                      ? 'hover:bg-white/10 text-gray-400'
+                                      : 'hover:bg-gray-100 text-gray-600'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="truncate">{doc.title}</span>
+                                    <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                                      selectedDoc?.id === doc.id
+                                        ? 'bg-white/20 text-white'
+                                        : completionColor
+                                    }`}>
+                                      {completionPercent}%
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -708,10 +865,26 @@ const GeneratedDocsTab: React.FC = () => {
             <>
               <div className="p-6 border-b border-green-metallic/20">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                      {selectedDoc.title}
-                    </h2>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        {selectedDoc.title}
+                      </h2>
+                      {/* Completion Badge */}
+                      {selectedDoc.completion_percent !== undefined && (
+                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                          selectedDoc.completion_percent === 100
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                            : selectedDoc.completion_percent >= 75
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                            : selectedDoc.completion_percent >= 50
+                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+                            : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                        }`}>
+                          {selectedDoc.completion_percent}% Complete
+                        </span>
+                      )}
+                    </div>
                     <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       Last updated: {format(new Date(selectedDoc.updated_at), 'MMM d, yyyy h:mm a')} • Version {selectedDoc.version}
                     </p>
@@ -741,6 +914,51 @@ const GeneratedDocsTab: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Missing Fields Panel for Incomplete Documents */}
+                {selectedDoc.completion_percent !== undefined &&
+                 selectedDoc.completion_percent < 100 &&
+                 selectedDoc.missing_fields &&
+                 selectedDoc.missing_fields.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-4 rounded-xl ${isDarkMode ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'}`}
+                  >
+                    <div className="flex items-start space-x-2">
+                      <div className="text-yellow-500 mt-0.5">⚠️</div>
+                      <div className="flex-1">
+                        <h3 className={`font-bold mb-2 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
+                          Missing Information
+                        </h3>
+                        <p className={`text-sm mb-3 ${isDarkMode ? 'text-yellow-400/80' : 'text-yellow-700'}`}>
+                          This document needs more information from your project's decided items. Add these details to reach 100% completion:
+                        </p>
+                        <div className="space-y-1.5">
+                          {selectedDoc.missing_fields.map((field: string, idx: number) => (
+                            <div key={idx} className="flex items-start space-x-2 text-sm">
+                              <span className={isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}>•</span>
+                              <span className={isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}>
+                                {field}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={regenerateDocuments}
+                          disabled={generating}
+                          className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            generating
+                              ? 'bg-yellow-500/30 cursor-not-allowed'
+                              : 'bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50'
+                          } ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}
+                        >
+                          {generating ? 'Regenerating...' : 'Re-examine with Current Decisions'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Quality Score Panel */}
                 {qualityScores.get(selectedDoc.id) && (

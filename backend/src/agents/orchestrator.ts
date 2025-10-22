@@ -7,6 +7,8 @@ import { ContextManagerAgent } from './contextManager';
 import { ReferenceAnalysisAgent } from './referenceAnalysis';
 import { ReviewerAgent } from './reviewer';
 import { ResourceManagerAgent } from './resourceManager';
+import { DocumentResearchAgent } from './documentResearchAgent'; // Phase 3.1: Conversational Document Research
+import { ResearchSuggestionAgent } from './researchSuggestionAgent'; // Phase 3.2: Smart Research Suggestions
 import { ContextPruner } from '../services/contextPruner';
 import { ResponseCache } from '../services/responseCache';
 import { TokenMetrics } from '../services/tokenMetrics';
@@ -39,6 +41,8 @@ export class IntegrationOrchestrator {
     this.agents.set('referenceAnalysis', new ReferenceAnalysisAgent());
     this.agents.set('reviewer', new ReviewerAgent());
     this.agents.set('resourceManager', new ResourceManagerAgent());
+    this.agents.set('documentResearch', new DocumentResearchAgent()); // Phase 3.1: Document Research
+    this.agents.set('researchSuggestion', new ResearchSuggestionAgent()); // Phase 3.2: Research Suggestions
 
     // Legacy aliases for backwards compatibility during migration
     // ConversationAgent aliases
@@ -63,12 +67,14 @@ export class IntegrationOrchestrator {
     this.agents.set('development', this.agents.get('strategicPlanner'));
     this.agents.set('prioritization', this.agents.get('strategicPlanner'));
 
-    console.log('✓ FINAL Consolidation COMPLETE: 17→5 core agents + 3 support = 8 total');
+    console.log('✓ FINAL Consolidation COMPLETE: 17→5 core agents + 5 support = 10 total');
     console.log('  - ConversationAgent (Brainstorming+GapDetection+Clarification+Questioner)');
     console.log('  - PersistenceManager (Recorder+Verification+VersionControl)');
     console.log('  - QualityAuditor (Verification+AssumptionBlocker+AccuracyAuditor+ConsistencyGuardian)');
     console.log('  - StrategicPlanner (Translation+Development+Prioritization)');
     console.log('  - ContextManager');
+    console.log('  - DocumentResearchAgent (Phase 3.1)');
+    console.log('  - ResearchSuggestionAgent (Phase 3.2)');
   }
 
   async determineWorkflow(intent: IntentClassification, userMessage: string): Promise<Workflow> {
@@ -137,6 +143,12 @@ export class IntegrationOrchestrator {
         { agentName: 'clarification', action: 'generateQuestion', condition: 'if_conflicts_found' },
         { agentName: 'recorder', action: 'updateConfidenceScores', condition: 'if_confirmations_found' },
       ],
+
+      document_research: [
+        { agentName: 'documentResearch', action: 'analyzeAndSuggest' },
+        { agentName: 'qualityAuditor', action: 'validateSuggestions' },
+        { agentName: 'recorder', action: 'recordDocumentIntent' },
+      ],
     };
 
     const workflow: Workflow = {
@@ -198,6 +210,7 @@ export class IntegrationOrchestrator {
           // Store reviewer findings for use by recorder
           if (step.agentName === 'reviewer' && result.metadata && result.metadata.findings) {
             reviewData = result.metadata;
+            console.log(`[Orchestrator] Stored reviewData from reviewer: ${reviewData.findings.length} findings, status=${reviewData.status}`);
           }
         }
       } else {
@@ -406,16 +419,19 @@ export class IntegrationOrchestrator {
       case 'record':
         // Check if this is part of a review workflow with review data
         if (workflow.intent === 'reviewing' && reviewData && reviewData.findings) {
-          console.log(`[Orchestrator] Review workflow - using reviewData with ${reviewData.findings.length} findings`);
+          console.log(`[Orchestrator] ✓ Review workflow detected - using recordFromReview with ${reviewData.findings.length} findings`);
+          console.log(`[Orchestrator] ReviewData status: ${reviewData.status}, score: ${reviewData.score}`);
           // Use the new recordFromReview method
-          return await agent.recordFromReview(
+          const recordResult = await agent.recordFromReview(
             reviewData.findings,
             conversationHistory,
             projectState
           );
+          console.log(`[Orchestrator] recordFromReview completed: itemsToRecord=${recordResult.metadata?.itemsToRecord?.length || 0}`);
+          return recordResult;
         }
         // Default behavior: Record the user's message to project state (with workflow intent for context-aware verification)
-        console.log(`[Orchestrator] Using default record method with intent: ${workflow.intent}`);
+        console.log(`[Orchestrator] Using default record method with intent: ${workflow.intent}, reviewData=${reviewData ? 'exists but no findings' : 'null'}`);
         return await agent.record({ message: userMessage }, projectState, userMessage, workflow.intent, conversationHistory);
 
       case 'trackChange':
@@ -494,6 +510,37 @@ export class IntegrationOrchestrator {
           };
         }
         return null;
+
+      case 'analyzeAndSuggest':
+        // Phase 3.1: Document Research - Auto-analyze project and suggest documents
+        return await agent.analyzeProjectAndSuggest({
+          title: projectState.title || 'Project',
+          items: [
+            ...(projectState.decided || []),
+            ...(projectState.exploring || []),
+            ...(projectState.parked || []),
+          ],
+        });
+
+      case 'validateSuggestions':
+        // Validate document suggestions against project state
+        const researchResult = this.getLastResult(previousResults, 'documentResearch');
+        if (researchResult && researchResult.metadata?.suggestedDocuments) {
+          return await agent.validateDocumentSuggestions(
+            researchResult.metadata.suggestedDocuments,
+            projectState
+          );
+        }
+        return null;
+
+      case 'recordDocumentIntent':
+        // Record the user's intent to research documents
+        const validatedSuggestions = this.getLastResult(previousResults, 'qualityAuditor');
+        return await agent.recordDocumentResearchIntent(
+          userMessage,
+          projectState,
+          validatedSuggestions?.metadata || {}
+        );
 
       default:
         console.warn(`[Orchestrator] Unknown action: ${action}`);

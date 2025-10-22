@@ -6,6 +6,7 @@ import { useChatStore } from '../store/chatStore';
 import { useSessionStore } from '../store/sessionStore';
 import { useAgentStore } from '../store/agentStore';
 import { useChat, useMessageLoader } from '../hooks';
+import '../styles/homepage.css';
 import {
   ChatPageHeader,
   ChatContainer,
@@ -28,9 +29,12 @@ import { SessionHistoryModal } from '../components/SessionHistoryModal';
 import { SessionTrackingPanel } from '../components/SessionTrackingPanel';
 import { FloatingAgentBubbles } from '../components/FloatingAgentBubbles';
 import { AgentChatWindow } from '../components/AgentChatWindow';
+import { SuggestionsSidePanel } from '../components/SuggestionsSidePanel';
+import { SuggestionsToggleButton } from '../components/SuggestionsToggleButton';
 import { useCardCapacity } from '../hooks/useCardCapacity';
 import { useArchive } from '../hooks/useArchive';
 import { useMemo } from 'react';
+import { projectsApi, sessionsApi } from '../services/api';
 
 export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -54,7 +58,32 @@ export const ChatPage: React.FC = () => {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isSuggestionsPanelOpen, setIsSuggestionsPanelOpen] = useState(false);
+  const [suggestionCount, setSuggestionCount] = useState(0);
   const hasShownSummaryRef = useRef(false);
+
+  // Apply homepage background
+  useEffect(() => {
+    document.body.classList.add('homepage-background');
+    return () => {
+      document.body.classList.remove('homepage-background');
+    };
+  }, []);
+
+  // Debug: Log current project when it changes
+  useEffect(() => {
+    if (currentProject) {
+      console.log('[ChatPage] Current project updated:', {
+        id: currentProject.id,
+        title: currentProject.title,
+        itemsCount: currentProject.items?.length || 0,
+        decidedCount: currentProject.items?.filter(i => i.state === 'decided').length || 0,
+        exploringCount: currentProject.items?.filter(i => i.state === 'exploring').length || 0,
+      });
+    } else {
+      console.log('[ChatPage] No current project');
+    }
+  }, [currentProject]);
 
   // Custom hooks
   const { sendMessage, isSending } = useChat(currentProject?.id);
@@ -65,9 +94,17 @@ export const ChatPage: React.FC = () => {
 
   // Get active items (decided + exploring, non-archived)
   const activeItems = useMemo(() => {
-    return projectItems.filter(
+    const filtered = projectItems.filter(
       item => (item.state === 'decided' || item.state === 'exploring') && !item.isArchived
     );
+    console.log('[ChatPage] Active items for canvas:', {
+      totalProjectItems: projectItems.length,
+      activeItemsCount: filtered.length,
+      decidedCount: projectItems.filter(i => i.state === 'decided').length,
+      exploringCount: projectItems.filter(i => i.state === 'exploring').length,
+      archivedCount: projectItems.filter(i => i.isArchived).length,
+    });
+    return filtered;
   }, [projectItems]);
 
   // Archive hook
@@ -90,6 +127,67 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     hasShownSummaryRef.current = false;
   }, [currentProject?.id]);
+
+  // Load suggestion count when project changes
+  useEffect(() => {
+    const loadSuggestionCount = async () => {
+      if (currentProject && user) {
+        try {
+          const response = await projectsApi.getSuggestions(currentProject.id);
+          if (response.success && response.suggestions) {
+            setSuggestionCount(response.suggestions.length);
+          }
+        } catch (error) {
+          console.error('Failed to load suggestion count:', error);
+        }
+      }
+    };
+
+    loadSuggestionCount();
+    // Refresh suggestion count every 30 seconds
+    const interval = setInterval(loadSuggestionCount, 30000);
+    return () => clearInterval(interval);
+  }, [currentProject, user, messages]);
+
+  // Auto-start and auto-end sessions
+  useEffect(() => {
+    let sessionStarted = false;
+
+    const startSession = async () => {
+      if (currentProject && user) {
+        try {
+          console.log('[ChatPage] Starting session for project:', currentProject.id);
+          const response = await sessionsApi.startSession(user.id, currentProject.id);
+          if (response.success) {
+            sessionStarted = true;
+            console.log('[ChatPage] Session started successfully:', response.data);
+          }
+        } catch (error) {
+          console.error('[ChatPage] Failed to start session:', error);
+        }
+      }
+    };
+
+    const endSession = async () => {
+      if (sessionStarted && currentProject && user) {
+        try {
+          console.log('[ChatPage] Ending session for project:', currentProject.id);
+          await sessionsApi.endSession(user.id, currentProject.id);
+          console.log('[ChatPage] Session ended successfully');
+        } catch (error) {
+          console.error('[ChatPage] Failed to end session:', error);
+        }
+      }
+    };
+
+    // Start session when component mounts or project changes
+    startSession();
+
+    // End session on unmount or when project changes
+    return () => {
+      endSession();
+    };
+  }, [currentProject?.id, user?.id]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !currentProject || isSending || !isSessionActive) {
@@ -177,7 +275,7 @@ export const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-[1800px] mx-auto">
+    <div className="min-h-screen max-w-[1800px] mx-auto">
       {/* Header with session controls */}
       <ChatPageHeader
         onHistoryClick={() => setShowHistoryModal(true)}
@@ -298,6 +396,21 @@ export const ChatPage: React.FC = () => {
             onSendMessage={handleAgentMessageSend}
           />
         ))}
+
+      {/* Suggestions Toggle Button - Always visible */}
+      {!isSuggestionsPanelOpen && (
+        <SuggestionsToggleButton
+          onClick={() => setIsSuggestionsPanelOpen(true)}
+          suggestionCount={suggestionCount}
+          hasNewSuggestions={suggestionCount > 0}
+        />
+      )}
+
+      {/* Suggestions Side Panel */}
+      <SuggestionsSidePanel
+        isOpen={isSuggestionsPanelOpen}
+        onClose={() => setIsSuggestionsPanelOpen(false)}
+      />
     </div>
   );
 };

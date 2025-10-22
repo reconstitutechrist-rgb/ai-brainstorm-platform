@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { EmbeddingService } from './embeddingService';
+import { phase3Config } from '../config/phase3.config';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -15,6 +16,7 @@ export interface GeneratedDocument {
   version: number;
   created_at: string;
   updated_at: string;
+  metadata?: any;
 }
 
 export interface DocumentVersion {
@@ -235,6 +237,18 @@ export class GeneratedDocumentsService {
 
     if (error) {
       throw new Error(`Failed to save generated document: ${error.message}`);
+    }
+
+    // Generate embedding for the document (Phase 3.3)
+    if (data && content && content.trim().length > 0) {
+      this.embeddingService.generateAndStoreDocumentEmbedding(data.id, content)
+        .then(() => {
+          console.log(`[GeneratedDocs] ✅ Embedding generated for ${documentType}`);
+        })
+        .catch((err) => {
+          console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for ${documentType}:`, err);
+          // Don't fail the whole document generation if embedding fails
+        });
     }
 
     return data;
@@ -934,6 +948,213 @@ Format as JSON array:
   }
 
   /**
+   * Generate a document from research query results
+   * Phase 3.1: Automatic Document Generation from Research
+   */
+  async generateFromResearch(
+    researchQueryId: string,
+    documentType: GeneratedDocument['document_type'],
+    userId?: string
+  ): Promise<GeneratedDocument> {
+    // Fetch the research query
+    const { data: researchQuery, error: queryError } = await this.supabase
+      .from('research_queries')
+      .select('*')
+      .eq('id', researchQueryId)
+      .single();
+
+    if (queryError || !researchQuery) {
+      throw new Error(`Research query not found: ${queryError?.message}`);
+    }
+
+    if (researchQuery.status !== 'completed') {
+      throw new Error('Research query is not completed yet');
+    }
+
+    // Fetch the project
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', researchQuery.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Project not found: ${projectError?.message}`);
+    }
+
+    // Fetch saved references from the research
+    let researchReferences: any[] = [];
+    if (researchQuery.metadata?.savedReferences && researchQuery.metadata.savedReferences.length > 0) {
+      const { data: refs } = await this.supabase
+        .from('references')
+        .select('*')
+        .in('id', researchQuery.metadata.savedReferences);
+
+      researchReferences = refs || [];
+    }
+
+    // Build context enriched with research findings
+    const researchContext = {
+      query: researchQuery.query,
+      synthesis: researchQuery.metadata?.synthesis || '',
+      sources: researchQuery.metadata?.sources || [],
+      references: researchReferences,
+      duration: researchQuery.metadata?.duration || 0,
+      timestamp: researchQuery.created_at,
+    };
+
+    // Get existing project context
+    const { data: uploadedDocs } = await this.supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('created_at', { ascending: false });
+
+    const baseContext = {
+      project,
+      items: project.items || [],
+      uploadedDocuments: uploadedDocs || [],
+      researchContext, // Add research context
+    };
+
+    // Use semantic search for relevant messages
+    let relevantMessages: any[] = [];
+    try {
+      const semanticMessages = await this.embeddingService.findRelevantMessagesForDocument(
+        documentType,
+        project.id,
+        50
+      );
+      relevantMessages = semanticMessages;
+    } catch (error) {
+      console.error('Semantic search failed, falling back to recent messages:', error);
+      const { data: recentMessages } = await this.supabase
+        .from('messages')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      relevantMessages = recentMessages || [];
+    }
+
+    const context = {
+      ...baseContext,
+      messages: relevantMessages,
+    };
+
+    // Generate prompt with research context
+    const prompt = this.getPromptForDocumentTypeWithResearch(documentType, context);
+
+    // Call Claude API to generate the document
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const content = message.content[0].type === 'text' ? message.content[0].text : '';
+    const title = this.getTitleForDocumentType(documentType, context.project.title);
+
+    // Upsert the document
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .upsert(
+        {
+          project_id: project.id,
+          document_type: documentType,
+          title,
+          content,
+          metadata: {
+            generated_from_research: true,
+            research_query_id: researchQueryId,
+            research_query: researchQuery.query,
+            generated_by: userId,
+            generated_at: new Date().toISOString(),
+          },
+        },
+        {
+          onConflict: 'project_id,document_type',
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save generated document: ${error.message}`);
+    }
+
+    console.log(`[GeneratedDocs] Generated ${documentType} from research query ${researchQueryId}`);
+
+    // Generate embedding for the research-generated document (Phase 3.3)
+    if (data && data.content && data.content.trim().length > 0) {
+      this.embeddingService.generateAndStoreDocumentEmbedding(data.id, data.content)
+        .then(() => {
+          console.log(`[GeneratedDocs] ✅ Embedding generated for research-based ${documentType}`);
+        })
+        .catch((err) => {
+          console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for research-based ${documentType}:`, err);
+          // Don't fail the whole document generation if embedding fails
+        });
+    }
+
+    return data;
+  }
+
+  /**
+   * Get prompt for document type with research context integration
+   */
+  private getPromptForDocumentTypeWithResearch(
+    documentType: GeneratedDocument['document_type'],
+    context: any
+  ): string {
+    const { researchContext } = context;
+
+    // Build research findings summary
+    const researchSummary = researchContext ? `
+RESEARCH FINDINGS:
+Query: "${researchContext.query}"
+Date: ${new Date(researchContext.timestamp).toLocaleDateString()}
+Duration: ${researchContext.duration}ms
+
+Research Synthesis:
+${researchContext.synthesis}
+
+Research Sources (${researchContext.sources?.length || 0}):
+${researchContext.sources?.map((s: any, idx: number) =>
+  `${idx + 1}. ${s.title || 'Untitled'}
+   URL: ${s.url}
+   ${s.analysis ? `Analysis: ${s.analysis.substring(0, 200)}...` : ''}`
+).join('\n\n') || 'No sources available'}
+
+Saved References (${researchContext.references?.length || 0}):
+${researchContext.references?.map((r: any, idx: number) =>
+  `${idx + 1}. ${r.title}
+   Type: ${r.type}
+   ${r.content ? `Content Preview: ${r.content.substring(0, 150)}...` : ''}`
+).join('\n\n') || 'No references saved'}
+` : '';
+
+    // Get base prompt and enhance with research context
+    const basePrompt = this.getPromptForDocumentType(documentType, context);
+
+    if (!researchContext) {
+      return basePrompt;
+    }
+
+    // Prepend research context to the base prompt
+    return `${researchSummary}
+
+${basePrompt}
+
+IMPORTANT: Incorporate the research findings above into the document. Use the research synthesis, sources, and references to provide evidence-based insights and recommendations. Cite specific sources where appropriate using markdown links.`;
+  }
+
+  /**
    * Calculate quality score for a document
    */
   async calculateQualityScore(documentId: string): Promise<QualityScore> {
@@ -1029,5 +1250,230 @@ Format as JSON:
       issues: aiScores.issues || [],
       suggestions: aiScores.suggestions || [],
     };
+  }
+
+  /**
+   * Check if a document needs re-examination based on project changes
+   * Phase 3.1: Re-examination System
+   */
+  async checkIfNeedsReexamination(documentId: string): Promise<{
+    needsReexamination: boolean;
+    reason?: string;
+    decidedItemsChanged: number;
+    newDecidedItems: number;
+  }> {
+    // Get the document with its metadata
+    const { data: document, error: docError } = await this.supabase
+      .from('generated_documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (docError || !document) {
+      throw new Error(`Failed to fetch document: ${docError?.message}`);
+    }
+
+    // Get current project state
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', document.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    const currentDecidedItems = project.items?.filter((i: any) => i.state === 'decided') || [];
+    const sourceItemsHash = document.metadata?.source_items_hash || '';
+    const sourceItemsCount = document.metadata?.source_items_count || 0;
+
+    // Calculate hash of current decided items
+    const currentItemsText = currentDecidedItems.map((item: any) => item.text).sort().join('|');
+    const currentHash = this.simpleHash(currentItemsText);
+
+    // Check if hash changed or count changed significantly
+    const hashChanged = sourceItemsHash !== '' && currentHash !== sourceItemsHash;
+    const countDifference = Math.abs(currentDecidedItems.length - sourceItemsCount);
+    const significantCountChange = countDifference >= phase3Config.reexamination.significantChangeThreshold;
+
+    let needsReexamination = false;
+    let reason = '';
+    const decidedItemsChanged = hashChanged ? countDifference : 0;
+    const newDecidedItems = Math.max(0, currentDecidedItems.length - sourceItemsCount);
+
+    if (hashChanged) {
+      needsReexamination = true;
+      reason = `Project decisions have changed. ${decidedItemsChanged} items modified, ${newDecidedItems} new items added.`;
+    } else if (significantCountChange) {
+      needsReexamination = true;
+      reason = `Significant project changes detected. ${newDecidedItems} new decided items added.`;
+    }
+
+    return {
+      needsReexamination,
+      reason,
+      decidedItemsChanged,
+      newDecidedItems,
+    };
+  }
+
+  /**
+   * Re-examine and regenerate a document with current project data
+   * Phase 3.1: Re-examination System
+   */
+  async reexamineDocument(documentId: string, userId?: string): Promise<{
+    document: GeneratedDocument;
+    changes: string[];
+    previousVersion: number;
+  }> {
+    // Get the current document
+    const document = await this.getById(documentId);
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    const previousVersion = document.version;
+    const previousContent = document.content;
+
+    // Get current project data
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', document.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    // Regenerate the document with current project data
+    // Build the context for document regeneration
+    const items = project.items || [];
+    const decidedItems = items.filter((i: any) => i.state === 'decided');
+    const exploringItems = items.filter((i: any) => i.state === 'exploring');
+    const rejectedItems = items.filter((i: any) => i.state === 'rejected');
+
+    const baseContext = {
+      project: { title: project.title, description: project.description || '' },
+      items,
+      decidedItems,
+      exploringItems,
+      rejectedItems,
+      messages: [],
+      uploadedDocuments: [],
+    };
+
+    const prompt = this.getPromptForDocumentType(document.document_type, baseContext);
+
+    // Call Claude API to regenerate
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const newContent = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    // Calculate what changed
+    const changes = await this.identifyChanges(previousContent, newContent);
+
+    // Update the document and create a new version
+    const { data: updated, error: updateError } = await this.supabase
+      .from('generated_documents')
+      .update({
+        content: newContent,
+        version: previousVersion + 1,
+        updated_at: new Date().toISOString(),
+        metadata: {
+          ...document.metadata,
+          last_reexamined_at: new Date().toISOString(),
+          reexamined_by: userId,
+          source_items_count: project.items?.filter((i: any) => i.state === 'decided').length || 0,
+          source_items_hash: this.simpleHash(
+            project.items?.filter((i: any) => i.state === 'decided')
+              .map((item: any) => item.text)
+              .sort()
+              .join('|') || ''
+          ),
+        },
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to update document: ${updateError.message}`);
+    }
+
+    // Create version history entry
+    await this.supabase.from('document_versions').insert([{
+      document_id: documentId,
+      version_number: previousVersion,
+      content: previousContent,
+      title: document.title,
+      change_summary: `Re-examined with updated project data`,
+      change_reason: 'Project decisions changed',
+      created_by: userId,
+      created_at: document.updated_at,
+    }]);
+
+    return {
+      document: updated,
+      changes,
+      previousVersion,
+    };
+  }
+
+  /**
+   * Identify changes between two document versions
+   * Phase 3.1: Re-examination System
+   */
+  private async identifyChanges(oldContent: string, newContent: string): Promise<string[]> {
+    const truncLength = phase3Config.reexamination.contentTruncationLength;
+    const prompt = `Compare these two versions of a document and identify the KEY changes in bullet points.
+
+OLD VERSION:
+${oldContent.substring(0, truncLength)}
+
+NEW VERSION:
+${newContent.substring(0, truncLength)}
+
+List ONLY the significant changes (new sections, removed content, major updates).
+Return as a JSON array of strings, max 5 changes.
+
+Example: ["Added technical requirements section", "Updated timeline from Q2 to Q3", "Removed vendor comparison table"]`;
+
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const responseText = message.content[0].type === 'text' ? message.content[0].text : '[]';
+      const changesMatch = responseText.match(/\[[\s\S]*?\]/);
+      if (changesMatch) {
+        return JSON.parse(changesMatch[0]);
+      }
+      return ['Content updated with current project data'];
+    } catch (error) {
+      console.error('Error identifying changes:', error);
+      return ['Content updated with current project data'];
+    }
+  }
+
+  /**
+   * Simple hash function for detecting content changes
+   * Phase 3.1: Re-examination System
+   */
+  private simpleHash(text: string): string {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
   }
 }

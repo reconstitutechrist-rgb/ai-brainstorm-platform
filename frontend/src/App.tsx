@@ -13,7 +13,6 @@ import { LoginPage } from './pages/LoginPage';
 import { CreateProjectModal } from './components/modals/CreateProjectModal';
 import { SandboxMode, SandboxToggleButton } from './components/SandboxMode';
 import { SessionSummary } from './components/SessionManager';
-import { AgentSuggestions } from './components/AgentSuggestions';
 import { UniversalSearch } from './components/UniversalSearch';
 import { useThemeStore } from './store/themeStore';
 import { useUserStore } from './store/userStore';
@@ -157,7 +156,6 @@ function App() {
           <CreateProjectModal />
           <SandboxMode />
           <SandboxToggleButton />
-          <AgentSuggestions />
           <UniversalSearch />
         </>
       )}
