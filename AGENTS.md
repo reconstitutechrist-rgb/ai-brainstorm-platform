@@ -1,5 +1,9 @@
 # === USER INSTRUCTIONS ===
-Central coordinator managing 8 specialized AI agents through configurable workflows. Implements unique business logic for intent-based agent selection, parallel execution chains, and cross-agent context sharing.
+Central coordinator managing 9 specialized AI agents through configurable workflows. Implements unique business logic for intent-based agent selection, parallel execution chains, and cross-agent context sharing.
+
+For comprehensive agent documentation, see: [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
+
+**DEPRECATION NOTICE:** DocumentResearchAgent and ResearchSuggestionAgent have been replaced by UnifiedResearchAgent. See [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md) for migration guide.
 # === END USER INSTRUCTIONS ===
 
 
@@ -22,10 +26,13 @@ The system implements a multi-agent AI brainstorming platform with sophisticated
 ## Core Business Architecture
 
 1. Agent Orchestration Layer (90/100)
-- 8 specialized AI agents with distinct roles and capabilities 
-- Workflow categorization into core/support/orchestrator types
+- **9 specialized AI agents** with distinct roles and capabilities (consolidated from 17 original agents)
+- **Core Agents (5):** ConversationAgent, PersistenceManagerAgent, QualityAuditorAgent, StrategicPlannerAgent, ContextManagerAgent
+- **Support Agents (4):** ReferenceAnalysisAgent, ReviewerAgent, ResourceManagerAgent, UnifiedResearchAgent
+- Workflow categorization with intent-based routing
 - Multi-stage workflow processing with parallel/sequential execution
-- Context-aware agent routing based on conversation state
+- Context-aware agent routing with context pruning and response caching
+- **Unified Research System:** Single agent for web + document research (replaces LiveResearchAgent + DocumentResearchAgent)
 
 2. Idea Management Pipeline (85/100)
 - Four-stage progression: mentioned → exploring → refined → ready_to_extract

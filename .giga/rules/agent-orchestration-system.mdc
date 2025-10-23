@@ -1,69 +1,79 @@
 ---
-description: Defines orchestration patterns and workflows for a 17-agent AI system with specialized roles and dependencies
+description: Specifies the 17-agent orchestration system architecture, workflows, and dependencies for AI coordination
 ---
 
 
 # agent-orchestration-system
 
-## Core Agent Orchestration Structure
-Importance Score: 95/100
+## Core Agent Architecture
 
-### Agent Categories & Roles
-- Core Agents (5)
-  - Research Coordinator: Manages document analysis and synthesis
-  - Context Manager: Maintains conversation state and intent 
-  - Decision Recorder: Validates and persists key decisions
-  - Quality Auditor: Verifies assumptions and consistency
-  - Strategic Planner: Handles technical translation and priorities
+The system orchestrates 17 specialized AI agents organized in 4 tiers:
 
-- Support Agents (8)
-  - Reference Analyzer: Document parsing and extraction
-  - Gap Detector: Identifies missing information
-  - Assumption Validator: Flags unproven statements
-  - Citation Checker: Verifies source claims
-  - Consistency Monitor: Cross-reference validation
-  - Implementation Scorer: Complexity assessment
-  - Priority Manager: Dependency analysis
-  - Format Converter: Data standardization
+### Primary Agents (Tier 1)
+- ResearchAgent: Drives document/web research workflows
+- IdeationAgent: Handles creative exploration and refinement 
+- ValidationAgent: Performs cross-reference verification
+- SynthesisAgent: Combines multi-source insights
 
-- Orchestrator Agents (4)
-  - Workflow Director: Routes conversations based on intent
-  - Parallel Coordinator: Manages concurrent agent execution
-  - Context Pruner: Optimizes conversation state
-  - State Manager: Handles agent lifecycle transitions
+### Support Agents (Tier 2)
+- QualityAgent: Multi-stage quality inspection
+- GapAgent: Knowledge gap detection
+- ClarificationAgent: Ambiguity resolution
+- ConsistencyAgent: Cross-validation
 
-### State Management
-- Agent States
-  - IDLE: Available for new tasks
-  - ACTIVE: Currently processing
-  - BLOCKED: Waiting on dependencies
-  - FAILED: Error condition
-  - COMPLETED: Task finished
+### Specialized Agents (Tier 3)
+- DocumentAgent: Template-based doc generation
+- ReferenceAgent: Citation management
+- PrioritizationAgent: Task ranking
+- TranslationAgent: Format conversion
 
-### Dependencies
-- Hierarchical Structure
-  - Level 1: Orchestrator agents
-  - Level 2: Core agents 
-  - Level 3: Support agents
-  - Strict dependency order enforcement
+### Meta Agents (Tier 4)
+- OrchestrationAgent: Cross-agent coordination
+- ContextAgent: State/context management  
+- ProgressAgent: Stage tracking
+- BlockerAgent: Bottleneck detection
+- IntegrationAgent: System-wide synthesis
 
-### Workflow Patterns
-- Sequential Processing
-  1. Intent Classification
-  2. Core Agent Assignment
-  3. Support Agent Distribution
-  4. Result Consolidation
+## Workflow Patterns
 
-- Parallel Execution
-  - Compatible agents run concurrently
-  - Automatic deadlock prevention
-  - Resource allocation based on priority
+1. Research Workflow
+- ResearchAgent initiates queries
+- GapAgent analyzes coverage
+- ValidationAgent verifies sources
+- SynthesisAgent combines findings
 
-### Communication Protocols
-- Inter-agent messaging system
-- Context preservation across transitions
-- State synchronization mechanism
-- Failure recovery patterns
+2. Document Generation
+- DocumentAgent creates drafts
+- QualityAgent reviews content
+- ClarificationAgent resolves issues
+- ConsistencyAgent ensures alignment
+
+3. Ideation Process
+- IdeationAgent generates concepts
+- PrioritizationAgent ranks ideas
+- ValidationAgent checks feasibility
+- IntegrationAgent maps to project
+
+## State Management
+
+The OrchestrationAgent maintains:
+
+1. Agent States
+- active: Currently processing
+- standby: Ready for tasks
+- blocked: Awaiting dependencies
+
+2. Context Management
+- Project state snapshots
+- Cross-agent memory
+- Dependency tracking
+- State transition logs
+
+3. Progress Tracking
+- Stage completion status
+- Blocking conditions
+- Resource utilization
+- Agent synchronization
 
 $END$
 

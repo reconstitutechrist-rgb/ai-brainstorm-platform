@@ -7,8 +7,6 @@ import { ContextManagerAgent } from './contextManager';
 import { ReferenceAnalysisAgent } from './referenceAnalysis';
 import { ReviewerAgent } from './reviewer';
 import { ResourceManagerAgent } from './resourceManager';
-import { DocumentResearchAgent } from './documentResearchAgent'; // Phase 3.1: Conversational Document Research
-import { ResearchSuggestionAgent } from './researchSuggestionAgent'; // Phase 3.2: Smart Research Suggestions
 import { ContextPruner } from '../services/contextPruner';
 import { ResponseCache } from '../services/responseCache';
 import { TokenMetrics } from '../services/tokenMetrics';
@@ -41,8 +39,6 @@ export class IntegrationOrchestrator {
     this.agents.set('referenceAnalysis', new ReferenceAnalysisAgent());
     this.agents.set('reviewer', new ReviewerAgent());
     this.agents.set('resourceManager', new ResourceManagerAgent());
-    this.agents.set('documentResearch', new DocumentResearchAgent()); // Phase 3.1: Document Research
-    this.agents.set('researchSuggestion', new ResearchSuggestionAgent()); // Phase 3.2: Research Suggestions
 
     // Legacy aliases for backwards compatibility during migration
     // ConversationAgent aliases
@@ -67,14 +63,21 @@ export class IntegrationOrchestrator {
     this.agents.set('development', this.agents.get('strategicPlanner'));
     this.agents.set('prioritization', this.agents.get('strategicPlanner'));
 
-    console.log('✓ FINAL Consolidation COMPLETE: 17→5 core agents + 5 support = 10 total');
-    console.log('  - ConversationAgent (Brainstorming+GapDetection+Clarification+Questioner)');
-    console.log('  - PersistenceManager (Recorder+Verification+VersionControl)');
-    console.log('  - QualityAuditor (Verification+AssumptionBlocker+AccuracyAuditor+ConsistencyGuardian)');
-    console.log('  - StrategicPlanner (Translation+Development+Prioritization)');
-    console.log('  - ContextManager');
-    console.log('  - DocumentResearchAgent (Phase 3.1)');
-    console.log('  - ResearchSuggestionAgent (Phase 3.2)');
+    console.log('✓ Agent System Initialized: 9 active agents (5 core + 4 support)');
+    console.log('  Core Agents (5):');
+    console.log('    - ConversationAgent (Brainstorming+GapDetection+Clarification+Questioner)');
+    console.log('    - PersistenceManager (Recorder+Verification+VersionControl)');
+    console.log('    - QualityAuditor (Verification+AssumptionBlocker+AccuracyAuditor+ConsistencyGuardian)');
+    console.log('    - StrategicPlanner (Translation+Development+Prioritization)');
+    console.log('    - ContextManager');
+    console.log('  Support Agents (4):');
+    console.log('    - ReferenceAnalysisAgent');
+    console.log('    - ReviewerAgent');
+    console.log('    - ResourceManagerAgent');
+    console.log('    - UnifiedResearchAgent (use via API - replaces DocumentResearch+ResearchSuggestion)');
+    console.log('  Deprecated (backward compatibility only):');
+    console.log('    - DocumentResearchAgent → Use UnifiedResearchAgent with intent="document_discovery"');
+    console.log('    - ResearchSuggestionAgent → Use UnifiedResearchAgent with intent="gap_analysis"');
   }
 
   async determineWorkflow(intent: IntentClassification, userMessage: string): Promise<Workflow> {

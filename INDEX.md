@@ -47,7 +47,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 ### 5. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
 **Detailed technical summary**
 - Complete component checklist
-- All 8 AI agents described
+- All 9 AI agents described
 - Package dependencies
 - File structure
 - Known issues
@@ -73,9 +73,39 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ---
 
+## 🤖 AI Agent Documentation
+
+### 8. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
+**Comprehensive AI agent reference**
+- All 9 agents documented in detail
+- Core agents (5): Conversation, Persistence, Quality, Strategic Planning, Context
+- Support agents (4): Reference Analysis, Review, Resource Management, Unified Research
+- Agent consolidation history (17→9 agents)
+- Workflow examples and API integration
+- Perfect for: Understanding the agent system
+
+### 9. [UNIFIED_RESEARCH_COMPLETE.md](UNIFIED_RESEARCH_COMPLETE.md)
+**Unified research system overview**
+- How LiveResearch + DocumentResearch + ResearchSuggestion became UnifiedResearch
+- Multi-source search (web + documents)
+- Three research intents (research, document_discovery, gap_analysis)
+- AI-powered source selection
+- Perfect for: Understanding research capabilities
+
+### 10. [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md)
+**Migration guide for research APIs**
+- How to migrate from old research agents
+- API comparison tables
+- Code examples (before/after)
+- Feature mapping
+- Deprecation timeline
+- Perfect for: Migrating to unified research
+
+---
+
 ## 🏗️ Technical Documentation
 
-### 8. [ARCHITECTURE.md](ARCHITECTURE.md)
+### 11. [ARCHITECTURE.md](ARCHITECTURE.md)
 **System architecture diagrams**
 - System architecture diagram
 - Data flow visualization
@@ -85,7 +115,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 - Technology stack deep dive
 - Perfect for: Understanding how it all works
 
-### 9. [database/schema.sql](database/schema.sql)
+### 12. [database/schema.sql](database/schema.sql)
 **Database schema**
 - Table definitions
 - Indexes
@@ -98,7 +128,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 🔧 Troubleshooting & Support
 
-### 10. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+### 13. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 **Common issues and solutions**
 - Backend issues
 - Frontend issues
@@ -127,6 +157,12 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 #### **Learn how the system works**
 → [ARCHITECTURE.md](ARCHITECTURE.md)
 
+#### **Understand the AI agents**
+→ [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
+
+#### **Migrate to unified research**
+→ [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md)
+
 #### **Fix an error**
 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
@@ -146,9 +182,9 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 📊 Documentation Stats
 
-- **Total Documents**: 10 files
-- **Total Pages**: 100+
-- **Total Words**: 15,000+
+- **Total Documents**: 13 files
+- **Total Pages**: 150+
+- **Total Words**: 25,000+
 - **Coverage**: 100% complete
 
 ---
@@ -241,8 +277,10 @@ Database schema in standard SQL:
 ### For Developers
 1. [SETUP.md](SETUP.md) - Complete setup
 2. [ARCHITECTURE.md](ARCHITECTURE.md) - Understand architecture
-3. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Technical details
-4. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debug guide
+3. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md) - AI agent reference
+4. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Technical details
+5. [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md) - Research API migration
+6. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debug guide
 
 ### For Project Managers
 1. [PROJECT_STATUS.md](PROJECT_STATUS.md) - Current status
@@ -335,10 +373,13 @@ You now have access to complete documentation covering:
 | PROJECT_SUMMARY.md | Technical details | 8 pages | 2025-10-13 |
 | PROJECT_STATUS.md | Status report | 15 pages | 2025-10-13 |
 | COMPLETION_CHECKLIST.md | Checklist | 10 pages | 2025-10-13 |
+| **AGENTS_DOCUMENTATION.md** | **AI agent reference** | **40 pages** | **2025-10-21** |
+| **UNIFIED_RESEARCH_COMPLETE.md** | **Research system** | **8 pages** | **2025-10-21** |
+| **MIGRATION_UNIFIED_RESEARCH.md** | **Migration guide** | **12 pages** | **2025-10-21** |
 | ARCHITECTURE.md | Architecture | 20 pages | 2025-10-13 |
 | TROUBLESHOOTING.md | Debug guide | 12 pages | 2025-10-13 |
-| INDEX.md | This file | 5 pages | 2025-10-13 |
-| **TOTAL** | | **91 pages** | |
+| INDEX.md | This file | 6 pages | 2025-10-21 |
+| **TOTAL** | | **152 pages** | |
 
 ---
 

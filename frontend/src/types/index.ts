@@ -4,7 +4,7 @@ export interface Project {
   user_id: string; // UUID format from auth.users
   title: string;
   description: string;
-  status: 'decided' | 'exploring' | 'parked';
+  status: 'decided' | 'exploring' | 'parked' | 'rejected';
   items: ProjectItem[];
   clusters?: ClusterMetadata[]; // Canvas cluster metadata
   created_at: string;
@@ -22,7 +22,7 @@ export interface ClusterMetadata {
 export interface ProjectItem {
   id: string;
   text: string;
-  state: 'decided' | 'exploring' | 'parked';
+  state: 'decided' | 'exploring' | 'parked' | 'rejected';
   created_at: string;
   citation?: {
     userQuote: string;

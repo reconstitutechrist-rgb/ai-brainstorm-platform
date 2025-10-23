@@ -13,6 +13,7 @@ import {
   Search,
   Home,
   Globe,
+  TestTube,
 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: <Home size={20} />, path: '/home' },
   { id: 'projects', label: 'Projects', icon: <FolderOpen size={20} />, path: '/' },
   { id: 'chat', label: 'Chat', icon: <MessageSquare size={20} />, path: '/chat' },
+  { id: 'sandbox', label: 'Sandbox', icon: <TestTube size={20} />, path: '/sandbox' },
   { id: 'research', label: 'Research Hub', icon: <Search size={20} />, path: '/research' },
   { id: 'intelligence', label: 'Intelligence', icon: <Database size={20} />, path: '/intelligence' },
   { id: 'agents', label: 'Agents', icon: <Users size={20} />, path: '/agents' },

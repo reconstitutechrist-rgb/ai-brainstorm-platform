@@ -1,62 +1,59 @@
 ---
-description: Analyzes and documents conversation intent classification and workflow routing systems.
+description: Documents conversation intent classification system, workflow mapping, and conditional agent execution patterns
 ---
 
 
 # intent-classification-system
 
-## Core Intent Classification Pipeline
-Importance Score: 95/100
+Core intent classification system with 9 distinct conversation modes:
 
-Primary intent classification system identifies and routes conversations through 9 distinct modes:
+1. Research Intent Processing
+- Classification of queries into research, document_discovery, gap_analysis
+- Source selection algorithm based on intent mapping:
+  - research → web + docs
+  - document_discovery → docs only 
+  - gap_analysis → metadata analysis
 
-1. Brainstorming Intent
-- Free-form ideation mode
-- Pattern matching for creative exploration markers
-- Automatic transition to refinement when ideas stabilize
+2. Workflow Mapping
+- Intent-based agent selection and orchestration
+- Agent execution patterns based on intent:
+  - Research intents → Research + Context agents
+  - Technical intents → Expert + Verification agents
+  - Creative intents → Brainstorm + Refiner agents
 
-2. Decision Intent
-- Consensus-seeking conversation patterns
-- Citation and reference requirements enforced
-- Blocks progression without sufficient support data
+3. Agent Execution Rules
+- Sequential agent execution for dependent intents
+- Parallel execution for compatible agents:
+  - Research + Context allowed
+  - Expert + Research allowed
+  - Verification always last
 
-3. Research Intent
-- Triggers multi-agent research coordination
-- Automatic query refinement based on context
-- Research coverage scoring system
+4. Intent Transition Logic
+- State machine for conversation flow:
+  - research → document_discovery
+  - document_discovery → gap_analysis
+  - research → verification
+- Context preservation between transitions
+- Intent inheritance across related queries
 
-4. Exploring Intent
-- Open-ended investigation patterns
-- Maintains idea state machine transitions
-- Links related concepts for clustering
+5. Classification Confidence
+- Intent scoring (0-100) based on:
+  - Keyword matches
+  - Context alignment
+  - Historical patterns
+- Threshold-based intent selection:
+  - >85: Direct execution
+  - 60-85: Agent confirmation
+  - <60: User clarification
 
-## Workflow Mapping Engine
-Importance Score: 85/100
+Key domain-specific components:
+- 9 core conversation intents
+- Intent-based workflow mapping
+- Agent execution orchestration
+- Transition state machine
+- Confidence scoring system
 
-Conversation analysis drives workflow transitions through:
-
-1. State Management
-- Tracking mentioned → exploring → refined → ready_to_extract states
-- Automatic state transitions based on conversation markers
-- Prevents invalid state transitions
-
-2. Agent Selection
-- Routes conversations to specialized agents based on intent
-- Parallel agent execution for compatible intents
-- Automatic handoff between agent types
-
-## Conditional Execution Patterns
-Importance Score: 80/100
-
-1. Intent-Based Routing
-- Routes to specific agent combinations based on detected intent
-- Enforces agent specialization hierarchy
-- Manages context sharing between agents
-
-2. State-Based Actions
-- Triggers automatic actions based on conversation state
-- Enforces business rules for state transitions
-- Manages parallel processing of compatible states
+Importance Score: 90/100
 
 $END$
 

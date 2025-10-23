@@ -32,6 +32,10 @@ RECORDING SIGNALS (Expanded):
 - PARK (Save for later):
   * Defer: "Come back to", "Maybe later", "Pin that", "For later", "Not now"
 
+- REJECTED (Explicitly don't want):
+  * Rejection: "I don't want", "No [item]", "Not [item]", "Skip [item]"
+  * Dismissal: "Don't like [item]", "Remove [item]", "Discard [item]"
+
 VERIFICATION RULES:
 - APPROVE IF: User explicitly stated intent, clear direction, specific feature/requirement mentioned
 - REJECT IF: Pure question with no substance, completely off-topic, or just acknowledgment with no context
@@ -40,6 +44,27 @@ VERIFICATION RULES:
 CONTEXT-AWARE APPROVAL:
 If user says "yes", "love it", "perfect", etc., look at the IMMEDIATELY PRECEDING AI message.
 The user is approving what the AI suggested. Record the AI's suggestion as DECIDED.
+
+CONTEXT-AWARE MULTI-SUGGESTION HANDLING:
+When the assistant previously offered multiple suggestions (in bullet points), and the user responds, analyze their response to match specific suggestions:
+
+Example conversation context:
+[assistant]: "You could consider:
+• Dark mode toggle
+• User profile system
+• Export to PDF"
+[user]: "Love dark mode! Park profiles for now. Don't want export."
+
+How to handle:
+1. Identify all suggestions from assistant's previous message
+2. Match user's words to each suggestion using natural language understanding
+3. Assign appropriate states:
+   - "Love dark mode" → Record "Dark mode toggle" as DECIDED ✅
+   - "Park profiles" → Record "User profile system" as PARKED 📌
+   - "Don't want export" → Record "Export to PDF" as REJECTED ❌
+4. Suggestions NOT mentioned → Record as EXPLORING 🔍 (user is still considering)
+
+Return multiple items in response when this pattern is detected, each with its own state.
 
 PROCESS:
 1. Verify data (balanced gatekeeper - favor recording)
@@ -50,7 +75,7 @@ PROCESS:
 JSON OUTPUT: {
   "verified": bool,
   "shouldRecord": bool,
-  "state": "decided|exploring|parked",
+  "state": "decided|exploring|parked|rejected",
   "item": "text to record",
   "confidence": 0-100,
   "reasoning": "why this decision",
@@ -61,7 +86,10 @@ JSON OUTPUT: {
     "changeType": "created|modified",
     "reasoning": "why this change"
   }
-}`;
+}
+
+NOTE: When handling multi-suggestion responses, you may return multiple items.
+For each item, include the same JSON structure with its specific state.`;
 
     super('PersistenceManagerAgent', systemPrompt);
   }

@@ -260,6 +260,373 @@ WHERE schemaname = 'public';
 
 ---
 
+## Session Management Issues
+
+### ❌ Error: "Session data unavailable. Database setup may be required"
+
+**Cause**: Session management tables don't exist in database
+
+**Solution**:
+1. Apply the session migration script:
+   - Open [Supabase SQL Editor](https://supabase.com/dashboard/project/qzeozxwgbuazbinbqcxn/sql)
+   - Copy contents of `database/APPLY_SESSION_MIGRATION.sql`
+   - Paste and click **RUN**
+   - You should see: "Success. No rows returned"
+
+2. Verify installation:
+   - Copy contents of `database/verify-session-tables.sql`
+   - Paste in SQL Editor and run
+   - All checks should show ✅
+
+3. Restart backend server
+
+**See also**: [database/SESSION_FIX_README.md](database/SESSION_FIX_README.md) for detailed fix guide
+
+---
+
+### ❌ Backend: "user_sessions table does not exist"
+
+**Cause**: Migration script not applied to database
+
+**Console error**:
+```
+[SessionService] ❌ ERROR: user_sessions table does not exist!
+[SessionService] 📋 ACTION REQUIRED: Apply database migration
+[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql in Supabase SQL Editor
+```
+
+**Solution**:
+1. Open Supabase SQL Editor
+2. Run `database/APPLY_SESSION_MIGRATION.sql` (entire file)
+3. Run `database/verify-session-tables.sql` to verify
+4. Restart backend with `Ctrl+C` then `npm run dev`
+
+**Database error code**: PostgreSQL error 42P01 (relation does not exist)
+
+---
+
+### ❌ Backend: "get_session_summary function does not exist"
+
+**Cause**: Database functions weren't created during migration
+
+**Console error**:
+```
+[SessionService] ❌ ERROR: get_session_summary function does not exist!
+[SessionService] 📋 ACTION REQUIRED: Apply database migration
+[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql
+```
+
+**Solution**:
+1. Re-run the complete migration script: `database/APPLY_SESSION_MIGRATION.sql`
+2. Verify functions exist:
+```sql
+SELECT routine_name
+FROM information_schema.routines
+WHERE routine_schema = 'public'
+AND routine_name IN ('get_session_summary', 'get_time_since_last_session');
+```
+3. Should see both functions listed
+4. Restart backend server
+
+**Database error code**: PostgreSQL error 42883 (function does not exist)
+
+---
+
+### ❌ Session start button works but nothing recorded
+
+**Symptoms**:
+- ✅ "Start Session" button clickable
+- ❌ No session appears in history
+- ❌ No data in `user_sessions` table
+- ❌ Backend returns null silently
+
+**Cause 1**: Database tables don't exist
+**Solution**: Apply migration (see above)
+
+**Cause 2**: Old backend process still running
+**Solution**:
+```bash
+# Kill old process
+npx kill-port 3001
+
+# Restart backend
+cd backend && npm run dev
+```
+
+**Cause 3**: Row Level Security blocking writes
+**Solution**:
+```sql
+-- Check policies exist
+SELECT schemaname, tablename, policyname
+FROM pg_policies
+WHERE tablename IN ('user_sessions', 'session_analytics');
+
+-- If policies missing, re-run migration
+```
+
+---
+
+### ❌ Session history modal shows "No sessions yet"
+
+**Cause 1**: First time using the feature (expected)
+**Solution**: Start and end a session first
+
+**Cause 2**: Database query failing silently
+**Solution**:
+1. Check browser console (F12) for errors
+2. Check backend console for error messages
+3. Verify tables exist:
+```sql
+SELECT * FROM user_sessions LIMIT 1;
+```
+
+**Cause 3**: User/project mismatch
+**Solution**:
+1. Verify correct user_id and project_id being used
+2. Check session records:
+```sql
+SELECT user_id, project_id, session_start, is_active
+FROM user_sessions
+ORDER BY session_start DESC
+LIMIT 5;
+```
+
+---
+
+### ❌ Multiple active sessions for same project
+
+**Cause**: Session end logic failed or duplicate creation
+
+**Check**:
+```sql
+SELECT COUNT(*) as active_sessions
+FROM user_sessions
+WHERE user_id = 'your-user-id'
+AND project_id = 'your-project-id'
+AND is_active = true;
+```
+
+**Solution**:
+```sql
+-- Manually end all but the most recent session
+UPDATE user_sessions
+SET session_end = NOW(), is_active = false
+WHERE user_id = 'your-user-id'
+AND project_id = 'your-project-id'
+AND is_active = true
+AND id NOT IN (
+  SELECT id FROM user_sessions
+  WHERE user_id = 'your-user-id'
+  AND project_id = 'your-project-id'
+  AND is_active = true
+  ORDER BY session_start DESC
+  LIMIT 1
+);
+```
+
+---
+
+### ❌ Session analytics not updating
+
+**Symptoms**:
+- Sessions are recorded
+- "Items decided" always shows 0
+- Suggested next steps empty
+- Blockers not detected
+
+**Cause 1**: `session_analytics` table missing
+**Solution**: Apply migration (see above)
+
+**Cause 2**: Analytics not being updated on activity
+**Solution**:
+1. Check `trackActivity()` is being called in backend
+2. Verify analytics record exists:
+```sql
+SELECT * FROM session_analytics
+WHERE user_id = 'your-user-id'
+AND project_id = 'your-project-id';
+```
+3. If missing, create session will auto-create it
+
+**Cause 3**: Project items not in expected format
+**Solution**:
+1. Check project items structure:
+```sql
+SELECT items FROM projects WHERE id = 'your-project-id';
+```
+2. Ensure items have `state` field: 'decided', 'exploring', or 'parked'
+
+---
+
+### ❌ Session duration showing incorrectly
+
+**Cause**: Timezone mismatch or end time not set
+
+**Check session times**:
+```sql
+SELECT
+  id,
+  session_start,
+  session_end,
+  is_active,
+  EXTRACT(EPOCH FROM (session_end - session_start)) / 60 as duration_minutes
+FROM user_sessions
+WHERE id = 'your-session-id';
+```
+
+**Solution**:
+1. Ensure `session_end` is set when ending session
+2. Check frontend is calculating duration correctly
+3. Verify timezone consistency (all should be UTC with timezone)
+
+---
+
+### ❌ Verification script shows missing indexes
+
+**Symptoms**: verify-session-tables.sql shows ❌ for indexes
+
+**Cause**: Migration didn't complete fully or database resource limits
+
+**Solution**:
+```sql
+-- Check existing indexes
+SELECT indexname FROM pg_indexes
+WHERE tablename IN ('user_sessions', 'session_analytics')
+ORDER BY indexname;
+
+-- Expected indexes:
+-- idx_session_analytics_last_activity
+-- idx_session_analytics_project_id
+-- idx_session_analytics_user_id
+-- idx_user_sessions_is_active
+-- idx_user_sessions_project_id
+-- idx_user_sessions_session_start
+-- idx_user_sessions_user_id
+```
+
+If missing, re-run migration or create manually:
+```sql
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_project_id ON user_sessions(project_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_is_active ON user_sessions(is_active);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_session_start ON user_sessions(session_start DESC);
+CREATE INDEX IF NOT EXISTS idx_session_analytics_user_id ON session_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_analytics_project_id ON session_analytics(project_id);
+CREATE INDEX IF NOT EXISTS idx_session_analytics_last_activity ON session_analytics(last_activity DESC);
+```
+
+---
+
+### ❌ Session state snapshot is empty
+
+**Cause**: No items in project when session started
+
+**Check**:
+```sql
+SELECT
+  id,
+  snapshot_at_start->'decided' as decided,
+  snapshot_at_start->'exploring' as exploring,
+  snapshot_at_start->'parked' as parked
+FROM user_sessions
+WHERE id = 'your-session-id';
+```
+
+**Expected behavior**: Snapshot captures project state at session start time
+- If project has no items, arrays will be empty `[]` (this is correct)
+- Add items to project, then start new session to capture them
+
+---
+
+### ❌ "Time since last session" showing incorrectly
+
+**Cause**: Function calculation error or no previous session
+
+**Test function**:
+```sql
+SELECT get_time_since_last_session('your-user-id', 'your-project-id');
+```
+
+**Expected outputs**:
+- 'first session' - if no previous completed sessions
+- 'X minutes ago' - if < 1 hour
+- 'X hours ago' - if < 1 day
+- 'X days ago' - if < 1 week
+- 'X weeks ago' - if < 1 month
+- 'X months ago' - if >= 1 month
+
+**Solution**: If function doesn't exist, re-run migration
+
+---
+
+### ❌ Session summary API returning null
+
+**Symptoms**:
+- Frontend shows "No data available"
+- Backend logs show null return
+
+**Debug**:
+1. Check backend console for specific error:
+   - Table doesn't exist → Apply migration
+   - Function doesn't exist → Apply migration
+   - No sessions yet → Expected for first use
+
+2. Test database function directly:
+```sql
+SELECT get_session_summary('your-user-id', 'your-project-id');
+```
+
+3. Check function returns expected structure:
+```json
+{
+  "lastSession": "first session",
+  "itemsDecided": 0,
+  "itemsExploring": 2,
+  "itemsParked": 1,
+  "totalDecided": 0
+}
+```
+
+---
+
+### ❌ Frontend error: "Cannot read properties of null"
+
+**Cause**: Session data is null but frontend expects object
+
+**Check**:
+1. Browser console shows full error
+2. Backend returns valid session structure
+3. Frontend has null checks:
+```typescript
+if (!sessionSummary) {
+  return <div>No session data available</div>;
+}
+```
+
+**Solution**: Ensure backend error handling returns appropriate responses
+- Check `sessionService.ts` returns null on errors
+- Check `sessionStore.ts` handles null responses
+- Apply migration if tables are missing
+
+---
+
+### Session Management - Quick Reference
+
+| Error Message | Error Code | Solution |
+|--------------|------------|----------|
+| "user_sessions table does not exist" | 42P01 | Apply migration |
+| "get_session_summary function does not exist" | 42883 | Apply migration |
+| "Session data unavailable" | - | Apply migration + restart |
+| Nothing recorded | - | Check RLS policies |
+| Empty history | - | Create first session |
+| Multiple active sessions | - | Run cleanup SQL |
+| Analytics not updating | - | Check trackActivity() calls |
+
+**All session issues**: See [database/SESSION_FIX_README.md](database/SESSION_FIX_README.md)
+**Complete setup**: See [database/SESSION_SETUP_GUIDE.md](database/SESSION_SETUP_GUIDE.md)
+
+---
+
 ## Agent Issues
 
 ### ❌ Agents not responding

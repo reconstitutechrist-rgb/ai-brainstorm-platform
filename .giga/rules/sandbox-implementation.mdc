@@ -1,62 +1,49 @@
 ---
-description: Specifies sandbox environment implementation for idea exploration and refinement workflows
+description: Technical specification for sandbox implementation, focused on idea generation and state progression workflows
 ---
 
 
 # sandbox-implementation
 
-The sandbox implementation provides an isolated environment for idea exploration and progressive refinement through multiple states:
+The sandbox environment implements an isolated ideation workflow with progressive state refinement:
 
-## Core State Management
-Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
-Importance Score: 85/100
-
-- Progressive idea state transitions:
-  - mentioned → Initial capture of concepts
-  - exploring → Active investigation phase  
-  - refined → Validated and detailed
-  - ready_to_extract → Approved for production use
-- Innovation level categorization:
-  - practical: Direct implementation potential
-  - moderate: Some complexity but feasible
-  - experimental: Novel approaches requiring validation
-- Source attribution tracking:
-  - user_mention: Direct user input
-  - ai_suggestion: Agent-generated content
-  - collaborative: Combined human-AI development
-
-## Isolation System
-Path: frontend/src/store/sandboxStore.ts
-Importance Score: 80/100
-
-- Maintains strict separation between sandbox and production environments
-- State isolation prevents contamination of production data
-- Allows experimental iterations without impacting existing work
-- Temporary storage for in-progress ideation
-- Parallel exploration of multiple concept branches
+## State Management
+- Ideas progress through 4 distinct states:
+  - mentioned: Initial capture from conversations/research
+  - exploring: Under active consideration and refinement
+  - refined: Vetted and validated ideas
+  - ready_to_extract: Approved for project integration
 
 ## Idea Generation Pipeline
-Path: backend/src/agents/ConversationalIdeaAgent.ts 
-Importance Score: 90/100
+- Direction-based ideation algorithms:
+  - innovative: Focuses on novel approaches
+  - practical: Emphasizes feasible solutions
+  - experimental: Explores edge cases
+  - budget: Cost-optimized alternatives 
+  - premium: Feature-rich solutions
 
-- Socratic questioning pattern for idea development
-- Natural language idea extraction from conversations
-- Automatic recognition of novel concepts
-- Progressive refinement through guided exploration
-- Context preservation across multiple sessions
-- Intelligent combination of related ideas
+## State Isolation
+- Sandbox maintains isolated state from main project
+- Ideas can be freely explored without impacting project state
+- Custom metadata tracks idea evolution and relationships
+- State transitions trigger automated validation checks
 
-## Workflow Management 
-Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
-Importance Score: 75/100
+## Extraction System
+- Smart extraction pipeline for promoting ideas:
+  - Source attribution tracking
+  - Confidence scoring (0-100)
+  - Innovation level classification
+  - Implementation feasibility assessment
+  - Resource requirement estimation
 
-- Staged progression through refinement states
-- Validation gates between state transitions
-- Automatic suggestion of next refinement steps
-- Collaboration controls for multi-user ideation
-- Version tracking for idea evolution
+## Progressive Refinement
+- Ideas require minimum quality thresholds to advance states
+- AI agents provide targeted refinement suggestions
+- Cross-reference validation against existing project items
+- Automatic relationship detection between related ideas
+- Impact analysis for potential conflicts
 
-The sandbox implementation emphasizes safe experimentation while maintaining clear pathways for promoting validated ideas to production use.
+Importance Score: 85/100
 
 $END$
 

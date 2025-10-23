@@ -11,7 +11,6 @@ import { ProjectIntelligenceHub } from './pages/ProjectIntelligenceHub';
 import ResearchHubPage from './pages/ResearchHubPage';
 import { LoginPage } from './pages/LoginPage';
 import { CreateProjectModal } from './components/modals/CreateProjectModal';
-import { SandboxMode, SandboxToggleButton } from './components/SandboxMode';
 import { SessionSummary } from './components/SessionManager';
 import { UniversalSearch } from './components/UniversalSearch';
 import { useThemeStore } from './store/themeStore';
@@ -154,8 +153,6 @@ function App() {
       {isAuthenticated && (
         <>
           <CreateProjectModal />
-          <SandboxMode />
-          <SandboxToggleButton />
           <UniversalSearch />
         </>
       )}

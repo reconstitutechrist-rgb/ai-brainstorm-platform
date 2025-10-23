@@ -20,7 +20,7 @@ export class SessionService {
   async startSession(userId: string, projectId: string): Promise<UserSession | null> {
     try {
       // Check if there's already an active session
-      const { data: existingSession } = await supabase
+      const { data: existingSession, error: checkError } = await supabase
         .from('user_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -28,13 +28,22 @@ export class SessionService {
         .eq('is_active', true)
         .single();
 
+      // Handle specific error for missing table
+      if (checkError && checkError.code === '42P01') {
+        console.error('[SessionService] ❌ ERROR: user_sessions table does not exist!');
+        console.error('[SessionService] 📋 ACTION REQUIRED: Apply database migration');
+        console.error('[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql in Supabase SQL Editor');
+        console.error('[SessionService] 📖 See: SESSION_SETUP_GUIDE.md for instructions');
+        return null;
+      }
+
       // If there's an active session, return it (don't create a new one)
       if (existingSession) {
-        console.log('[SessionService] Active session exists, reusing it');
+        console.log('[SessionService] ✅ Active session exists, reusing it:', existingSession.id);
         return existingSession;
       }
 
-      console.log('[SessionService] No active session, creating new one');
+      console.log('[SessionService] 🆕 No active session, creating new one');
 
       // End any old sessions that might be stuck as active
       await this.endActiveSession(userId, projectId);
@@ -62,13 +71,26 @@ export class SessionService {
         .single();
 
       if (error) {
-        console.error('Error starting session:', error);
+        // Handle specific error cases
+        if (error.code === '42P01') {
+          console.error('[SessionService] ❌ ERROR: user_sessions table does not exist!');
+          console.error('[SessionService] 📋 ACTION REQUIRED: Apply database migration');
+          console.error('[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql');
+        } else {
+          console.error('[SessionService] ❌ Error starting session:', error.message);
+          console.error('[SessionService] Error code:', error.code);
+          console.error('[SessionService] Error details:', error.details);
+        }
         return null;
       }
 
+      console.log('[SessionService] ✅ Session created successfully:', data.id);
       return data;
-    } catch (error) {
-      console.error('Error in startSession:', error);
+    } catch (error: any) {
+      console.error('[SessionService] ❌ Unexpected error in startSession:', error.message || error);
+      if (error.code) {
+        console.error('[SessionService] Error code:', error.code);
+      }
       return null;
     }
   }
@@ -105,7 +127,19 @@ export class SessionService {
         });
 
       if (error) {
-        console.error('Error getting session summary:', error);
+        // Handle specific error cases
+        if (error.code === '42P01') {
+          console.error('[SessionService] ❌ ERROR: Session tables do not exist!');
+          console.error('[SessionService] 📋 ACTION REQUIRED: Apply database migration');
+          console.error('[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql');
+        } else if (error.code === '42883') {
+          console.error('[SessionService] ❌ ERROR: get_session_summary function does not exist!');
+          console.error('[SessionService] 📋 ACTION REQUIRED: Apply database migration');
+          console.error('[SessionService] 📄 Run: database/APPLY_SESSION_MIGRATION.sql');
+        } else {
+          console.error('[SessionService] ❌ Error getting session summary:', error.message);
+          console.error('[SessionService] Error code:', error.code);
+        }
         return null;
       }
 

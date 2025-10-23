@@ -738,6 +738,22 @@ export const generatedDocumentsApi = {
     );
     return response.data;
   },
+
+  // Save a document preview to the project
+  savePreview: async (data: {
+    projectId: string;
+    title: string;
+    content: string;
+    format: string;
+    metadata?: any;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      document: any;
+      message: string;
+    }>('/generated-documents/save-preview', data);
+    return response.data;
+  },
 };
 
 // Canvas API
@@ -813,68 +829,9 @@ export const researchApi = {
   },
 };
 
-// Document Research API (Phase 3.1)
-export const documentResearchApi = {
-  startSession: async (data: {
-    projectId: string;
-    userId: string;
-    initialMessage?: string;
-  }) => {
-    const response = await api.post<{
-      success: boolean;
-      sessionId: string;
-      response?: string;
-      discovery?: any;
-    }>('/research/document-research/start', data);
-    return response.data;
-  },
-
-  sendMessage: async (data: {
-    sessionId: string;
-    message: string;
-    projectId: string;
-  }) => {
-    const response = await api.post<{
-      success: boolean;
-      response: string;
-      discovery: any;
-    }>('/research/document-research/chat', data);
-    return response.data;
-  },
-
-  generateDocument: async (data: {
-    sessionId: string;
-    templateId: string;
-    projectId: string;
-    userId: string;
-  }) => {
-    const response = await api.post<{
-      success: boolean;
-      document: any;
-      autoFillResult: any;
-      message: string;
-    }>('/research/document-research/generate', data);
-    return response.data;
-  },
-
-  getSession: async (sessionId: string) => {
-    const response = await api.get<{
-      success: boolean;
-      session: any;
-    }>(`/research/document-research/session/${sessionId}`);
-    return response.data;
-  },
-
-  getProjectSessions: async (projectId: string) => {
-    const response = await api.get<{
-      success: boolean;
-      sessions: any[];
-    }>(`/research/document-research/project/${projectId}/sessions`);
-    return response.data;
-  },
-};
-
-// Unified Research API (Phase 3.3)
+/**
+ * Unified Research API (Phase 3.3)
+ */
 export const unifiedResearchApi = {
   /**
    * Start a unified research query

@@ -153,6 +153,9 @@ export class GeneratedDocumentsService {
       'next_steps',
       'open_questions',
       'risk_assessment',
+      'rfp',
+      'implementation_plan',
+      'vendor_comparison',
     ];
 
     const generatedDocs: GeneratedDocument[] = [];

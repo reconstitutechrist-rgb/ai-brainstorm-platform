@@ -1,5 +1,14 @@
 # === USER INSTRUCTIONS ===
-Central coordinator managing 8 specialized AI agents through configurable workflows. Implements unique business logic for intent-based agent selection, parallel execution chains, and cross-agent context sharing.
+Central coordinator managing 9 specialized AI agents through configurable workflows. Implements unique business logic for intent-based agent selection, parallel execution chains, and cross-agent context sharing.
+
+For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
+
+### 1. Agent Orchestration (90/100)
+- Nine-agent collaborative system with specialized roles
+- Core agents (5): Conversation, Persistence, Quality, Strategic Planning, Context Management
+- Support agents (4): Reference Analysis, Review, Resource Management, Unified Research
+- Orchestrator: Coordinates workflows with parallel execution and context pruning
+- Key features: Intent-based routing, parallel agent execution, response caching
 # === END USER INSTRUCTIONS ===
 
 
@@ -17,58 +26,56 @@ Central coordinator managing 8 specialized AI agents through configurable workfl
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-## Core System Architecture
+AI Research and Project Management Platform
 
-The system implements an AI-powered project management platform with five primary business domains:
+Core Business Logic Structure:
 
-### 1. Agent Orchestration (85/100)
-- Eight-agent collaborative system with specialized roles
-- Core agents (4): Brainstorming, Research, Documentation, Quality
-- Support agents (3): Context, Verification, Integration  
-- Orchestrator agent (1): Workflow coordination
-- Progressive idea refinement workflow stages:
-  - Mentioned → Exploring → Refined → Ready to Extract
+1. Agent Orchestration System (85/100)
+- Multi-agent coordination with 8 specialized AI roles
+- Intent-based workflow determination
+- Parallel execution with dependency management
+- Context pruning and state transitions
+- Agent consolidation for optimal interaction
 
-### 2. Research Management (90/100) 
-- Multi-stage research pipeline with:
-  - Query analysis and decomposition
-  - Source credibility scoring
-  - Content synthesis algorithms
-  - Reference integration logic
-- Document discovery system with auto-fill capabilities
-- Domain-specific template matching
+2. Research Pipeline (90/100)
+- Unified research combining web, documents, and gap analysis 
+- Source selection algorithm with intent classification
+- Multi-source synthesis and prioritization
+- Template-based document discovery
+- Context-aware gap analysis
 
-### 3. Document Processing (80/100)
-- Intelligent document section parsing
-- Business-specific content categorization 
-- Template-based analysis framework
-- Source verification and citation tracking
-- Cross-reference consistency validation
-
-### 4. Session Analytics (75/100)
-- Project session metrics tracking
-- Blocker detection algorithms
+3. Session Management (85/100)
+- Project state snapshots with three-tier item classification:
+  - Decided items
+  - Exploring items
+  - Parked items
+- Intelligent blocker detection
+- Progress analytics and metrics
 - Activity pattern analysis
-- Progress tracking with automated suggestions
-- Productivity scoring system
+- Session state preservation
 
-### 5. Quality Control (85/100)
-- Comprehensive verification system
-- Reference conflict detection
-- Assumption identification logic
-- Cross-reference consistency checking
-- Citation verification with confidence scoring
+4. Document Generation (80/100) 
+- Research-driven document creation
+- Template-based content structuring
+- Cross-reference validation
+- Version control with semantic diffing
+- Project context integration
 
-## Integration Architecture
+5. Canvas Management (75/100)
+- Capacity warning system with thresholds:
+  - Info: 12 items
+  - Warning: 20 items
+  - Critical: 30 items
+- State-based organization
+- Spatial clustering algorithm
+- Contextual suggestions based on capacity
 
-The business logic components are connected through:
-- Agent coordination protocols
-- State transition workflows
-- Context preservation mechanisms
-- Document versioning system
-- Research synthesis pipeline
-
-The platform's unique value derives from its sophisticated multi-agent coordination and research synthesis capabilities, coupled with comprehensive quality control mechanisms.
+The system integrates these components through:
+- Multi-agent coordination for research and analysis
+- Context-aware document generation
+- Session-based project state management
+- Capacity-controlled visualization
+- Intelligent progress tracking
 
 $END$
 

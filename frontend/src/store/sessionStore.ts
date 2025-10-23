@@ -44,18 +44,28 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       if (response.success && response.data) {
         set({
           sessionSummary: response.data,
-          isLoading: false
+          isLoading: false,
+          error: null
         });
       } else {
+        console.warn('[SessionStore] ⚠️ Session summary load failed, data may not be available yet');
         set({
-          error: 'Failed to load session summary',
+          error: null, // Don't show error for missing data - this is expected for new projects
           isLoading: false
         });
       }
-    } catch (error) {
-      console.error('Error loading session summary:', error);
+    } catch (error: any) {
+      console.error('[SessionStore] ❌ Error loading session summary:', error);
+
+      // Only show user-facing error for actual errors, not missing data
+      const isSetupError = error.response?.status === 500 ||
+                          error.message?.includes('table') ||
+                          error.message?.includes('function');
+
       set({
-        error: 'Failed to load session summary',
+        error: isSetupError
+          ? 'Session data unavailable. Database setup may be required - see SESSION_SETUP_GUIDE.md'
+          : null,
         isLoading: false
       });
     }
@@ -117,7 +127,19 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   // Start a new session
   startSession: async (userId: string, projectId: string) => {
     try {
-      await sessionsApi.startSession(userId, projectId);
+      console.log('[SessionStore] Starting session...');
+      const response = await sessionsApi.startSession(userId, projectId);
+
+      // Check if session was actually created
+      if (!response.success || !response.data) {
+        console.error('[SessionStore] ❌ Session start failed - no data returned');
+        set({
+          error: '⚠️ Session could not be started. The database may need to be set up. Check the console for details.'
+        });
+        return;
+      }
+
+      console.log('[SessionStore] ✅ Session started successfully');
 
       // Load fresh session data
       const { loadAllSessionData, startInactivityTimer } = useSessionStore.getState();
@@ -125,9 +147,21 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
       // Start inactivity timer
       startInactivityTimer(userId, projectId);
-    } catch (error) {
-      console.error('Error starting session:', error);
-      set({ error: 'Failed to start session' });
+    } catch (error: any) {
+      console.error('[SessionStore] ❌ Error starting session:', error);
+
+      // Provide user-friendly error message
+      let errorMessage = 'Failed to start session. ';
+
+      if (error.response?.status === 500) {
+        errorMessage += 'The database may need to be set up. Please check SESSION_SETUP_GUIDE.md.';
+      } else if (error.message?.includes('table')) {
+        errorMessage += 'Session tables may be missing from the database.';
+      } else {
+        errorMessage += 'Please try again or contact support.';
+      }
+
+      set({ error: errorMessage });
     }
   },
 

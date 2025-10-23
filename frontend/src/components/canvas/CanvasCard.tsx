@@ -42,6 +42,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
           text: 'text-gray-500',
           glow: 'shadow-[0_0_20px_rgba(107,114,128,0.3)]',
         };
+      case 'rejected':
+        return {
+          border: 'border-red-400',
+          bg: isDarkMode ? 'bg-red-900/30' : 'bg-red-50/90',
+          text: 'text-red-500',
+          glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+        };
       default:
         return {
           border: 'border-gray-400',

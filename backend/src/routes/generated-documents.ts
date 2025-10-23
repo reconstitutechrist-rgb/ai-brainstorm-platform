@@ -77,7 +77,8 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    const supabase = getSupabaseClient(req.user?.access_token);
+    // Use service role for document generation (needs INSERT/UPDATE permissions)
+    const supabase = getSupabaseClient();
     const service = new GeneratedDocumentsService(supabase);
 
     const documents = await service.generateDocuments(projectId);
@@ -133,6 +134,55 @@ router.post('/generate-from-research', async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to generate document from research',
+    });
+  }
+});
+
+/**
+ * POST /api/generated-documents/save-preview
+ * Save an AI-generated document preview to the project
+ * Body: { projectId: string, title: string, content: string, format: string, metadata?: object }
+ */
+router.post('/save-preview', async (req, res) => {
+  try {
+    const { projectId, title, content, format, metadata } = req.body;
+
+    if (!projectId || !title || !content) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID, title, and content are required',
+      });
+    }
+
+    const supabase = getSupabaseClient(req.user?.access_token);
+
+    // Save to generated_documents table
+    const { data, error } = await supabase
+      .from('generated_documents')
+      .insert([{
+        project_id: projectId,
+        title,
+        content,
+        format: format || 'markdown',
+        metadata: metadata || {},
+        status: 'completed',
+        generated_at: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      document: data,
+      message: 'Document saved successfully',
+    });
+  } catch (error: any) {
+    console.error('Save preview document error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to save document',
     });
   }
 });
