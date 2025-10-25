@@ -16,6 +16,8 @@ import canvasRoutes from './routes/canvas';
 import researchRoutes from './routes/research';
 import analysisChatRoutes from './routes/analysis-chat';
 import analysisTemplatesRoutes from './routes/analysis-templates';
+import sessionReviewRoutes from './routes/session-review';
+import brainstormSessionsRoutes from './routes/brainstorm-sessions';
 import { testConnection } from './services/supabase';
 
 const app: Express = express();
@@ -53,6 +55,8 @@ app.use('/api/canvas', canvasRoutes);
 app.use('/api/research', researchRoutes);
 app.use('/api/analysis', analysisChatRoutes); // Phase 4.1
 app.use('/api/analysis-templates', analysisTemplatesRoutes); // Phase 4.2
+app.use('/api/session-review', sessionReviewRoutes); // Sandbox session review
+app.use('/api/brainstorm-sessions', brainstormSessionsRoutes); // Brainstorm sessions
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

@@ -890,4 +890,161 @@ export const unifiedResearchApi = {
   },
 };
 
+// Session Review API (for sandbox session completion)
+export const sessionReviewApi = {
+  /**
+   * Detect if user wants to end the brainstorm session
+   */
+  detectEndIntent: async (userMessage: string) => {
+    const response = await api.post<{
+      success: boolean;
+      isEndIntent: boolean;
+      confidence: number;
+    }>('/session-review/detect-end-intent', { userMessage });
+    return response.data;
+  },
+
+  /**
+   * Generate review summary with grouped ideas
+   */
+  generateSummary: async (conversationId: string) => {
+    const response = await api.post<{
+      success: boolean;
+      summary: any;
+      topicGroups: any[];
+    }>('/session-review/generate-summary', { conversationId });
+    return response.data;
+  },
+
+  /**
+   * Parse user's natural language decisions
+   */
+  parseDecisions: async (conversationId: string, userDecisions: string) => {
+    const response = await api.post<{
+      success: boolean;
+      parsedDecisions: {
+        accepted: any[];
+        rejected: any[];
+        unmarked: any[];
+        confidence: number;
+        needsClarification: boolean;
+        clarificationQuestion?: string;
+      };
+    }>('/session-review/parse-decisions', { conversationId, userDecisions });
+    return response.data;
+  },
+
+  /**
+   * Generate final confirmation message
+   */
+  generateConfirmation: async (parsedDecisions: any) => {
+    const response = await api.post<{
+      success: boolean;
+      confirmation: string;
+    }>('/session-review/generate-confirmation', { parsedDecisions });
+    return response.data;
+  },
+
+  /**
+   * Finalize session and trigger document generation
+   */
+  finalizeSession: async (conversationId: string, finalDecisions: any) => {
+    const response = await api.post<{
+      success: boolean;
+      sessionSummary: {
+        success: boolean;
+        sessionId: string;
+        sessionName: string;
+        documentsCreated: any[];
+        documentsUpdated: any[];
+        projectItemsAdded: number;
+        itemsDetails: {
+          decided: number;
+          exploring: number;
+        };
+        sandboxStatus: string;
+      };
+    }>('/session-review/finalize', { conversationId, finalDecisions });
+    return response.data;
+  },
+
+  /**
+   * Cancel session review and return to active conversation
+   */
+  cancelReview: async (conversationId: string) => {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+    }>('/session-review/cancel', { conversationId });
+    return response.data;
+  },
+};
+
+// Brainstorm Sessions API
+export const brainstormSessionsApi = {
+  /**
+   * Get all brainstorm sessions for a project
+   */
+  getProjectSessions: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      sessions: any[];
+    }>(`/brainstorm-sessions/project/${projectId}`);
+    return response.data;
+  },
+
+  /**
+   * Get detailed information about a specific session
+   */
+  getSession: async (sessionId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      session: any;
+    }>(`/brainstorm-sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Get all documents created/updated by a specific session
+   */
+  getSessionDocuments: async (sessionId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      documents: {
+        generated: any[];
+        updated: any[];
+      };
+    }>(`/brainstorm-sessions/${sessionId}/documents`);
+    return response.data;
+  },
+
+  /**
+   * Archive a brainstorm session
+   */
+  archiveSession: async (sessionId: string) => {
+    const response = await api.delete<{
+      success: boolean;
+      message: string;
+    }>(`/brainstorm-sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Get statistics about brainstorm sessions for a project
+   */
+  getStats: async (projectId: string) => {
+    const response = await api.get<{
+      success: boolean;
+      stats: {
+        totalSessions: number;
+        totalAcceptedIdeas: number;
+        totalRejectedIdeas: number;
+        totalUnmarkedIdeas: number;
+        mostRecentSession: any;
+      };
+    }>(`/brainstorm-sessions/stats/${projectId}`);
+    return response.data;
+  },
+};
+
 export default api;

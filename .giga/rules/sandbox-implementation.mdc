@@ -1,49 +1,52 @@
 ---
-description: Technical specification for sandbox implementation, focused on idea generation and state progression workflows
+description: Specification for sandbox idea exploration system with progressive refinement states and isolation mechanics
 ---
 
 
 # sandbox-implementation
 
-The sandbox environment implements an isolated ideation workflow with progressive state refinement:
+The sandbox system implements a progressive idea refinement workflow with strict state isolation:
 
-## State Management
-- Ideas progress through 4 distinct states:
-  - mentioned: Initial capture from conversations/research
-  - exploring: Under active consideration and refinement
-  - refined: Vetted and validated ideas
-  - ready_to_extract: Approved for project integration
+## Core Sandbox States
+Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
+Importance Score: 85
 
-## Idea Generation Pipeline
-- Direction-based ideation algorithms:
-  - innovative: Focuses on novel approaches
-  - practical: Emphasizes feasible solutions
-  - experimental: Explores edge cases
-  - budget: Cost-optimized alternatives 
-  - premium: Feature-rich solutions
+- Four distinct idea states with controlled transitions:
+  1. mentioned: Initial capture of raw ideas
+  2. exploring: Active investigation and development
+  3. refined: Validated and detailed concepts
+  4. ready_to_extract: Approved for project integration
 
-## State Isolation
-- Sandbox maintains isolated state from main project
-- Ideas can be freely explored without impacting project state
-- Custom metadata tracks idea evolution and relationships
-- State transitions trigger automated validation checks
+- Innovation classification system:
+  - practical: Direct implementation potential
+  - moderate: Medium-term feasibility
+  - experimental: Long-term exploration
 
-## Extraction System
-- Smart extraction pipeline for promoting ideas:
-  - Source attribution tracking
-  - Confidence scoring (0-100)
-  - Innovation level classification
-  - Implementation feasibility assessment
-  - Resource requirement estimation
+## State Isolation Engine
+Path: frontend/src/components/sandbox/ChatInterface.tsx
+Importance Score: 90
 
-## Progressive Refinement
-- Ideas require minimum quality thresholds to advance states
-- AI agents provide targeted refinement suggestions
-- Cross-reference validation against existing project items
-- Automatic relationship detection between related ideas
-- Impact analysis for potential conflicts
+- Conversation modes for controlled ideation:
+  - exploration: Free-form idea generation
+  - clarification: Concept refinement
+  - generation: Structured ideation
+  - refinement: Detail enhancement
+  - comparison: Alternative analysis
+  - validation: Assumption testing
+  - implementation: Execution planning
 
-Importance Score: 85/100
+- Context-aware prompt suggestion system maps user intent to appropriate conversation modes
+
+## Idea Source Tracking
+Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
+Importance Score: 75
+
+Three origin categories with distinct handling:
+1. user_mention: Direct participant suggestions
+2. ai_suggestion: Agent-generated concepts
+3. collaborative: Combined human-AI refinements
+
+The system maintains strict separation between sandbox explorations and main project state until explicit extraction approval, ensuring experimental safety while enabling creative freedom.
 
 $END$
 

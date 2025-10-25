@@ -1,59 +1,54 @@
 ---
-description: Documents conversation intent classification system, workflow mapping, and conditional agent execution patterns
+description: Specifies conversation intent classification system for AI agent orchestration and workflow mapping
 ---
 
 
 # intent-classification-system
 
-Core intent classification system with 9 distinct conversation modes:
+## Core Intent Classification
+Path: frontend/src/components/sandbox/ChatInterface.tsx
+Importance Score: 90
 
-1. Research Intent Processing
-- Classification of queries into research, document_discovery, gap_analysis
-- Source selection algorithm based on intent mapping:
-  - research → web + docs
-  - document_discovery → docs only 
-  - gap_analysis → metadata analysis
+The system implements conversation mode detection and adaptation across 7 distinct modes:
+- exploration: Open-ended ideation and discovery
+- clarification: Resolving ambiguity and gathering details  
+- generation: Creating specific outputs or solutions
+- refinement: Improving and iterating on ideas
+- comparison: Evaluating alternatives
+- validation: Verifying assumptions and decisions
+- implementation: Converting ideas to actionable plans
 
-2. Workflow Mapping
-- Intent-based agent selection and orchestration
-- Agent execution patterns based on intent:
-  - Research intents → Research + Context agents
-  - Technical intents → Expert + Verification agents
-  - Creative intents → Brainstorm + Refiner agents
+## Context-Aware Workflow Mapping 
+Path: backend/src/agents/orchestrator.ts
+Importance Score: 85
 
-3. Agent Execution Rules
-- Sequential agent execution for dependent intents
-- Parallel execution for compatible agents:
-  - Research + Context allowed
-  - Expert + Research allowed
-  - Verification always last
+Intelligent workflow determination based on:
+1. Message intent classification 
+2. Project phase indicators
+3. Current conversation context
+4. Historical interaction patterns
 
-4. Intent Transition Logic
-- State machine for conversation flow:
-  - research → document_discovery
-  - document_discovery → gap_analysis
-  - research → verification
-- Context preservation between transitions
-- Intent inheritance across related queries
+Workflow mapping triggers specialized agent combinations for:
+- Initial exploration sequences
+- Deep-dive analysis paths
+- Validation/verification chains
+- Implementation guidance flows
 
-5. Classification Confidence
-- Intent scoring (0-100) based on:
-  - Keyword matches
-  - Context alignment
-  - Historical patterns
-- Threshold-based intent selection:
-  - >85: Direct execution
-  - 60-85: Agent confirmation
-  - <60: User clarification
+## Agent Execution Patterns
+Path: backend/src/agents/ContextManagerAgent.ts
+Importance Score: 80
 
-Key domain-specific components:
-- 9 core conversation intents
-- Intent-based workflow mapping
-- Agent execution orchestration
-- Transition state machine
-- Confidence scoring system
+Conditional agent execution based on:
+1. Intent confidence scoring
+2. Required verification levels
+3. Context preservation rules
+4. Agent coordination patterns
 
-Importance Score: 90/100
+The system maintains conversation state tracking with:
+- Active intent classification
+- Context carryover rules
+- Mode transition triggers
+- Agent activation conditions
 
 $END$
 

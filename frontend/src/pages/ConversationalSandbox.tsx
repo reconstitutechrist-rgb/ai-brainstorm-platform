@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { ChatInterface } from '../components/sandbox/ChatInterface';
-import { IdeaBoardPanel } from '../components/sandbox/IdeaBoardPanel';
-import { sandboxApi } from '../services/api';
+import { LiveIdeasPanel } from '../components/sandbox/LiveIdeasPanel';
+import { SessionReviewModal } from '../components/sandbox/SessionReviewModal';
+import { SessionCompleteSummary } from '../components/sandbox/SessionCompleteSummary';
+import { sandboxApi, sessionReviewApi } from '../services/api';
 import { TestTube, Save, Trash2, AlertTriangle } from 'lucide-react';
 import '../styles/homepage.css';
 
@@ -16,9 +18,15 @@ export const ConversationalSandbox: React.FC = () => {
   const [conversation, setConversation] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [extractedIdeas, setExtractedIdeas] = useState<any[]>([]);
-  const [selectedIdeaIds, setSelectedIdeaIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [conversationMode, setConversationMode] = useState('exploration');
+
+  // Session review state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<any>(null);
+  const [topicGroups, setTopicGroups] = useState<any[]>([]);
+  const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [showCompleteSummary, setShowCompleteSummary] = useState(false);
 
   // Apply homepage background
   useEffect(() => {
@@ -88,6 +96,16 @@ export const ConversationalSandbox: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // Check if user wants to end session
+      const endIntentCheck = await sessionReviewApi.detectEndIntent(userMessage);
+
+      if (endIntentCheck.isEndIntent && endIntentCheck.confidence > 70) {
+        // User wants to end session - trigger review
+        await handleEndSession();
+        setIsLoading(false);
+        return;
+      }
+
       const response = await sandboxApi.sendMessage({
         conversationId: conversation.id,
         userMessage,
@@ -113,51 +131,79 @@ export const ConversationalSandbox: React.FC = () => {
     }
   };
 
-  const handleToggleIdeaSelect = (ideaId: string) => {
-    setSelectedIdeaIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(ideaId)) {
-        newSet.delete(ideaId);
-      } else {
-        newSet.add(ideaId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleExtractIdeas = async () => {
-    if (!conversation || selectedIdeaIds.size === 0) return;
-
-    try {
-      await sandboxApi.extractFromConversation({
-        conversationId: conversation.id,
-        selectedIdeaIds: Array.from(selectedIdeaIds),
-      });
-
-      alert(`✅ Extracted ${selectedIdeaIds.size} ideas to your main project!`);
-      setSelectedIdeaIds(new Set());
-    } catch (error) {
-      console.error('Extract ideas error:', error);
-      alert('Failed to extract ideas. Please try again.');
-    }
-  };
-
-  const handleUpdateIdeaStatus = async (ideaId: string, status: string) => {
+  const handleEndSession = async () => {
     if (!conversation) return;
 
     try {
-      await sandboxApi.updateIdeaStatus({
-        ideaId,
-        conversationId: conversation.id,
-        status,
-      });
+      // Generate review summary with grouped ideas
+      const summaryResponse = await sessionReviewApi.generateSummary(conversation.id);
 
-      // Update local state
-      setExtractedIdeas((prev) =>
-        prev.map((idea) => (idea.id === ideaId ? { ...idea, status } : idea))
-      );
+      setReviewSummary(summaryResponse.summary);
+      setTopicGroups(summaryResponse.topicGroups);
+      setIsReviewModalOpen(true);
     } catch (error) {
-      console.error('Update idea status error:', error);
+      console.error('Error generating review summary:', error);
+      alert('Failed to generate review. Please try again.');
+    }
+  };
+
+  const handleSubmitDecisions = async (decisionsText: string) => {
+    if (!conversation) return null;
+
+    try {
+      const parseResponse = await sessionReviewApi.parseDecisions(
+        conversation.id,
+        decisionsText
+      );
+
+      return parseResponse.parsedDecisions;
+    } catch (error) {
+      console.error('Error parsing decisions:', error);
+      return null;
+    }
+  };
+
+  const handleConfirmFinalDecisions = async (parsedDecisions: any) => {
+    if (!conversation) return;
+
+    try {
+      const finalizeResponse = await sessionReviewApi.finalizeSession(
+        conversation.id,
+        {
+          accepted: parsedDecisions.accepted,
+          rejected: parsedDecisions.rejected,
+          unmarked: parsedDecisions.unmarked,
+        }
+      );
+
+      // Close review modal
+      setIsReviewModalOpen(false);
+
+      // Show completion summary
+      setSessionSummary(finalizeResponse.sessionSummary);
+      setShowCompleteSummary(true);
+
+      // Reset sandbox for new session
+      setMessages([]);
+      setExtractedIdeas([]);
+      setConversation(null);
+    } catch (error) {
+      console.error('Error finalizing session:', error);
+      alert('Failed to finalize session. Please try again.');
+      throw error; // Re-throw to keep modal in loading state
+    }
+  };
+
+  const handleCancelReview = async () => {
+    if (!conversation) return;
+
+    try {
+      await sessionReviewApi.cancelReview(conversation.id);
+      setIsReviewModalOpen(false);
+      setReviewSummary(null);
+      setTopicGroups([]);
+    } catch (error) {
+      console.error('Error canceling review:', error);
     }
   };
 
@@ -289,18 +335,49 @@ export const ConversationalSandbox: React.FC = () => {
             />
           </div>
 
-          {/* Ideas Board Panel - 1/3 width on large screens */}
+          {/* Live Ideas Panel - 1/3 width on large screens */}
           <div className="h-full">
-            <IdeaBoardPanel
+            <LiveIdeasPanel
               ideas={extractedIdeas}
-              selectedIdeaIds={selectedIdeaIds}
-              onToggleSelect={handleToggleIdeaSelect}
-              onExtract={handleExtractIdeas}
-              onUpdateStatus={handleUpdateIdeaStatus}
+              conversationId={conversation?.id}
+              onEndSession={extractedIdeas.length > 0 ? handleEndSession : undefined}
             />
           </div>
         </div>
       </motion.div>
+
+      {/* Session Review Modal */}
+      {isReviewModalOpen && reviewSummary && (
+        <SessionReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={handleCancelReview}
+          topicGroups={topicGroups}
+          summaryText={reviewSummary.summaryText}
+          onSubmitDecisions={handleSubmitDecisions}
+          onConfirmFinal={handleConfirmFinalDecisions}
+          onCancel={handleCancelReview}
+        />
+      )}
+
+      {/* Session Complete Summary */}
+      {showCompleteSummary && sessionSummary && (
+        <SessionCompleteSummary
+          summary={sessionSummary}
+          onViewDocs={() => {
+            // Navigate to Intelligence Hub - Generated Docs tab
+            window.location.href = '/intelligence-hub';
+          }}
+          onNewSession={() => {
+            setShowCompleteSummary(false);
+            setSessionSummary(null);
+            initializeSandbox();
+          }}
+          onClose={() => {
+            setShowCompleteSummary(false);
+            setSessionSummary(null);
+          }}
+        />
+      )}
     </div>
   );
 };

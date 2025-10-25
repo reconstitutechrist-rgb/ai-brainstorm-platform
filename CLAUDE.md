@@ -26,56 +26,62 @@ For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-AI Research and Project Management Platform
+## Core Business Systems
 
-Core Business Logic Structure:
+### Sandbox Idea Management
+- Idea lifecycle pipeline with states: mentioned -> exploring -> refined -> ready_to_extract
+- Innovation level classification (practical/moderate/experimental)
+- Source tracking system with user mentions, AI suggestions, collaborative inputs
+- Group-based visualization based on development stage
+Importance Score: 85
 
-1. Agent Orchestration System (85/100)
-- Multi-agent coordination with 8 specialized AI roles
-- Intent-based workflow determination
-- Parallel execution with dependency management
-- Context pruning and state transitions
-- Agent consolidation for optimal interaction
+### Research Analysis Pipeline 
+- Conflict detection between reference documents and project decisions
+- Project alignment verification through contextual analysis
+- Decision validation with confirmation tracking
+- Dynamic insight classification and detection
+Importance Score: 90
 
-2. Research Pipeline (90/100)
-- Unified research combining web, documents, and gap analysis 
-- Source selection algorithm with intent classification
-- Multi-source synthesis and prioritization
-- Template-based document discovery
-- Context-aware gap analysis
+### Document Organization
+- Hierarchical classification with specialized type handling
+- Analysis status tracking (completed/processing/failed)
+- Reference metadata system with favorite marking and tagging
+Importance Score: 75
 
-3. Session Management (85/100)
-- Project state snapshots with three-tier item classification:
-  - Decided items
-  - Exploring items
-  - Parked items
-- Intelligent blocker detection
-- Progress analytics and metrics
-- Activity pattern analysis
-- Session state preservation
+### Visual Organization
+- Auto-positioning for new content
+- Related item clustering with visual grouping
+- State management (decided/exploring/parked/rejected)
+- Dynamic cluster visualization with expandable containers
+Importance Score: 80
 
-4. Document Generation (80/100) 
-- Research-driven document creation
-- Template-based content structuring
-- Cross-reference validation
-- Version control with semantic diffing
-- Project context integration
+### AI Conversation Management
+- Dynamic conversation modes: exploration, clarification, generation, refinement
+- Context-aware prompt suggestions
+- Automated idea extraction pipeline
+Importance Score: 85
 
-5. Canvas Management (75/100)
-- Capacity warning system with thresholds:
-  - Info: 12 items
-  - Warning: 20 items
-  - Critical: 30 items
-- State-based organization
-- Spatial clustering algorithm
-- Contextual suggestions based on capacity
+## Core Business Workflows
 
-The system integrates these components through:
-- Multi-agent coordination for research and analysis
-- Context-aware document generation
-- Session-based project state management
-- Capacity-controlled visualization
-- Intelligent progress tracking
+1. Research & Analysis
+- Multi-stage document processing
+- Context verification
+- Decision validation
+- Insight extraction
+
+2. Session Management
+- Progress tracking
+- Decision categorization
+- Blocker identification
+- Activity monitoring
+
+3. Document Processing
+- Template-based analysis
+- Contextual validation
+- Reference organization
+- Insight generation
+
+The system implements an AI-driven research and ideation platform focusing on structured idea development, contextual analysis, and collaborative decision-making through specialized agent interactions.
 
 $END$
 

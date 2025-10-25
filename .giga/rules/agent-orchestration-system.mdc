@@ -1,79 +1,53 @@
 ---
-description: Specifies the 17-agent orchestration system architecture, workflows, and dependencies for AI coordination
+description: Configures and manages the multi-agent orchestration system for coordinating AI agent workflows and interactions
 ---
 
 
 # agent-orchestration-system
 
-## Core Agent Architecture
+The 17-agent orchestration system implements a sophisticated workflow management architecture:
 
-The system orchestrates 17 specialized AI agents organized in 4 tiers:
+## Agent Dependency Graph
+- Core coordination between Questioner, Clarification, and Gap Detection agents
+- Recorder agent maintains decision history and verification chain
+- Context Manager controls state transitions and workflow selection
+- Quality Control agents (Auditor, Verification) operate as cross-cutting concerns
+Importance Score: 95
 
-### Primary Agents (Tier 1)
-- ResearchAgent: Drives document/web research workflows
-- IdeationAgent: Handles creative exploration and refinement 
-- ValidationAgent: Performs cross-reference verification
-- SynthesisAgent: Combines multi-source insights
+## Workflow Orchestration 
+- Dynamic agent selection based on conversation intent and project phase
+- Parallel execution paths for independent agent tasks
+- Sequential coordination for dependent operations
+- State preservation across agent handoffs
+Importance Score: 90
 
-### Support Agents (Tier 2)
-- QualityAgent: Multi-stage quality inspection
-- GapAgent: Knowledge gap detection
-- ClarificationAgent: Ambiguity resolution
-- ConsistencyAgent: Cross-validation
+## Context Management
+- Pruning system removes irrelevant context per agent type
+- Session state tracking with immutable snapshots
+- Selective context sharing between agent groups
+- Project alignment verification before state changes
+Importance Score: 85
 
-### Specialized Agents (Tier 3)
-- DocumentAgent: Template-based doc generation
-- ReferenceAgent: Citation management
-- PrioritizationAgent: Task ranking
-- TranslationAgent: Format conversion
+## Agent Response Integration
+- Multi-stage response consolidation pipeline
+- Conflict resolution between agent outputs
+- Priority-based message filtering
+- Response confidence scoring
+Importance Score: 80
 
-### Meta Agents (Tier 4)
-- OrchestrationAgent: Cross-agent coordination
-- ContextAgent: State/context management  
-- ProgressAgent: Stage tracking
-- BlockerAgent: Bottleneck detection
-- IntegrationAgent: System-wide synthesis
+## Execution Paths
+- Exploration: Questioner → Gap Detection → Clarification
+- Verification: Context → Auditor → Recorder
+- Research: Search → Analysis → Integration
+- Implementation: Planning → Task → Quality Check
+Importance Score: 85
 
-## Workflow Patterns
-
-1. Research Workflow
-- ResearchAgent initiates queries
-- GapAgent analyzes coverage
-- ValidationAgent verifies sources
-- SynthesisAgent combines findings
-
-2. Document Generation
-- DocumentAgent creates drafts
-- QualityAgent reviews content
-- ClarificationAgent resolves issues
-- ConsistencyAgent ensures alignment
-
-3. Ideation Process
-- IdeationAgent generates concepts
-- PrioritizationAgent ranks ideas
-- ValidationAgent checks feasibility
-- IntegrationAgent maps to project
-
-## State Management
-
-The OrchestrationAgent maintains:
-
-1. Agent States
-- active: Currently processing
-- standby: Ready for tasks
-- blocked: Awaiting dependencies
-
-2. Context Management
-- Project state snapshots
-- Cross-agent memory
-- Dependency tracking
-- State transition logs
-
-3. Progress Tracking
-- Stage completion status
-- Blocking conditions
-- Resource utilization
-- Agent synchronization
+## State Management Algorithm
+- Tracks agent availability and current tasks
+- Manages blocked states and dependencies
+- Handles rollback scenarios for failed workflows
+- Maintains consistency across parallel operations
+Importance Score: 90
 
 $END$
 
