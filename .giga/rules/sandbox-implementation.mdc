@@ -1,52 +1,61 @@
 ---
-description: Specification for sandbox idea exploration system with progressive refinement states and isolation mechanics
+description: Technical specification for AI-assisted sandbox ideation system with state progression and context management
 ---
 
 
 # sandbox-implementation
 
-The sandbox system implements a progressive idea refinement workflow with strict state isolation:
+The sandbox implementation provides an isolated ideation environment with structured state progression and context management.
 
-## Core Sandbox States
-Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
-Importance Score: 85
+## Core Components
 
-- Four distinct idea states with controlled transitions:
-  1. mentioned: Initial capture of raw ideas
-  2. exploring: Active investigation and development
-  3. refined: Validated and detailed concepts
-  4. ready_to_extract: Approved for project integration
+### State Management System
+Location: frontend/src/components/sandbox/IdeaBoardPanel.tsx
+Importance: 90/100
 
-- Innovation classification system:
-  - practical: Direct implementation potential
-  - moderate: Medium-term feasibility
-  - experimental: Long-term exploration
+Implements four-stage idea progression workflow:
+- mentioned -> Initial capture of ideas from conversation
+- exploring -> Active investigation and refinement
+- refined -> Vetted and clarified concepts
+- ready_to_extract -> Ideas approved for project integration
 
-## State Isolation Engine
-Path: frontend/src/components/sandbox/ChatInterface.tsx
-Importance Score: 90
+State transitions require:
+- Confirmation of source citations
+- Context preservation
+- Topic classification confidence score
+- Innovation level assessment
 
-- Conversation modes for controlled ideation:
-  - exploration: Free-form idea generation
-  - clarification: Concept refinement
-  - generation: Structured ideation
-  - refinement: Detail enhancement
-  - comparison: Alternative analysis
-  - validation: Assumption testing
-  - implementation: Execution planning
+### Context Isolation Engine
+Location: frontend/src/components/sandbox/SessionReviewModal.tsx
+Importance: 85/100
 
-- Context-aware prompt suggestion system maps user intent to appropriate conversation modes
+Manages sandbox environment isolation:
+- Maintains separate conversation context from main project
+- Tracks idea relationships and dependencies
+- Preserves citation links across state transitions
+- Controls promotion of ideas to main project space
 
-## Idea Source Tracking
-Path: frontend/src/components/sandbox/IdeaBoardPanel.tsx
-Importance Score: 75
+### Idea Clustering System
+Location: frontend/src/hooks/useClustering.ts 
+Importance: 80/100
 
-Three origin categories with distinct handling:
-1. user_mention: Direct participant suggestions
-2. ai_suggestion: Agent-generated concepts
-3. collaborative: Combined human-AI refinements
+Implements dynamic idea organization:
+- Topic-based clustering using conversation context
+- Confidence scoring for topic assignments
+- Progressive refinement of clusters
+- Automatic positioning based on semantic relationships
 
-The system maintains strict separation between sandbox explorations and main project state until explicit extraction approval, ensuring experimental safety while enabling creative freedom.
+### Extraction Workflow
+Location: frontend/src/components/sandbox/ExtractionPanel.tsx
+Importance: 85/100
+
+Controls idea promotion to main project:
+- Validation of required citations
+- Context preservation during transfer
+- State mapping from sandbox to project
+- Relationship maintenance across contexts
+
+The sandbox system enforces strict isolation while allowing controlled promotion of refined ideas into the main project space, with emphasis on context preservation and citation tracking throughout the ideation lifecycle.
 
 $END$
 

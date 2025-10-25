@@ -1,54 +1,79 @@
 ---
-description: Specifies conversation intent classification system for AI agent orchestration and workflow mapping
+description: Specifications for the conversation intent classification and agent workflow system
 ---
 
 
 # intent-classification-system
 
-## Core Intent Classification
-Path: frontend/src/components/sandbox/ChatInterface.tsx
-Importance Score: 90
+Importance Score: 85/100
 
-The system implements conversation mode detection and adaptation across 7 distinct modes:
-- exploration: Open-ended ideation and discovery
-- clarification: Resolving ambiguity and gathering details  
-- generation: Creating specific outputs or solutions
-- refinement: Improving and iterating on ideas
-- comparison: Evaluating alternatives
-- validation: Verifying assumptions and decisions
-- implementation: Converting ideas to actionable plans
+The intent classification system implements multi-stage conversation analysis and agent orchestration:
 
-## Context-Aware Workflow Mapping 
-Path: backend/src/agents/orchestrator.ts
-Importance Score: 85
+## Core Intent Classification Pipeline
 
-Intelligent workflow determination based on:
-1. Message intent classification 
-2. Project phase indicators
-3. Current conversation context
-4. Historical interaction patterns
+1. Primary Intent Categories:
+- Research mode (document discovery, gap analysis, technical review)
+- Ideation mode (exploration, refinement, extraction)
+- Decision mode (evaluation, confirmation, rejection)
+- Clarification mode (blocker resolution, question handling)
 
-Workflow mapping triggers specialized agent combinations for:
-- Initial exploration sequences
-- Deep-dive analysis paths
-- Validation/verification chains
-- Implementation guidance flows
+2. Context-Aware Classification Logic:
+```
+frontend/src/components/research/ResearchChatPanel.tsx
+```
+- Automatic research mode determination based on conversation context
+- Real-time intent adjustment based on user responses
+- Multi-agent consensus for intent verification
+- Confidence scoring for intent classification
 
-## Agent Execution Patterns
-Path: backend/src/agents/ContextManagerAgent.ts
-Importance Score: 80
+3. Workflow Mapping System:
+```
+backend/src/agents/orchestrator.ts
+```
+- Maps classified intents to specific agent workflows
+- Dynamic agent selection based on conversation needs
+- Parallel agent execution for independent verifications
+- Context preservation between agent handoffs
 
-Conditional agent execution based on:
-1. Intent confidence scoring
-2. Required verification levels
-3. Context preservation rules
-4. Agent coordination patterns
+4. Decision Flow Orchestration:
+```
+backend/src/services/sessionCompletionService.ts
+```
+- Natural language decision parsing with intent classification
+- Automated conflict detection between decisions
+- Citation requirement enforcement based on intent
+- Multi-step review process for critical decisions
 
-The system maintains conversation state tracking with:
-- Active intent classification
-- Context carryover rules
-- Mode transition triggers
-- Agent activation conditions
+## Intent-Based Agent Selection
+
+1. Agent Types by Intent:
+- Research Agent: Document analysis, gap identification
+- Strategic Agent: Vision alignment, requirement mapping
+- Verification Agent: Assumption checking, citation validation
+- Clarification Agent: Question generation, blocker resolution
+
+2. Selection Rules:
+- Research intents trigger parallel document analysis
+- Decision intents require verification agent review
+- Clarification intents activate question-answer workflow
+- Strategic intents engage long-term planning analysis
+
+## State Management
+
+1. Intent Tracking:
+```
+frontend/src/store/agentStore.ts
+```
+- Maintains current and historical intents per session
+- Tracks intent transitions and agent responses
+- Maps intent sequences to outcome patterns
+- Preserves context between related intents
+
+2. Workflow Progress:
+- Stage-based progression through intent sequences
+- Automatic blocking on critical clarifications
+- Intent-based suggestion generation
+- Context pruning for completed workflows
 
 $END$
 

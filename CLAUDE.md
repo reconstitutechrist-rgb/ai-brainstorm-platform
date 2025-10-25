@@ -26,62 +26,58 @@ For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-## Core Business Systems
+A multi-agent AI research and brainstorming platform with specialized workflows for idea generation, analysis, and document processing.
 
-### Sandbox Idea Management
-- Idea lifecycle pipeline with states: mentioned -> exploring -> refined -> ready_to_extract
-- Innovation level classification (practical/moderate/experimental)
-- Source tracking system with user mentions, AI suggestions, collaborative inputs
-- Group-based visualization based on development stage
-Importance Score: 85
+## Core Architecture
 
-### Research Analysis Pipeline 
-- Conflict detection between reference documents and project decisions
-- Project alignment verification through contextual analysis
-- Decision validation with confirmation tracking
-- Dynamic insight classification and detection
+### Research Analysis Pipeline
+Importance Score: 95
+- Multi-intent research system determining mode automatically (research/discovery/gap analysis)
+- Document regeneration with version control and context preservation 
+- Parallel processing of web and document sources
+- Project alignment verification using three-tier classification
+
+### Sandbox Ideation System 
 Importance Score: 90
+- Status progression tracking: mentioned -> exploring -> refined -> ready_to_extract
+- Context-based idea clustering with confidence scoring
+- Real-time extraction and innovation assessment
+- Zero-assumption policy enforcement through citation tracking
 
-### Document Organization
-- Hierarchical classification with specialized type handling
-- Analysis status tracking (completed/processing/failed)
-- Reference metadata system with favorite marking and tagging
-Importance Score: 75
-
-### Visual Organization
-- Auto-positioning for new content
-- Related item clustering with visual grouping
-- State management (decided/exploring/parked/rejected)
-- Dynamic cluster visualization with expandable containers
-Importance Score: 80
-
-### AI Conversation Management
-- Dynamic conversation modes: exploration, clarification, generation, refinement
-- Context-aware prompt suggestions
-- Automated idea extraction pipeline
+### Agent Orchestration
 Importance Score: 85
+- Manages 8 specialized AI agents with workflow orchestration
+- Context-aware agent selection and parallel execution
+- Natural language decision parsing with confidence thresholds
+- Automated conflict detection and resolution
 
-## Core Business Workflows
+### Document Processing
+Importance Score: 80
+- Template-based analysis with structured extraction rules
+- Multi-format support (PDFs, images, videos, URLs)
+- Reference-to-decision mapping and conflict detection
+- Version control with user-specific access patterns
 
-1. Research & Analysis
-- Multi-stage document processing
-- Context verification
-- Decision validation
-- Insight extraction
+### Session Management
+Importance Score: 75
+- Dual-table architecture separating analytics from immutable records
+- Real-time metrics computation for productivity tracking
+- Automatic next-step suggestions based on session history
+- Blocker detection and dependency tracking
 
-2. Session Management
-- Progress tracking
-- Decision categorization
-- Blocker identification
-- Activity monitoring
+## Critical Integration Points
 
-3. Document Processing
-- Template-based analysis
-- Contextual validation
-- Reference organization
-- Insight generation
+### State Management
+- Three-state idea classification: decided/exploring/parked
+- Context preservation across agent interactions
+- Citation and verification requirements
+- Project snapshot comparisons
 
-The system implements an AI-driven research and ideation platform focusing on structured idea development, contextual analysis, and collaborative decision-making through specialized agent interactions.
+### Workflow Organization  
+- Natural language decision capture
+- Topic grouping and clustering
+- Automatic document generation
+- Progress tracking and analytics
 
 $END$
 

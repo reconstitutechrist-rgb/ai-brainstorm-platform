@@ -1,53 +1,77 @@
 ---
-description: Configures and manages the multi-agent orchestration system for coordinating AI agent workflows and interactions
+description: Specifications for the multi-agent orchestration system that coordinates 17 specialized AI agents with complex workflows and dependencies
 ---
 
 
 # agent-orchestration-system
 
-The 17-agent orchestration system implements a sophisticated workflow management architecture:
+## Core Orchestration Logic
+Importance Score: 95/100
 
-## Agent Dependency Graph
-- Core coordination between Questioner, Clarification, and Gap Detection agents
-- Recorder agent maintains decision history and verification chain
-- Context Manager controls state transitions and workflow selection
-- Quality Control agents (Auditor, Verification) operate as cross-cutting concerns
-Importance Score: 95
+Multi-agent workflow engine coordinates 17 specialized AI agents through complex interaction patterns:
 
-## Workflow Orchestration 
-- Dynamic agent selection based on conversation intent and project phase
-- Parallel execution paths for independent agent tasks
-- Sequential coordination for dependent operations
-- State preservation across agent handoffs
-Importance Score: 90
+1. Agent Dependency Graph
+- Research Agent → Analysis Agent → Strategy Agent
+- Ideation Agent → Refinement Agent → Validation Agent
+- Context Agent → Synthesis Agent → Document Agent
 
-## Context Management
-- Pruning system removes irrelevant context per agent type
-- Session state tracking with immutable snapshots
-- Selective context sharing between agent groups
-- Project alignment verification before state changes
-Importance Score: 85
+2. Workflow State Machine
+- Sequential execution paths based on agent dependencies
+- Parallel processing for independent verification tasks 
+- Rollback capabilities for failed agent interactions
 
-## Agent Response Integration
-- Multi-stage response consolidation pipeline
-- Conflict resolution between agent outputs
-- Priority-based message filtering
-- Response confidence scoring
-Importance Score: 80
+3. Context Management
+- Progressive context pruning between agent handoffs
+- Selective context propagation based on relevance
+- Citation preservation across agent boundaries
 
-## Execution Paths
-- Exploration: Questioner → Gap Detection → Clarification
-- Verification: Context → Auditor → Recorder
-- Research: Search → Analysis → Integration
-- Implementation: Planning → Task → Quality Check
-Importance Score: 85
+4. Response Coordination
+- Multi-agent consensus requirements for critical decisions
+- Conflict resolution through specialized mediator agents
+- Natural language synthesis of multi-agent outputs
+
+## Agent Types and Roles
+
+Research Pipeline:
+- UnifiedResearchAgent: Multi-source research aggregation
+- ReferenceAnalysisAgent: Document analysis and extraction
+- GapAnalysisAgent: Missing information detection
+
+Ideation Pipeline:
+- IdeaGeneratorAgent: Creative concept generation
+- RefinementAgent: Idea improvement and combination
+- ValidationAgent: Zero-assumption verification
+
+Analysis Pipeline:
+- ContextAnalysisAgent: Topic grouping and relationships
+- ConflictDetectionAgent: Decision consistency checking
+- InsightExtractionAgent: Key finding identification
+
+Document Pipeline:
+- TemplateSynthesisAgent: Structured content generation
+- CitationTrackingAgent: Reference management
+- QualityAuditAgent: Output verification
+
+Strategy Pipeline:
+- VisionTranslationAgent: High-level goal interpretation
+- RequirementsMappingAgent: Technical specification
+- PriorityAssignmentAgent: Feature scoring
+- ResourceAllocationAgent: Implementation planning
+- DeliverySequencingAgent: Dependency management
 
 ## State Management Algorithm
-- Tracks agent availability and current tasks
-- Manages blocked states and dependencies
-- Handles rollback scenarios for failed workflows
-- Maintains consistency across parallel operations
-Importance Score: 90
+
+1. Agent State Tracking:
+- Active/Idle/Blocked status monitoring
+- Resource utilization metrics
+- Task queue management
+- Timeout and retry handling
+
+2. Workflow State:
+- Session status tracking
+- Conversation context preservation
+- Decision state management
+- Citation verification status
 
 $END$
 

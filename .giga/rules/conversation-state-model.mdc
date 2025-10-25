@@ -1,49 +1,54 @@
 ---
-description: Guidelines for managing conversation state, context pruning, and decision tracking in AI-assisted dialogues
+description: Specification for managing conversation state, context management, and state transitions in AI-assisted brainstorming sessions
 ---
 
 
 # conversation-state-model
 
-## Three-State Decision System
-- States: exploring -> decided -> parked
-- Transition rules based on agent consensus and user confirmation 
-- Automatic parking of items inactive for 7+ days
-- State tracking at both item and conversation levels
-Importance Score: 85
+## State Management System
+Importance Score: 85/100
 
-## Context Pruning Engine
-Location: backend/src/agents/ContextManagerAgent.ts
-- Dynamic pruning based on conversation mode (exploration/clarification/refinement)
-- Maintains decision chain references even when pruning context
-- Preserves cited sources and key decision points
-- Implements "memory bubble" for related items in active discussion
-Importance Score: 90
+Core conversation state model implements a three-state decision system:
 
-## Mode Detection System
-Location: backend/src/agents/orchestrator.ts
-- Conversation modes: exploration, clarification, generation, refinement, comparison
-- Automatic mode switching based on linguistic markers and user intent
-- Mode-specific context retention rules
-- Maintains coherence across mode transitions
-Importance Score: 85
+1. Conversation State Classifications:
+- GATHERING: Initial ideation and information collection phase
+- SYNTHESIZING: Processing and analyzing collected information
+- DECIDING: Making determinations based on synthesis
 
-## Cache Invalidation Logic
-Location: backend/src/services/contextPruner.ts
-- Invalidates cached responses when:
-  - Related items change state
-  - New conflicting information detected
-  - Context shifts between domains
-  - Mode transitions occur
-- Preserves critical decision history
-Importance Score: 80
+2. Context Pruning Rules:
+- Maximum 8 prior messages retained for active context
+- Context relevance scoring determines message retention
+- Critical decisions always preserved regardless of age
+- Automatic pruning of redundant or superseded information 
 
-## Conversation Analytics
-- Tracks conversation productivity metrics
-- Maps dialogue patterns to successful decisions
-- Identifies common blocking points
-- Generates suggested conversation directions
-Importance Score: 75
+3. State Transition Logic:
+- Transitions triggered by:
+  - Direct user decisions
+  - AI agent recommendations
+  - Analysis completion events
+  - Citation verification status
+- State changes require confirmation when impacting existing decisions
+
+4. Cache Invalidation:
+- Context cache cleared on:
+  - Topic changes
+  - New citations added
+  - Conflicting information detected
+  - User-initiated resets
+- Partial cache retention for critical decision history
+
+5. Persistence Requirements:
+- All state transitions logged with reasoning
+- Decision context preserved across sessions
+- Citation links maintained through state changes
+- Agent attributions tracked for all modifications
+
+Key Files:
+- backend/src/services/contextGroupingService.ts
+- backend/src/agents/conversationManager.ts 
+- backend/src/store/sessionStore.ts
+
+The conversation state model enforces strict context management and state transitions to maintain decision quality and traceability throughout brainstorming sessions.
 
 $END$
 
