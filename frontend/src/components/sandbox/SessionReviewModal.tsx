@@ -9,17 +9,30 @@ import {
   Loader2,
   Send,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 interface ExtractedIdea {
   id: string;
+  source: 'user_mention' | 'ai_suggestion' | 'collaborative';
+  conversationContext: {
+    messageId: string;
+    timestamp: string;
+    leadingQuestions: string[];
+    topic?: string;
+    topicConfidence?: number;
+    relatedMessageIds?: string[];
+  };
   idea: {
     title: string;
     description: string;
+    reasoning: string;
+    userIntent: string;
   };
-  conversationContext: {
-    topic?: string;
-  };
+  status: 'mentioned' | 'exploring' | 'refined' | 'ready_to_extract';
+  tags: string[];
+  innovationLevel: 'practical' | 'moderate' | 'experimental';
 }
 
 interface TopicGroup {
@@ -64,28 +77,38 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
   const [parsedDecisions, setParsedDecisions] = useState<ParsedDecisions | null>(null);
   const [clarificationInput, setClarificationInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [expandedIdeas, setExpandedIdeas] = useState<Set<string>>(new Set());
 
   if (!isOpen) return null;
 
   const handleSubmitDecisions = async () => {
     if (!decisionsInput.trim()) return;
 
+    console.log('[SessionReviewModal] Submitting decisions:', decisionsInput);
     setIsProcessing(true);
     try {
       const parsed = await onSubmitDecisions(decisionsInput);
+      console.log('[SessionReviewModal] Received parsed decisions:', parsed);
+
       if (parsed) {
         setParsedDecisions(parsed);
 
         if (parsed.needsClarification) {
+          console.log('[SessionReviewModal] Needs clarification, moving to clarification step');
           setCurrentStep('clarification');
         } else {
+          console.log('[SessionReviewModal] Moving to confirmation step');
           setCurrentStep('confirmation');
         }
+      } else {
+        console.error('[SessionReviewModal] Parsed decisions is null/undefined');
+        alert('Failed to parse decisions. Please try again.');
       }
     } catch (error) {
-      console.error('Error submitting decisions:', error);
+      console.error('[SessionReviewModal] Error submitting decisions:', error);
       alert('Failed to parse decisions. Please try again.');
     } finally {
+      console.log('[SessionReviewModal] Setting isProcessing to false');
       setIsProcessing(false);
     }
   };
@@ -141,6 +164,16 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
     }
   };
 
+  const toggleIdea = (ideaId: string) => {
+    const newExpanded = new Set(expandedIdeas);
+    if (newExpanded.has(ideaId)) {
+      newExpanded.delete(ideaId);
+    } else {
+      newExpanded.add(ideaId);
+    }
+    setExpandedIdeas(newExpanded);
+  };
+
   const renderSummaryStep = () => (
     <div className="space-y-4">
       <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert' : ''}`}>
@@ -193,58 +226,155 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
   );
 
   const renderDecisionsStep = () => (
-    <div className="space-y-4">
-      <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-        <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-          Tell me which ideas you want to accept and which you want to reject in natural language.
-        </p>
-        <p className={`text-xs mt-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-          Examples: "I want the OAuth and dark mode. I don't want the mobile app." or "Accept all authentication ideas, reject the analytics stuff."
-        </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Left side - Ideas reference */}
+      <div className="space-y-3 lg:max-h-[400px] lg:overflow-y-auto lg:pr-2">
+        <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          Ideas to Review:
+        </h3>
+        {topicGroups.map((group) => (
+          <div
+            key={group.topic}
+            className={`rounded-xl p-3 ${
+              isDarkMode ? 'bg-white/5' : 'bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">{group.icon}</span>
+              <span className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                {group.topic}
+              </span>
+              <span
+                className={`text-xs px-2 py-0.5 rounded ${
+                  isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                {group.ideas.length}
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {group.ideas.map((idea, i) => {
+                const isExpanded = expandedIdeas.has(idea.id);
+                return (
+                  <li
+                    key={idea.id}
+                    onClick={() => toggleIdea(idea.id)}
+                    className={`text-xs cursor-pointer rounded-lg p-2 transition-all ${
+                      isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2">
+                      {isExpanded ? (
+                        <ChevronDown size={12} className="mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <ChevronRight size={12} className="mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                          {i + 1}. {idea.idea.title}
+                        </div>
+
+                        {isExpanded && (
+                          <div className="mt-2 space-y-2">
+                            {/* Description */}
+                            <div>
+                              <p className={`text-xs font-medium mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Description:
+                              </p>
+                              <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {idea.idea.description}
+                              </p>
+                            </div>
+
+                            {/* User Quote */}
+                            {idea.idea.userIntent && idea.idea.userIntent !== 'Review analysis' && (
+                              <div className={`p-2 rounded ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+                                <p className={`text-xs font-medium mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  What you said:
+                                </p>
+                                <p className={`text-xs italic ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                  "{idea.idea.userIntent}"
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Reasoning */}
+                            {idea.idea.reasoning && (
+                              <div>
+                                <p className={`text-xs font-medium mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  Why:
+                                </p>
+                                <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {idea.idea.reasoning}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </div>
 
-      <textarea
-        value={decisionsInput}
-        onChange={(e) => setDecisionsInput(e.target.value)}
-        placeholder="I want... I don't want..."
-        rows={5}
-        className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-metallic ${
-          isDarkMode
-            ? 'bg-white/10 text-white placeholder-gray-500'
-            : 'bg-white text-gray-800 placeholder-gray-400 border border-gray-300'
-        }`}
-        disabled={isProcessing}
-      />
+      {/* Right side - Decision input */}
+      <div className="space-y-4">
+        <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+          <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+            Tell me which ideas you want to accept and which you want to reject in natural language.
+          </p>
+          <p className={`text-xs mt-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+            Examples: "I want the OAuth and dark mode. I don't want the mobile app."
+          </p>
+        </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleBack}
-          className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all ${
+        <textarea
+          value={decisionsInput}
+          onChange={(e) => setDecisionsInput(e.target.value)}
+          placeholder="I want... I don't want..."
+          rows={8}
+          className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-metallic ${
             isDarkMode
-              ? 'bg-white/10 hover:bg-white/20 text-gray-300'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              ? 'bg-white/10 text-white placeholder-gray-500'
+              : 'bg-white text-gray-800 placeholder-gray-400 border border-gray-300'
           }`}
           disabled={isProcessing}
-        >
-          Back
-        </button>
-        <button
-          onClick={handleSubmitDecisions}
-          disabled={!decisionsInput.trim() || isProcessing}
-          className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <Send size={18} />
-              <span>Submit</span>
-            </>
-          )}
-        </button>
+        />
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleBack}
+            className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all ${
+              isDarkMode
+                ? 'bg-white/10 hover:bg-white/20 text-gray-300'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+            disabled={isProcessing}
+          >
+            Back
+          </button>
+          <button
+            onClick={handleSubmitDecisions}
+            disabled={!decisionsInput.trim() || isProcessing}
+            className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                <span>Submit</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

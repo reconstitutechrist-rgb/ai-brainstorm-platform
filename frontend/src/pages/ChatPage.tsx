@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { CheckSquare, Archive, Trash2 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useProjectStore } from '../store/projectStore';
@@ -31,15 +32,24 @@ import { FloatingAgentBubbles } from '../components/FloatingAgentBubbles';
 import { AgentChatWindow } from '../components/AgentChatWindow';
 import { SuggestionsSidePanel } from '../components/SuggestionsSidePanel';
 import { SuggestionsToggleButton } from '../components/SuggestionsToggleButton';
+import { AgentQuestionBubble } from '../components/AgentQuestionBubble';
 import { useCardCapacity } from '../hooks/useCardCapacity';
 import { useArchive } from '../hooks/useArchive';
 import { useMemo } from 'react';
-import { projectsApi, sessionsApi } from '../services/api';
+import { projectsApi, sessionsApi, canvasApi } from '../services/api';
 
 export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { user } = useUserStore();
-  const { currentProject, toggleItemArchive } = useProjectStore();
+  const {
+    currentProject,
+    toggleItemArchive,
+    setCurrentProject,
+    selectedCardIds,
+    selectAllCards,
+    clearSelection,
+    archiveMultipleItems
+  } = useProjectStore();
   const { messages, isTyping } = useChatStore();
   const { sessionSummary } = useSessionStore();
   const {
@@ -60,7 +70,13 @@ export const ChatPage: React.FC = () => {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isSuggestionsPanelOpen, setIsSuggestionsPanelOpen] = useState(false);
   const [suggestionCount, setSuggestionCount] = useState(0);
+  const [agentQuestions, setAgentQuestions] = useState<any[]>([]);
+  const [isQuestionBubbleOpen, setIsQuestionBubbleOpen] = useState(false);
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  const [showArchiveAllConfirm, setShowArchiveAllConfirm] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const hasShownSummaryRef = useRef(false);
+  const hasAttemptedClusteringRef = useRef(false);
 
   // Apply homepage background
   useEffect(() => {
@@ -126,6 +142,7 @@ export const ChatPage: React.FC = () => {
   // Reset summary modal flag when project changes
   useEffect(() => {
     hasShownSummaryRef.current = false;
+    hasAttemptedClusteringRef.current = false; // Reset clustering flag too
   }, [currentProject?.id]);
 
   // Load suggestion count when project changes
@@ -148,6 +165,76 @@ export const ChatPage: React.FC = () => {
     const interval = setInterval(loadSuggestionCount, 30000);
     return () => clearInterval(interval);
   }, [currentProject, user, messages]);
+
+  // Auto-cluster canvas when enough cards exist
+  useEffect(() => {
+    const attemptAutoClustering = async () => {
+      if (!currentProject || !user) return;
+
+      const activeCount = activeItems.length;
+      const hasClusters = currentProject.clusters && currentProject.clusters.length > 0;
+
+      // Skip if already attempted for this project or conditions not met
+      if (hasAttemptedClusteringRef.current) return;
+      if (activeCount < 12) return; // Early exit - not enough cards yet
+      if (hasClusters) return; // Early exit - clusters already exist
+
+      // Trigger clustering
+      console.log(`[ChatPage] Auto-clustering triggered: ${activeCount} cards detected`);
+      hasAttemptedClusteringRef.current = true;
+
+      try {
+        const result = await canvasApi.autoCluster(currentProject.id, 12);
+
+          if (result.success && result.clustered) {
+            console.log(`[ChatPage] Auto-clustering completed: ${result.clustersCreated} clusters created`);
+
+            // Update project store with clustered data
+            if (result.project) {
+              setCurrentProject(result.project);
+              console.log('[ChatPage] Canvas clustered successfully - project updated');
+            }
+          } else {
+            console.log(`[ChatPage] Auto-clustering skipped: ${result.message}`);
+          }
+      } catch (error) {
+        console.error('[ChatPage] Auto-clustering failed:', error);
+      }
+    };
+
+    attemptAutoClustering();
+  }, [activeItems.length, currentProject?.id, currentProject?.clusters, user?.id]);
+
+  // Extract and accumulate all agent questions from messages
+  useEffect(() => {
+    // Collect ALL questions from ALL messages (not just latest)
+    const allQuestions: any[] = [];
+
+    messages.forEach((msg) => {
+      if (msg.metadata?.agentQuestions && msg.metadata.agentQuestions.length > 0) {
+        msg.metadata.agentQuestions.forEach((q: any, qIndex: number) => {
+          // Create unique ID for each question based on message and question index
+          const questionId = `${msg.id}-${qIndex}`;
+          allQuestions.push({
+            ...q,
+            id: questionId,
+            messageId: msg.id,
+            timestamp: msg.created_at,
+            answered: answeredQuestionIds.has(questionId),
+          });
+        });
+      }
+    });
+
+    // Update questions list
+    setAgentQuestions(allQuestions);
+
+    // Auto-open bubble if there are new unanswered questions
+    const hasNewQuestions = allQuestions.some(q => !q.answered);
+    if (hasNewQuestions && allQuestions.length > 0) {
+      setIsQuestionBubbleOpen(true);
+    }
+  }, [messages, answeredQuestionIds]);
 
   // Auto-start and auto-end sessions
   useEffect(() => {
@@ -216,6 +303,18 @@ export const ChatPage: React.FC = () => {
     openAgentWindow(agentType);
   };
 
+  const handleAgentQuestionAnswer = async (questionId: string, question: string, answer: string) => {
+    // Send the answer as a regular message in the chat
+    if (answer.trim() && currentProject) {
+      await sendMessage(answer);
+
+      // Mark this question as answered
+      setAnsweredQuestionIds(prev => new Set(prev).add(questionId));
+
+      // Don't close the bubble - keep it accessible for viewing past questions
+    }
+  };
+
   const handleAgentMessageSend = async (agentType: string, message: string) => {
     if (!currentProject || !user) return;
 
@@ -256,6 +355,47 @@ export const ChatPage: React.FC = () => {
       setIsArchiveOpen(true);
     }
     capacity.dismissWarning();
+  };
+
+  // Bulk selection and archive handlers
+  const handleSelectAll = () => {
+    selectAllCards();
+  };
+
+  const handleArchiveSelected = async () => {
+    if (selectedCardIds.size === 0) return;
+
+    setIsArchiving(true);
+    try {
+      await archiveMultipleItems(Array.from(selectedCardIds));
+      clearSelection();
+    } catch (error) {
+      console.error('Failed to archive selected cards:', error);
+      alert('Failed to archive selected cards. Please try again.');
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleArchiveAll = () => {
+    if (activeItems.length === 0) return;
+    setShowArchiveAllConfirm(true);
+  };
+
+  const handleArchiveAllConfirmed = async () => {
+    setShowArchiveAllConfirm(false);
+    setIsArchiving(true);
+
+    try {
+      const allActiveIds = activeItems.map(item => item.id);
+      await archiveMultipleItems(allActiveIds);
+      clearSelection();
+    } catch (error) {
+      console.error('Failed to archive all cards:', error);
+      alert('Failed to archive all cards. Please try again.');
+    } finally {
+      setIsArchiving(false);
+    }
   };
 
   // No project selected state
@@ -300,40 +440,94 @@ export const ChatPage: React.FC = () => {
 
       {/* Main chat container */}
       <ChatContainer>
-        {/* Chat panel */}
-        <ChatPanel isDarkMode={isDarkMode}>
-          <ChatHeader
-            title={currentProject.title}
-            description={currentProject.description}
-            isDarkMode={isDarkMode}
-          />
+        {/* Top Row: Chat + Session Tracking */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Chat panel */}
+          <ChatPanel isDarkMode={isDarkMode}>
+            <ChatHeader
+              title={currentProject.title}
+              description={currentProject.description}
+              isDarkMode={isDarkMode}
+            />
 
-          <ChatMessages
-            messages={messages}
-            isTyping={isTyping}
-            isDarkMode={isDarkMode}
-          />
+            <ChatMessages
+              messages={messages}
+              isTyping={isTyping}
+              isDarkMode={isDarkMode}
+            />
 
-          <ChatInput
-            value={inputMessage}
-            onChange={setInputMessage}
-            onSend={handleSendMessage}
-            onUpload={() => setShowUploadModal(true)}
-            onKeyDown={handleKeyDown}
-            disabled={isSending}
-            isSending={isSending}
-            isSessionActive={isSessionActive}
-            isDarkMode={isDarkMode}
-          />
-        </ChatPanel>
+            <ChatInput
+              value={inputMessage}
+              onChange={setInputMessage}
+              onSend={handleSendMessage}
+              onUpload={() => setShowUploadModal(true)}
+              onKeyDown={handleKeyDown}
+              disabled={isSending}
+              isSending={isSending}
+              isSessionActive={isSessionActive}
+              isDarkMode={isDarkMode}
+            />
+          </ChatPanel>
 
-        {/* Canvas panel */}
+          {/* Session tracking panel */}
+          <TrackingPanel isDarkMode={isDarkMode}>
+            <SessionTrackingPanel />
+          </TrackingPanel>
+        </div>
+
+        {/* Bottom Row: Canvas (full-width) */}
         <CanvasPanel isDarkMode={isDarkMode}>
           <div className="p-4">
             <CardCounter
               capacityState={capacity.capacityState}
               isDarkMode={isDarkMode}
             />
+
+            {/* Bulk Action Buttons */}
+            {activeItems.length > 0 && (
+              <div className="flex items-center gap-3 mt-4">
+                <button
+                  onClick={handleSelectAll}
+                  disabled={isArchiving || selectedCardIds.size === activeItems.length}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                    isDarkMode
+                      ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <CheckSquare size={16} />
+                  Select All ({activeItems.length})
+                </button>
+
+                {selectedCardIds.size > 0 && (
+                  <button
+                    onClick={handleArchiveSelected}
+                    disabled={isArchiving}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                      isDarkMode
+                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-500/30'
+                        : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Archive size={16} />
+                    {isArchiving ? 'Archiving...' : `Archive Selected (${selectedCardIds.size})`}
+                  </button>
+                )}
+
+                <button
+                  onClick={handleArchiveAll}
+                  disabled={isArchiving}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                    isDarkMode
+                      ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <Trash2 size={16} />
+                  Archive All
+                </button>
+              </div>
+            )}
           </div>
           <VisualCanvas
             items={activeItems}
@@ -341,11 +535,6 @@ export const ChatPage: React.FC = () => {
             onArchive={handleArchiveCard}
           />
         </CanvasPanel>
-
-        {/* Session tracking panel */}
-        <TrackingPanel isDarkMode={isDarkMode}>
-          <SessionTrackingPanel />
-        </TrackingPanel>
       </ChatContainer>
 
       {/* Capacity Warning */}
@@ -380,6 +569,47 @@ export const ChatPage: React.FC = () => {
         isDarkMode={isDarkMode}
       />
 
+      {/* Archive All Confirmation Modal */}
+      {showArchiveAllConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div
+            className={`max-w-md w-full mx-4 p-6 rounded-2xl shadow-2xl ${
+              isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Archive All Cards?
+            </h3>
+            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              This will archive all {activeItems.length} cards currently on the canvas. You can restore them from the
+              archive later. Are you sure you want to continue?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowArchiveAllConfirm(false)}
+                className={`px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                  isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleArchiveAllConfirmed}
+                className={`px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                  isDarkMode
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+              >
+                Archive All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating agent bubbles */}
       <FloatingAgentBubbles onBubbleClick={handleBubbleClick} />
 
@@ -410,6 +640,15 @@ export const ChatPage: React.FC = () => {
       <SuggestionsSidePanel
         isOpen={isSuggestionsPanelOpen}
         onClose={() => setIsSuggestionsPanelOpen(false)}
+      />
+
+      {/* Agent Question Bubble - Always accessible */}
+      <AgentQuestionBubble
+        questions={agentQuestions}
+        isOpen={isQuestionBubbleOpen}
+        onToggle={() => setIsQuestionBubbleOpen(!isQuestionBubbleOpen)}
+        onAnswer={handleAgentQuestionAnswer}
+        unansweredCount={agentQuestions.filter(q => !q.answered).length}
       />
     </div>
   );

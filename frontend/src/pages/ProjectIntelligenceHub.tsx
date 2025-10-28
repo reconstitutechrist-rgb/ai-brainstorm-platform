@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
-import { documentsApi, agentsApi, generatedDocumentsApi } from '../services/api';
+import { documentsApi, agentsApi, generatedDocumentsApi, intelligenceHubApi } from '../services/api';
 import type { Document, DocumentFolder } from '../types';
 import '../styles/homepage.css';
 import {
@@ -1459,37 +1459,298 @@ const DocumentItem: React.FC<{
 // ============================================
 const SearchTab: React.FC = () => {
   const { isDarkMode } = useThemeStore();
+  const { currentProject } = useProjectStore();
   const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [saveType, setSaveType] = useState<'user' | 'generated'>('user');
+
+  const handleSearch = async () => {
+    if (!query.trim() || !currentProject) return;
+
+    setIsSearching(true);
+    try {
+      const response = await intelligenceHubApi.search(currentProject.id, query);
+      if (response.success) {
+        setSearchResults(response.results);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSaveAsDocument = async () => {
+    if (!currentProject || !searchResults || !saveTitle.trim()) return;
+
+    try {
+      // Format search results as markdown
+      const content = `# ${saveTitle}\n\n## Search Query\n${query}\n\n## Summary\n${searchResults.summary}\n\n## Results\n\n### Decisions (${searchResults.decisions.length})\n${searchResults.decisions.map((d: any) => `- ${d.idea || d.title}`).join('\n')}\n\n### Documents (${searchResults.documents.length})\n${searchResults.documents.map((d: any) => `- ${d.title}`).join('\n')}\n\n### Activity (${searchResults.activityLog.length} entries)\n\n## Suggested Actions\n${searchResults.suggestedActions.map((a: string) => `- ${a}`).join('\n')}`;
+
+      await intelligenceHubApi.saveAsDocument(currentProject.id, {
+        title: saveTitle,
+        content,
+        isUserDocument: saveType === 'user',
+        documentType: saveType === 'generated' ? 'search_results' : undefined
+      });
+
+      setShowSaveModal(false);
+      setSaveTitle('');
+      alert('Document saved successfully!');
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('Failed to save document');
+    }
+  };
 
   return (
-    <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-8 shadow-glass`}>
-      <div className="max-w-2xl mx-auto">
-        <h2 className={`text-2xl font-bold mb-6 text-center ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Search Everything
+    <div className="flex gap-6 h-[calc(100vh-300px)]">
+      {/* Chat/Search Panel */}
+      <div className={`flex-1 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
+        <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Search Your Project
         </h2>
 
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search decisions, documents, activity..."
-            className={`w-full pl-12 pr-4 py-4 rounded-xl ${
-              isDarkMode
-                ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
-                : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
-            } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
-          />
+        <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+          {!searchResults && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Search size={64} className={`mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Ask About Your Project
+              </h3>
+              <p className={`mb-4 max-w-md ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Search across decisions, documents, activities, and references. Try asking:
+              </p>
+              <div className={`text-sm space-y-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                <p>"What features have we decided on?"</p>
+                <p>"Show me all authentication-related decisions"</p>
+                <p>"What documents mention the user interface?"</p>
+              </div>
+            </div>
+          )}
+
+          {searchResults && (
+            <div className="space-y-4">
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                <p className={`font-semibold mb-2 ${isDarkMode ? 'text-green-metallic' : 'text-green-600'}`}>
+                  Your Question:
+                </p>
+                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                  {query}
+                </p>
+              </div>
+
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                <p className={`font-semibold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Summary:
+                </p>
+                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                  {searchResults.summary}
+                </p>
+              </div>
+
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                <p className={`font-semibold mb-3 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  Suggested Actions:
+                </p>
+                <ul className={`space-y-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {searchResults.suggestedActions.map((action: string, idx: number) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>{action}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="text-center py-12">
-          <Search size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-            Start typing to search across all project data
-          </p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Ask about your project..."
+              disabled={isSearching}
+              className={`w-full pl-10 pr-4 py-3 rounded-xl ${
+                isDarkMode
+                  ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
+                  : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
+              } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50 disabled:opacity-50`}
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            disabled={isSearching || !query.trim()}
+            className="px-6 py-3 bg-green-metallic text-white rounded-xl hover:bg-green-metallic/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+          >
+            {isSearching ? 'Searching...' : 'Search'}
+          </button>
         </div>
       </div>
+
+      {/* Results Panel */}
+      {searchResults && (
+        <div className={`w-96 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Results
+            </h3>
+            <button
+              onClick={() => setShowSaveModal(true)}
+              className="px-3 py-1 text-sm bg-green-metallic text-white rounded-lg hover:bg-green-metallic/90 transition-colors"
+            >
+              Save as Document
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {/* Decisions */}
+            {searchResults.decisions.length > 0 && (
+              <div>
+                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Decisions ({searchResults.decisions.length})
+                </h4>
+                <div className="space-y-2">
+                  {searchResults.decisions.slice(0, 5).map((decision: any, idx: number) => (
+                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                      <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                        {decision.idea || decision.title || decision.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Documents */}
+            {searchResults.documents.length > 0 && (
+              <div>
+                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  Documents ({searchResults.documents.length})
+                </h4>
+                <div className="space-y-2">
+                  {searchResults.documents.slice(0, 5).map((doc: any, idx: number) => (
+                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                      <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                        {doc.title}
+                      </p>
+                      {doc.document_type && (
+                        <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {doc.document_type}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Activity */}
+            {searchResults.activityLog.length > 0 && (
+              <div>
+                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  Recent Activity ({searchResults.activityLog.length})
+                </h4>
+                <div className="space-y-2">
+                  {searchResults.activityLog.slice(0, 3).map((activity: any, idx: number) => (
+                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                      <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                        {activity.action} by {activity.agent_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 max-w-md w-full shadow-2xl`}>
+            <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Save Search Results
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Document Title
+                </label>
+                <input
+                  type="text"
+                  value={saveTitle}
+                  onChange={(e) => setSaveTitle(e.target.value)}
+                  placeholder="Enter document title..."
+                  className={`w-full px-4 py-2 rounded-lg ${
+                    isDarkMode
+                      ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
+                      : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
+                  } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Save As
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="user"
+                      checked={saveType === 'user'}
+                      onChange={(e) => setSaveType(e.target.value as 'user')}
+                      className="mr-2"
+                    />
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>User Document</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="generated"
+                      checked={saveType === 'generated'}
+                      onChange={(e) => setSaveType(e.target.value as 'generated')}
+                      className="mr-2"
+                    />
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Generated Document</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowSaveModal(false)}
+                  className={`flex-1 px-4 py-2 rounded-lg ${
+                    isDarkMode
+                      ? 'bg-white/10 text-white hover:bg-white/20'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  } transition-colors`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAsDocument}
+                  disabled={!saveTitle.trim()}
+                  className="flex-1 px-4 py-2 bg-green-metallic text-white rounded-lg hover:bg-green-metallic/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

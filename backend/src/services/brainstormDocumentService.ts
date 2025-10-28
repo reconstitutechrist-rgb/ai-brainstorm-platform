@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
-import { ExtractedIdea } from './contextGroupingService';
+import { ExtractedIdea } from './ContextGroupingService';
 import { GeneratedDocument } from './generatedDocumentsService';
 
 const anthropic = new Anthropic({
@@ -87,6 +87,14 @@ export class BrainstormDocumentService {
   ): Promise<GeneratedDocument> {
     const content = this.generateAcceptedDocumentContent(sessionName, ideas);
 
+    // Delete existing document if it exists (simpler than complex upsert)
+    await this.supabase
+      .from('generated_documents')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('document_type', 'decision_log');
+
+    // Insert new document
     const { data, error } = await this.supabase
       .from('generated_documents')
       .insert({
@@ -96,13 +104,7 @@ export class BrainstormDocumentService {
         content,
         version: 1,
         source_type: 'brainstorm_session',
-        source_id: sessionId,
-        metadata: {
-          ideaCount: ideas.length,
-          sessionId,
-          sessionName,
-          type: 'accepted'
-        }
+        source_id: sessionId
       })
       .select()
       .single();
@@ -126,6 +128,14 @@ export class BrainstormDocumentService {
   ): Promise<GeneratedDocument> {
     const content = this.generateRejectedDocumentContent(sessionName, ideas);
 
+    // Delete existing document if it exists (simpler than complex upsert)
+    await this.supabase
+      .from('generated_documents')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('document_type', 'rejection_log');
+
+    // Insert new document
     const { data, error } = await this.supabase
       .from('generated_documents')
       .insert({
@@ -135,13 +145,7 @@ export class BrainstormDocumentService {
         content,
         version: 1,
         source_type: 'brainstorm_session',
-        source_id: sessionId,
-        metadata: {
-          ideaCount: ideas.length,
-          sessionId,
-          sessionName,
-          type: 'rejected'
-        }
+        source_id: sessionId
       })
       .select()
       .single();

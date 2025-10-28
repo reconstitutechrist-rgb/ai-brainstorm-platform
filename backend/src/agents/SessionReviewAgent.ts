@@ -1,6 +1,5 @@
 import { BaseAgent } from './base';
-import { ExtractedIdea } from '../services/contextGroupingService';
-import { TopicGroup } from '../services/contextGroupingService';
+import { ExtractedIdea, TopicGroup } from '../services/ContextGroupingService';
 
 export interface ParsedDecisions {
   accepted: ExtractedIdea[];

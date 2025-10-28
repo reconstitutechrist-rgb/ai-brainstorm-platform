@@ -24,22 +24,6 @@ export const ClusterContainer: React.FC<ClusterContainerProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Calculate container dimensions based on children
-  // Assuming 3 cards per row, with card width ~240px + spacing
-  const cardsPerRow = 3;
-  const cardWidth = 260;
-  const cardHeight = 180;
-  const padding = 20;
-  const headerHeight = 50;
-
-  const rows = Math.ceil(cardCount / cardsPerRow);
-  const cols = Math.min(cardCount, cardsPerRow);
-
-  const containerWidth = (cols * cardWidth) + (padding * 2);
-  const calcContainerHeight = isExpanded
-    ? (rows * cardHeight) + headerHeight + (padding * 2)
-    : headerHeight;
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -48,23 +32,21 @@ export const ClusterContainer: React.FC<ClusterContainerProps> = ({
       transition={{ duration: 0.3 }}
       style={{
         position: 'absolute' as const,
-        left: position.x - padding,
-        top: position.y - headerHeight - padding,
-        width: containerWidth,
-        minWidth: 320,
-        zIndex: 0,
+        left: position.x,
+        top: position.y,
+        zIndex: 10,
       }}
-      className={`rounded-xl border-2 transition-all duration-300 ${
-        isDarkMode ? 'bg-gray-900/40' : 'bg-white/40'
+      className={`rounded-xl border-2 transition-all duration-300 backdrop-blur-sm ${
+        isDarkMode ? 'bg-gray-900/80' : 'bg-white/80'
       }`}
       data-cluster-id={clusterId}
     >
-      {/* Colored border and background */}
+      {/* Colored border */}
       <div
-        className="absolute inset-0 rounded-xl opacity-20"
+        className="absolute inset-0 rounded-xl pointer-events-none"
         style={{
-          background: `linear-gradient(135deg, ${color}20 0%, ${color}05 100%)`,
           border: `2px solid ${color}`,
+          background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
         }}
       />
 
@@ -140,9 +122,9 @@ export const ClusterContainer: React.FC<ClusterContainerProps> = ({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="relative overflow-hidden"
+            className="relative"
           >
-            <div className="p-4">
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-w-[860px]">
               {children}
             </div>
           </motion.div>

@@ -1,62 +1,9 @@
 ---
-description: Technical specification for AI-assisted sandbox ideation system with state progression and context management
+description: Error: Failed to generate frontmatter for sandbox-implementation
 ---
-
 
 # sandbox-implementation
 
-The sandbox implementation provides an isolated ideation environment with structured state progression and context management.
+Error: Failed to generate specification for this section.
 
-## Core Components
-
-### State Management System
-Location: frontend/src/components/sandbox/IdeaBoardPanel.tsx
-Importance: 90/100
-
-Implements four-stage idea progression workflow:
-- mentioned -> Initial capture of ideas from conversation
-- exploring -> Active investigation and refinement
-- refined -> Vetted and clarified concepts
-- ready_to_extract -> Ideas approved for project integration
-
-State transitions require:
-- Confirmation of source citations
-- Context preservation
-- Topic classification confidence score
-- Innovation level assessment
-
-### Context Isolation Engine
-Location: frontend/src/components/sandbox/SessionReviewModal.tsx
-Importance: 85/100
-
-Manages sandbox environment isolation:
-- Maintains separate conversation context from main project
-- Tracks idea relationships and dependencies
-- Preserves citation links across state transitions
-- Controls promotion of ideas to main project space
-
-### Idea Clustering System
-Location: frontend/src/hooks/useClustering.ts 
-Importance: 80/100
-
-Implements dynamic idea organization:
-- Topic-based clustering using conversation context
-- Confidence scoring for topic assignments
-- Progressive refinement of clusters
-- Automatic positioning based on semantic relationships
-
-### Extraction Workflow
-Location: frontend/src/components/sandbox/ExtractionPanel.tsx
-Importance: 85/100
-
-Controls idea promotion to main project:
-- Validation of required citations
-- Context preservation during transfer
-- State mapping from sandbox to project
-- Relationship maintenance across contexts
-
-The sandbox system enforces strict isolation while allowing controlled promotion of refined ideas into the main project space, with emphasis on context preservation and citation tracking throughout the ideation lifecycle.
-
-$END$
-
- If you're using this file in context, clearly say in italics in one small line that "Context added by Giga sandbox-implementation" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.
+Technical details of the sandbox environment implementation, including idea generation algorithms, state isolation, and the progressive refinement workflow from mentioned → exploring → refined → ready_to_extract states

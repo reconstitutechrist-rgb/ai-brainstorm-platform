@@ -18,23 +18,59 @@ export class PersistenceManagerAgent extends BaseAgent {
 
 RECORDING SIGNALS (Expanded):
 - DECIDED (Strong commitment):
-  * Affirmative: "I want", "I need", "We need", "Let's use", "Let's go with", "Let's add"
-  * Approval: "I like that", "Perfect", "Exactly", "Yes", "Definitely", "Absolutely", "That's the one", "Love it"
-  * Selection: "I choose", "We'll use", "Go with", "Pick", "Select"
+  * Affirmative: "I want", "I need", "We need", "Let's use", "Let's go with", "Let's add", "Let's do it", "Let's make it happen"
+  * Approval: "I like that", "Perfect", "Exactly", "Yes", "Definitely", "Absolutely", "That's the one", "Love it", "Sounds perfect", "I'm sold", "Convinced"
+  * Selection: "I choose", "We'll use", "Go with", "Pick", "Select", "I'm in", "Count me in"
+  * Affirmation: "That works", "That'll work", "Agreed", "Sounds good"
+  * Finalization: "Approved", "Greenlight that", "Lock it in", "Finalize that", "Done", "Confirmed"
 
 - EXPLORING (Considering options):
-  * Tentative: "What if", "Maybe", "Could we", "Thinking about", "Consider"
-  * Questions: "Should we", "Would it work", "How about"
+  * Tentative: "What if", "Maybe", "Could we", "Thinking about", "Consider", "Potentially", "Possibly"
+  * Questions: "Should we", "Would it work", "How about", "What about", "What do you think about"
+  * Curiosity: "I'm curious about", "I wonder if", "Exploring the idea of", "Toying with the idea", "Pondering"
+  * Consideration: "Open to", "Might be worth exploring", "Worth considering", "Considering", "Looking into"
 
 - MODIFY (Changing previous decision):
   * Change: "Change to", "Instead of X do Y", "Actually", "Switch to"
 
 - PARK (Save for later):
   * Defer: "Come back to", "Maybe later", "Pin that", "For later", "Not now"
+  * Park Keyword: "Park that", "Let's park", "Parking this", "Park it", "Let's park that for later"
+  * Delay: "Hold off", "Hold that thought", "Hold off on that", "Not right now", "Not yet"
+  * Revisit: "Revisit later", "Maybe we can revisit", "Circle back to", "I'll think about it later", "I'll think about that"
+  * Future: "Down the road", "Future consideration", "Keep in mind for future", "In the future"
+  * Deprioritize: "Table that", "Set aside", "Back burner", "Nice to have but not now", "Save that thought", "Not a priority", "Lower priority"
+  * Implied: "That's interesting but...", "Good idea, but...", "I like it, but not priority", "Someday"
 
 - REJECTED (Explicitly don't want):
   * Rejection: "I don't want", "No [item]", "Not [item]", "Skip [item]"
   * Dismissal: "Don't like [item]", "Remove [item]", "Discard [item]"
+
+HEDGING LANGUAGE DETECTION:
+Pay attention to uncertainty markers that affect confidence and state classification:
+- HIGH CERTAINTY (90-100% confidence → DECIDED): "Definitely want", "Absolutely need", "For sure", "Certainly", "Without a doubt"
+- MODERATE CERTAINTY (70-85% confidence → DECIDED or EXPLORING): "I think we should", "Probably want", "Most likely", "I believe"
+- LOW CERTAINTY (50-70% confidence → EXPLORING): "I think maybe", "Might want", "Perhaps", "Possibly", "Not sure but..."
+- CONDITIONAL (60-80% confidence → EXPLORING): "If X works, then...", "Assuming Y is possible", "Depends on..."
+
+When hedging language is present:
+1. Adjust confidence score DOWN based on uncertainty level
+2. Consider state downgrade: Strong hedge + decision words → EXPLORING instead of DECIDED
+3. Example: "I think maybe we should use React" → EXPLORING (not DECIDED) with 60% confidence
+
+MULTI-INTENT RECOGNITION:
+Detect compound intents in single messages:
+- "I want X and park Y for later" → X=DECIDED, Y=PARKED (return 2 items)
+- "Love A, but B later" → A=DECIDED, B=PARKED (return 2 items)
+- "Let's do X instead of Y" → X=DECIDED, Y=REJECTED (return 2 items)
+- "I prefer X over Y" → X=DECIDED, Y=REJECTED (return 2 items)
+
+IMPLIED PARKING DETECTION:
+Recognize indirect parking signals:
+- "Good idea, but let's focus on X first" → Idea=PARKED, X=DECIDED
+- "That's interesting but..." → PARKED (implied deprioritization)
+- "I like it, but not priority" → PARKED (explicit deprioritization)
+- "Sounds nice, but [other focus]" → PARKED (redirected attention)
 
 VERIFICATION RULES:
 - APPROVE IF: User explicitly stated intent, clear direction, specific feature/requirement mentioned
@@ -70,7 +106,7 @@ PROCESS:
 1. Verify data (balanced gatekeeper - favor recording)
 2. If approved: Analyze intent and state classification
 3. If recording: Track version automatically
-4. Generate confirmation message for user
+4. NO confirmation message needed - UI shows checkmarks
 
 JSON OUTPUT: {
   "verified": bool,
@@ -79,14 +115,17 @@ JSON OUTPUT: {
   "item": "text to record",
   "confidence": 0-100,
   "reasoning": "why this decision",
-  "needsConfirmation": bool,
-  "confirmationMessage": "text",
+  "needsConfirmation": false,
+  "confirmationMessage": "",
   "versionInfo": {
     "versionNumber": number,
     "changeType": "created|modified",
     "reasoning": "why this change"
   }
 }
+
+CRITICAL: Set needsConfirmation to false and confirmationMessage to empty string.
+Recording happens silently - the UI displays visual feedback (checkmarks) automatically.
 
 NOTE: When handling multi-suggestion responses, you may return multiple items.
 For each item, include the same JSON structure with its specific state.`;
@@ -273,29 +312,17 @@ Return ONLY valid JSON in this format:
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const recordingPlan = JSON.parse(cleanResponse);
 
-    // Format user-facing message
+    // NEW: Recording confirmations are now SILENT - UI shows checkmarks instead
     const itemCount = recordingPlan.itemsToRecord?.length || 0;
-    let message = '';
-
-    if (itemCount > 0) {
-      message = `\n\n📝 **Recorded ${itemCount} item${itemCount > 1 ? 's' : ''} based on review:**\n\n`;
-      recordingPlan.itemsToRecord.forEach((item: any, index: number) => {
-        const emoji = item.state === 'decided' ? '✅' : item.state === 'exploring' ? '🔍' : '📌';
-        message += `${emoji} ${item.item}\n`;
-      });
-
-      if (recordingPlan.summary) {
-        message += `\n${recordingPlan.summary}`;
-      }
-    }
 
     return {
       agent: this.name,
-      message,
-      showToUser: itemCount > 0,
+      message: '', // Don't show recording confirmation in chat
+      showToUser: false, // Silent recording - UI handles visual feedback
       metadata: {
         itemsToRecord: recordingPlan.itemsToRecord || [],
         recordedCount: itemCount,
+        recordingSummary: recordingPlan.summary, // Keep for UI use
       },
     };
   }

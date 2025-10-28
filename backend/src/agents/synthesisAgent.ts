@@ -69,7 +69,7 @@ Guidelines for the synthesis:
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         temperature: 0.7,
         messages: [
@@ -158,7 +158,7 @@ Provide your response in JSON format:
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2048,
         temperature: 0.5,
         messages: [

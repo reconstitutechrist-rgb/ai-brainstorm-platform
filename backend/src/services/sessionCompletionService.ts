@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ExtractedIdea } from './contextGroupingService';
+import { ExtractedIdea } from './ContextGroupingService';
 import { BrainstormDocumentService } from './brainstormDocumentService';
 import { v4 as uuidv4 } from 'uuid';
 

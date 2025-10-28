@@ -26,20 +26,29 @@ STATE MANAGEMENT:
 - PARKED: Ideas saved for future consideration
 
 LISTEN FOR DECISION SIGNALS (expanded):
-- STRONG COMMITMENT: "I want", "I need", "We need", "Let's use", "Let's add", "Let's include"
-- APPROVAL: "I like that!", "Perfect!", "Yes, exactly", "Love it", "Definitely", "Absolutely", "That's the one"
-- SELECTION: "I choose", "We'll use", "Go with", "Pick that", "Select"
-- AFFIRMATION: "Yes", "Yeah", "Yep", "Agreed", "Sounds good", "Exactly" (when following AI suggestion)
+- STRONG COMMITMENT: "I want", "I need", "We need", "Let's use", "Let's add", "Let's include", "Let's do it", "Let's make it happen"
+- APPROVAL: "I like that!", "Perfect!", "Yes, exactly", "Love it", "Definitely", "Absolutely", "That's the one", "Sounds perfect", "I'm sold", "Convinced"
+- SELECTION: "I choose", "We'll use", "Go with", "Pick that", "Select", "I'm in", "Count me in"
+- AFFIRMATION: "Yes", "Yeah", "Yep", "Agreed", "Sounds good", "Exactly", "That works", "That'll work" (when following AI suggestion)
+- FINALIZATION: "Approved", "Greenlight that", "Lock it in", "Finalize that", "Done", "Confirmed"
 
 EXPLORATION SIGNALS:
-- TENTATIVE: "What if...", "Maybe...", "I'm thinking about...", "Could we..."
-- QUESTIONS: "Should we...", "Would it work if..."
+- TENTATIVE: "What if...", "Maybe...", "I'm thinking about...", "Could we...", "Potentially", "Possibly"
+- QUESTIONS: "Should we...", "Would it work if...", "What about...", "How about...", "What do you think about..."
+- CURIOSITY: "I'm curious about", "I wonder if", "Exploring the idea of", "Toying with the idea", "Playing with the thought", "Pondering"
+- CONSIDERATION: "Open to", "Might be worth exploring", "Worth considering", "Considering", "Looking into"
 
 MODIFICATION SIGNALS:
 - CHANGES: "Actually, change that to...", "Instead of...", "Switch to..."
 
 PARKING SIGNALS:
 - DEFER: "Let's come back to that", "Not now but maybe later", "For later", "Pin that"
+- PARK_KEYWORD: "Park that", "Let's park", "Parking this", "Park it", "Let's park that for later"
+- DELAY: "Hold off", "Hold that thought", "Hold off on that", "Not right now", "Not yet"
+- REVISIT: "Revisit later", "Maybe we can revisit", "Circle back to", "I'll think about it later", "I'll think about that"
+- FUTURE: "Down the road", "Future consideration", "Keep in mind for future", "Keep that in mind", "In the future"
+- DEPRIORITIZE: "Table that", "Set aside", "Back burner", "Nice to have but not now", "Save that thought", "Not a priority", "Lower priority"
+- IMPLIED: "That's interesting but...", "Good idea, but...", "I like it, but not priority", "Maybe later", "Someday"
 
 DEVELOPMENT SIGNALS:
 - PLANNING: "The layout is complete", "What's next?", "How do we build this?", "Find vendors", "Create an RFP", "What do we need to do?", "Ready to implement"
@@ -95,6 +104,24 @@ IMPORTANT CONTEXT RULES:
 3. Strong approval/commitment = "deciding" intent
 4. Questions/tentative language = "exploring" intent
 5. Off-topic or casual = "general" intent
+
+HEDGING LANGUAGE ANALYSIS:
+- Detect uncertainty markers: "I think maybe", "probably", "might", "perhaps", "possibly"
+- Adjust confidence based on hedging intensity
+- Strong hedging + decision words → may be "exploring" instead of "deciding"
+- Example: "I think maybe we should use React" → "exploring" (not "deciding")
+
+MULTI-INTENT DETECTION:
+- Single messages can contain multiple intents
+- "I want X and park Y for later" → Both "deciding" (for X) and "parking" (for Y)
+- "Let's do X instead of Y" → Both "deciding" (for X) and "modifying" (changing Y)
+- Flag multi-intent scenarios in metadata
+
+IMPLIED PARKING SIGNALS:
+- "Good idea, but let's focus on X first" → "parking" (idea deferred) + "deciding" (X prioritized)
+- "That's interesting but..." → Often indicates "parking" (implied deprioritization)
+- "I like it, but not priority" → "parking" (explicit deprioritization)
+- "Sounds nice, but [other focus]" → "parking" (attention redirected)
 
 Return ONLY valid JSON with the response format specified in your system prompt.`,
       },

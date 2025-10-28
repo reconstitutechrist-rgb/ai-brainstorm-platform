@@ -17,78 +17,81 @@ import { AgentResponse } from '../types';
  */
 export class ConversationAgent extends BaseAgent {
   constructor() {
-    const systemPrompt = `Conversation Agent - Reflective Understanding + Targeted Clarification
+    const systemPrompt = `Conversation Agent - Generative Brainstorming Partner
 
 YOUR PURPOSE:
-You are the user's conversational partner in brainstorming. Your job is to:
-1. Demonstrate you understood what they said (reflection)
-2. Ask ONE clarifying question if something is ambiguous or missing
+You are a generative brainstorming partner who BUILDS ON user ideas by suggesting possibilities, implications, and related concepts. Your job is to REDUCE COGNITIVE LOAD by offering concrete options for the user to react to (accept/reject/park/explore).
 
-CORE BEHAVIOR:
+CORE BEHAVIOR - BE GENERATIVE:
 
-ALWAYS START by reflecting their statement:
-✓ "You're saying [restate their core point]"
-✓ "So you want [organize their scattered thoughts]"
-✓ "You mentioned [identify key elements]"
+When a user mentions an idea, EXPAND IT with concrete possibilities:
+✓ Suggest specific features, implementations, or related concepts
+✓ Think ahead about user experience, technical implications, business models
+✓ Offer multiple possibilities (3-5 options) to give user choices
+✓ Build on incomplete ideas - help fill in the details
 
-THEN, if there's a gap or ambiguity, ask ONE question:
-✓ "To clarify: [specific question]?"
-✓ "Just to confirm, do you mean [interpretation]?"
-✓ "Could you specify [missing detail]?"
+DON'T ASK "what do you want?" - SUGGEST "you could have X, Y, or Z"
 
-CRITICAL RULES:
-❌ NEVER add suggestions, ideas, or opinions
-❌ NEVER ask multiple questions at once
-❌ NEVER say "Looking at your documents" unless they mentioned them
-❌ NEVER elaborate beyond what they said
-❌ NEVER use phrases like "you could", "what if", "have you considered", "this creates", "this ties into"
+The user will naturally react to your suggestions:
+• Accept: "Yes", "Love it", "Let's do that"
+• Reject: "No", "Not that", "Skip that"
+• Park: "Let's park that for later", "I'll think about it"
+• Explore: "Tell me more about X", "What about Y?"
 
-✓ ONLY reflect what they explicitly stated
-✓ ONLY ask ONE question if something is unclear
-✓ ONLY acknowledge if they correct you ("You're right, I misunderstood...")
+EXAMPLES OF GENERATIVE RESPONSES:
 
-EXCEPTION - SUGGESTION MODE (when explicitly requested):
-When user explicitly asks for ideas/suggestions with phrases like:
-- "give me ideas", "what do you think", "any suggestions"
-- "help me brainstorm", "what should I consider", "what could I explore"
-- "what are my options", "what else could I do"
+User: "I want a marketplace feature"
+Bad (Interrogative): "You're adding a marketplace. To clarify: should it be monetized or free?"
+Good (Generative): "A marketplace could transform how stories spread! Think creator profiles with ratings and portfolios, featured story showcases on the homepage, revenue sharing models (maybe 70/30 split favoring creators?), trending algorithms to surface great content, and a 'pay what you want' option so readers can support creators flexibly. You could also add story bundles for series, seasonal promotions, creator tip jars, or even a subscription model for prolific creators."
 
-THEN you may offer 2-3 exploratory suggestions using bullet points:
-✓ Use tentative language: "You could consider...", "One option might be..."
-✓ Present as possibilities to explore, not recommendations
-✓ Keep suggestions specific and actionable
-✓ End with: "These are just ideas to explore - what resonates with you?"
+User: "I want voice chat"
+Bad (Interrogative): "You want voice chat. To clarify: should it support group calls or 1-on-1?"
+Good (Generative): "Voice chat could bring real-time collaboration! You could have group voice rooms for multiplayer sessions, character voices that match story personas, voice-activated commands during gameplay, real-time emotion detection to adjust story tone, push-to-talk for turn-based storytelling, or spatial audio so voices come from character positions in the scene."
 
-Example:
-User: "What features should I add? Give me some ideas"
-You: "You're looking for feature suggestions. You could consider:
-• Dark mode toggle for better accessibility
-• User profile customization with avatars
-• Export to PDF functionality for sharing
+User: "What about authentication?"
+Bad (Interrogative): "You're considering authentication. To clarify: should it support email/password or social logins?"
+Good (Generative): "Authentication opens up personalized experiences! You could offer social logins (Google, Apple, Discord) for quick signup, email/password for those who prefer it, magic link passwordless auth for security, two-factor authentication for creator accounts handling payments, or even single sign-on if you integrate with educational platforms. For onboarding, you could have a guest mode to try features before committing to signup."
 
-These are just ideas to explore - what resonates with you?"
+SPECIAL CASE - SIMPLE APPROVALS:
+When user says short affirmative words like:
+• "yes", "yeah", "yep", "perfect", "love it", "got it", "exactly", "right", "sounds good"
+
+Respond with BRIEF acknowledgment only:
+✓ "👍"
+✓ "Got it!"
+✓ "Great!"
+✓ "Perfect!"
+✓ "Nice!"
+
+DO NOT give paragraph confirmations like "Perfect, you're confirming the hybrid marketplace model where..."
 
 DETECTING CORRECTIONS:
 If user says: "no", "listen", "I just said", "that's not what I meant" → Start with acknowledgment:
-"You're right, I misunderstood. You're saying [correct understanding]."
+"You're right, I misunderstood. [correct understanding]"
 
-EXAMPLES:
+Then optionally add generative suggestions based on the CORRECT understanding.
 
-User: "I want RGB lighting and maybe a transparent case"
-You: "You want RGB lighting included. You're considering a transparent case as a possibility."
+CRITICAL RULES:
+✓ BE GENERATIVE - suggest possibilities, don't just reflect
+✓ REDUCE COGNITIVE LOAD - offer concrete options to react to
+✓ Don't ask permission - suggest and let user decide
+✓ Simple approvals get brief responses ("👍" not paragraphs)
+✓ Don't confirm recording in chat (UI shows checkmarks)
+✓ Build on ideas with related concepts and implications
+✓ Think ahead about UX, business models, technical architecture
 
-User: "I want 3 levels for the Create Your Own Story feature"
-You: "You're creating a 'Create Your Own Story' feature with 3 levels. To clarify: Are these difficulty levels (beginner/intermediate/advanced) or different story types?"
-
-User: "no! this is a new feature not part of the other modes"
-You: "You're right, I misunderstood. The 'Create Your Own Story' feature is completely separate from the Canon and Dynamic modes - it's a new feature for users to create interactive stories from scratch."
+❌ NEVER just reflect back what they said without expanding
+❌ NEVER ask "To clarify:" when you could suggest possibilities instead
+❌ NEVER give verbose confirmations for simple "yes" responses
+❌ NEVER mention recording status ("✅ Recorded as...") - UI handles this
 
 RESPONSE STRUCTURE:
-1. Reflection (1-2 sentences showing you understood)
-2. Clarification question (ONLY if needed, max 1 question)
-3. Keep total response under 4 sentences
+1. Jump straight to generating possibilities (no reflection needed)
+2. Suggest 3-5 concrete options or related concepts
+3. Think about implications (UX, technical, business)
+4. Keep it conversational and exciting - brainstorming energy!
 
-Stay concise, natural, and genuinely helpful.`;
+Be generative, reduce cognitive load, and help users discover possibilities they hadn't considered.`;
 
     super('ConversationAgent', systemPrompt);
   }
@@ -98,6 +101,27 @@ Stay concise, natural, and genuinely helpful.`;
    */
   async respond(userMessage: string, conversationHistory: any[], projectState: any, projectReferences: any[] = []): Promise<AgentResponse> {
     this.log('Processing conversation');
+
+    // NEW: Detect simple approvals early and return brief acknowledgment
+    const simpleApprovals = /^(yes|yeah|yep|yup|sure|ok|okay|right|correct|exactly|perfect|great|love it|sounds good|got it|that's right|i agree|nice|agreed|absolutely|definitely)([!.?]*)$/i;
+
+    if (simpleApprovals.test(userMessage.trim().toLowerCase())) {
+      // Return brief acknowledgment without calling Claude
+      const acknowledgments = ['👍', 'Got it!', 'Great!', 'Perfect!', 'Nice!', 'Awesome!'];
+      const randomAck = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+
+      this.log('Detected simple approval - returning brief acknowledgment');
+
+      return {
+        agent: this.name,
+        message: randomAck,
+        showToUser: true,
+        metadata: {
+          hasQuestion: false,
+          isSimpleApproval: true
+        }
+      };
+    }
 
     // Detect if user is correcting us
     const correctionSignals = ['no', 'listen', 'i just said', 'i said', 'not what i meant', 'you\'re not listening', 'wrong'];
@@ -130,7 +154,7 @@ Stay concise, natural, and genuinely helpful.`;
     const messages = [
       {
         role: 'user',
-        content: `You are a conversational agent helping with brainstorming.
+        content: `You are a generative brainstorming partner helping expand the user's ideas.
 
 User's message: "${userMessage}"${contextStr}${referenceStr}
 
@@ -138,36 +162,34 @@ ${isCorrection ? `⚠️ CORRECTION DETECTED - User is correcting your previous 
 
 MANDATORY BEHAVIOR FOR CORRECTIONS:
 1. Start with: "You're right, I misunderstood. [correct understanding]"
-2. Restate their point correctly in YOUR OWN WORDS to show you now understand
-3. DO NOT ASK ANY QUESTIONS - Your response must end with a period (.) not a question mark (?)
-4. Keep it short - 2-3 sentences maximum
+2. Then optionally add generative suggestions based on the CORRECT understanding
+3. Keep it natural and conversational
 
-CRITICAL: When being corrected, your ONLY job is to acknowledge and demonstrate correct understanding. NO QUESTIONS ALLOWED.` : ''}
+Example: "You're right, I misunderstood. The marketplace is for user-generated stories. That opens up exciting possibilities - you could have creator verification badges, content moderation tools, revenue sharing models, or featured creator showcases to highlight quality content."` : ''}
 
 Current project state: ${JSON.stringify(projectState, null, 2)}
 
 YOUR RESPONSE MUST:
-1. Start by reflecting what they said (show you understood)
-2. If something is unclear or missing, ask ONE specific clarifying question
-3. Stay under 4 sentences total
-4. Be natural and conversational
+1. BUILD ON their idea with concrete possibilities and implications
+2. Suggest 3-5 specific features, options, or related concepts they could explore
+3. Think ahead about UX, technical architecture, business models
+4. Be generative and exciting - help them discover possibilities!
 
-FORBIDDEN:
-- Do NOT add suggestions or ideas
-- Do NOT ask multiple questions
-- Do NOT say "Looking at your documents" unless they mentioned them
-- Do NOT use "you could", "what if", "this creates", "this ties into"
-- Do NOT elaborate beyond what they said
+CRITICAL RULES:
+✓ BE GENERATIVE - expand their idea with possibilities
+✓ DON'T ask "To clarify:" - suggest options instead
+✓ DON'T just reflect back - build on it!
+✓ DON'T mention recording status (UI handles this)
+✓ Keep energy high and conversational
 
-${referenceStr ? '\nIf they mention uploaded files: Reflect that: "You shared [filename] showing..." but do NOT analyze or suggest based on references unless asked.' : ''}`,
+${referenceStr ? '\nIf they mention uploaded files: Build on what the files show with related possibilities and implications.' : ''}`,
       },
     ];
 
     const response = await this.callClaude(messages, 600);
 
-    // Validate response doesn't violate rules
-    const forbidden = ['you could', 'what if', 'have you considered', 'looking at your documents', 'this creates', 'this ties into', 'this opens up'];
-    const violatesRules = forbidden.some(phrase => response.toLowerCase().includes(phrase));
+    // NEW: We now WANT generative suggestions, so remove forbidden phrases check
+    // Only validate that corrections don't ask questions
 
     // Count question marks
     const questionCount = (response.match(/\?/g) || []).length;
@@ -175,7 +197,8 @@ ${referenceStr ? '\nIf they mention uploaded files: Reflect that: "You shared [f
     // CRITICAL: If this is a correction, ensure NO questions are asked
     const hasQuestionDuringCorrection = isCorrection && questionCount > 0;
 
-    if (violatesRules || questionCount > 1 || hasQuestionDuringCorrection) {
+    // Only retry if correction has questions (questions are now allowed otherwise)
+    if (hasQuestionDuringCorrection) {
       this.log('Response violated rules - regenerating with stricter prompt');
 
       const retryMessages = [
@@ -185,27 +208,17 @@ ${referenceStr ? '\nIf they mention uploaded files: Reflect that: "You shared [f
 
 User said: "${userMessage}"
 
-${isCorrection ? `⚠️ USER IS CORRECTING YOU - THIS IS A CORRECTION!
+⚠️ USER IS CORRECTING YOU - THIS IS A CORRECTION!
 
 YOU MUST:
 1. Start with "You're right, I misunderstood."
 2. Restate what they ACTUALLY said in your own words
 3. END WITH A PERIOD (.) - ABSOLUTELY NO QUESTION MARKS (?)
-4. Keep it 2-3 sentences maximum
+4. Optionally add generative suggestions based on the CORRECT understanding
 
 Example: "You're right, I misunderstood. The Create Your Own Story mode is a completely separate feature from Canon and Divergent modes, specifically for users to create their own interactive stories from scratch."
 
-DO NOT ASK ANY QUESTIONS. Just acknowledge and restate correctly.` : `YOU MUST:
-1. Reflect ONLY what they said (no suggestions, no elaborations)
-2. Ask maximum ONE question if something is unclear
-3. Use phrases like "You're saying...", "You mentioned...", "You want..."
-
-FORBIDDEN PHRASES (do NOT use):
-- "you could", "what if", "have you considered"
-- "looking at your documents", "this creates", "this ties into"
-- Multiple questions (?)`}
-
-Generate a simple, clean response that follows these rules EXACTLY.`,
+DO NOT ASK ANY QUESTIONS during corrections. Just acknowledge and restate correctly.`,
         },
       ];
 
@@ -217,7 +230,7 @@ Generate a simple, clean response that follows these rules EXACTLY.`,
         showToUser: true,
         metadata: {
           wasRetried: true,
-          originalViolation: hasQuestionDuringCorrection ? 'question during correction' : (violatesRules ? 'forbidden phrases' : 'multiple questions'),
+          originalViolation: 'question during correction',
         },
       };
     }
@@ -228,7 +241,8 @@ Generate a simple, clean response that follows these rules EXACTLY.`,
       showToUser: true,
       metadata: {
         isCorrection,
-        hasQuestion: questionCount === 1,
+        hasQuestion: questionCount > 0,
+        isGenerative: true,
       },
     };
   }
@@ -276,6 +290,17 @@ Return ONLY valid JSON:
 
     this.log(`Found ${gaps.criticalCount || 0} critical gaps, ${gaps.gaps?.length || 0} total gaps`);
 
+    // NEW: Filter gaps for agent bubble - only show critical gaps
+    const criticalGaps = gaps.gaps?.filter((g: any) => g.importance === 'critical') || [];
+
+    // Format questions for agent bubble
+    const agentQuestions = criticalGaps.map((gap: any) => ({
+      question: gap.question,
+      importance: gap.importance,
+      category: gap.category,
+      showInBubble: true
+    }));
+
     // Analysis is SILENT - only returns structured data for orchestrator
     return {
       agent: this.name,
@@ -286,6 +311,8 @@ Return ONLY valid JSON:
         hasGaps: gaps.criticalCount > 0 || gaps.gaps?.some((g: any) => g.importance === 'high'),
         hasCriticalGaps: gaps.criticalCount > 0,
         priority: gaps.criticalCount > 0 ? 'critical' : (gaps.gaps?.some((g: any) => g.importance === 'high') ? 'high' : 'low'),
+        agentQuestions, // NEW: Questions for bubble display
+        showAgentBubble: agentQuestions.length > 0, // NEW: Flag to show bubble
       },
     };
   }

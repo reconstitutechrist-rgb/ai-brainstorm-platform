@@ -48,16 +48,19 @@ interface LiveIdeasPanelProps {
   ideas: ExtractedIdea[];
   conversationId?: string;
   onEndSession?: () => void;
+  onReviewConversation?: () => void;
 }
 
 export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
   ideas,
   conversationId,
   onEndSession,
+  onReviewConversation,
 }) => {
   const { isDarkMode } = useThemeStore();
   const [topicGroups, setTopicGroups] = useState<TopicGroup[]>([]);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+  const [expandedIdeas, setExpandedIdeas] = useState<Set<string>>(new Set());
   const [isGrouping, setIsGrouping] = useState(false);
 
   // Group ideas by conversation context/topic
@@ -136,6 +139,16 @@ export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
     setExpandedTopics(newExpanded);
   };
 
+  const toggleIdea = (ideaId: string) => {
+    const newExpanded = new Set(expandedIdeas);
+    if (newExpanded.has(ideaId)) {
+      newExpanded.delete(ideaId);
+    } else {
+      newExpanded.add(ideaId);
+    }
+    setExpandedIdeas(newExpanded);
+  };
+
   const sourceIcons = {
     user_mention: User,
     ai_suggestion: Bot,
@@ -176,18 +189,34 @@ export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
           Ideas organized by conversation context
         </p>
 
-        {/* End Session Button */}
-        {ideas.length > 0 && onEndSession && (
-          <motion.button
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={onEndSession}
-            className="w-full px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-medium transition-all flex items-center justify-center space-x-2 border border-amber-500/30"
-          >
-            <Clock size={18} />
-            <span>End Session & Review</span>
-          </motion.button>
-        )}
+        {/* Action Buttons */}
+        <div className="space-y-2">
+          {/* Review Conversation Button */}
+          {onReviewConversation && (
+            <motion.button
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={onReviewConversation}
+              className="w-full px-4 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium transition-all flex items-center justify-center space-x-2 border border-blue-500/30"
+            >
+              <Lightbulb size={18} />
+              <span>Review for Missed Ideas</span>
+            </motion.button>
+          )}
+
+          {/* End Session Button */}
+          {ideas.length > 0 && onEndSession && (
+            <motion.button
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={onEndSession}
+              className="w-full px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-medium transition-all flex items-center justify-center space-x-2 border border-amber-500/30"
+            >
+              <Clock size={18} />
+              <span>End Session & Review</span>
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* Topic Groups */}
@@ -241,6 +270,7 @@ export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
                   >
                     {group.ideas.map((idea) => {
                       const SourceIcon = sourceIcons[idea.source];
+                      const isIdeaExpanded = expandedIdeas.has(idea.id);
 
                       return (
                         <motion.div
@@ -248,26 +278,75 @@ export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -10 }}
-                          className={`rounded-xl p-3 transition-all ${
-                            isDarkMode ? 'bg-white/5' : 'bg-white border border-gray-200'
+                          className={`rounded-xl p-3 transition-all cursor-pointer ${
+                            isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white border border-gray-200 hover:bg-gray-50'
                           }`}
+                          onClick={() => toggleIdea(idea.id)}
                         >
                           {/* Idea Header */}
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
-                              <h4 className={`text-sm font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                                {idea.idea.title}
-                              </h4>
-                              <p
-                                className={`text-xs line-clamp-2 ${
-                                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                                }`}
-                              >
-                                {idea.idea.description}
-                              </p>
+                              <div className="flex items-center space-x-2 mb-1">
+                                {isIdeaExpanded ? (
+                                  <ChevronDown size={14} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+                                ) : (
+                                  <ChevronRight size={14} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+                                )}
+                                <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                                  {idea.idea.title}
+                                </h4>
+                              </div>
+                              {!isIdeaExpanded && (
+                                <p
+                                  className={`text-xs line-clamp-2 ml-5 ${
+                                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                  }`}
+                                >
+                                  {idea.idea.description}
+                                </p>
+                              )}
                             </div>
                             <span className="text-lg ml-2">{statusEmojis[idea.status]}</span>
                           </div>
+
+                          {/* Expanded Details */}
+                          {isIdeaExpanded && (
+                            <div className="ml-5 space-y-2 mt-3">
+                              {/* Full Description */}
+                              <div>
+                                <p className={`text-xs font-medium mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  Description:
+                                </p>
+                                <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {idea.idea.description}
+                                </p>
+                              </div>
+
+                              {/* User Quote */}
+                              {idea.idea.userIntent && idea.idea.userIntent !== 'Review analysis' && (
+                                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                                  <p className={`text-xs font-medium mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    What you said:
+                                  </p>
+                                  <p className={`text-xs italic ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    "{idea.idea.userIntent}"
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Reasoning */}
+                              {idea.idea.reasoning && (
+                                <div>
+                                  <p className={`text-xs font-medium mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    Why:
+                                  </p>
+                                  <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    {idea.idea.reasoning}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Meta Info */}
                           <div className="flex items-center justify-between mt-2">

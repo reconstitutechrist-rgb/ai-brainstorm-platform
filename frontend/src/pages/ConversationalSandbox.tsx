@@ -42,6 +42,28 @@ export const ConversationalSandbox: React.FC = () => {
     }
   }, [currentProject]);
 
+  // Poll for new ideas extracted in background
+  useEffect(() => {
+    if (!conversation?.id) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const convResponse = await sandboxApi.getConversation(conversation.id);
+        const newIdeas = convResponse.conversation.extracted_ideas || [];
+
+        // Only update if there are new ideas
+        if (newIdeas.length > extractedIdeas.length) {
+          console.log(`📥 Polling: Found ${newIdeas.length - extractedIdeas.length} new ideas`);
+          setExtractedIdeas(newIdeas);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [conversation?.id, extractedIdeas.length]);
+
   const initializeSandbox = async () => {
     if (!currentProject) return;
 
@@ -94,6 +116,15 @@ export const ConversationalSandbox: React.FC = () => {
   const handleSendMessage = async (userMessage: string) => {
     if (!conversation) return;
 
+    // Immediately add user message to state for instant feedback
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: 'user' as const,
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
     setIsLoading(true);
     try {
       // Check if user wants to end session
@@ -112,10 +143,12 @@ export const ConversationalSandbox: React.FC = () => {
         mode: conversationMode,
       });
 
-      // Update messages
-      setMessages((prev) => [...prev, response.message]);
+      // Update messages with AI response (user message already added)
+      if (response.message) {
+        setMessages((prev) => [...prev, response.message]);
+      }
 
-      // Update extracted ideas
+      // Update extracted ideas (will be populated by background process via polling)
       if (response.extractedIdeas && response.extractedIdeas.length > 0) {
         setExtractedIdeas((prev) => [...prev, ...response.extractedIdeas]);
       }
@@ -126,8 +159,28 @@ export const ConversationalSandbox: React.FC = () => {
       }
     } catch (error) {
       console.error('Send message error:', error);
+      // Remove the optimistically added user message on error
+      setMessages((prev) => prev.filter(msg => msg.id !== userMsg.id));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleReviewConversation = async () => {
+    if (!conversation) return;
+
+    try {
+      const reviewResponse = await sandboxApi.reviewConversation(conversation.id);
+
+      console.log('🔍 Review started:', reviewResponse.message);
+
+      // Show instant feedback - new ideas will appear via live updates
+      alert('Review started! New ideas will appear in the display shortly.');
+
+      // The review happens in background, ideas will be added via the polling mechanism
+    } catch (error) {
+      console.error('Review conversation error:', error);
+      alert('Failed to review conversation. Please try again.');
     }
   };
 
@@ -151,14 +204,17 @@ export const ConversationalSandbox: React.FC = () => {
     if (!conversation) return null;
 
     try {
+      console.log('[ConversationalSandbox] Calling parseDecisions API');
       const parseResponse = await sessionReviewApi.parseDecisions(
         conversation.id,
         decisionsText
       );
+      console.log('[ConversationalSandbox] API response:', parseResponse);
+      console.log('[ConversationalSandbox] Returning parsedDecisions:', parseResponse.parsedDecisions);
 
       return parseResponse.parsedDecisions;
     } catch (error) {
-      console.error('Error parsing decisions:', error);
+      console.error('[ConversationalSandbox] Error parsing decisions:', error);
       return null;
     }
   };
@@ -167,6 +223,7 @@ export const ConversationalSandbox: React.FC = () => {
     if (!conversation) return;
 
     try {
+      console.log('[ConversationalSandbox] Calling finalize API');
       const finalizeResponse = await sessionReviewApi.finalizeSession(
         conversation.id,
         {
@@ -175,20 +232,32 @@ export const ConversationalSandbox: React.FC = () => {
           unmarked: parsedDecisions.unmarked,
         }
       );
+      console.log('[ConversationalSandbox] Finalize response:', finalizeResponse);
 
-      // Close review modal
+      // Close review modal immediately
       setIsReviewModalOpen(false);
 
-      // Show completion summary
-      setSessionSummary(finalizeResponse.sessionSummary);
-      setShowCompleteSummary(true);
+      // Check if processing in background
+      if (finalizeResponse.processing) {
+        // Background processing - show simple success message
+        alert('Session finalized successfully! Your documents are being generated in the background.');
 
-      // Reset sandbox for new session
-      setMessages([]);
-      setExtractedIdeas([]);
-      setConversation(null);
+        // Reset sandbox for new session
+        setMessages([]);
+        setExtractedIdeas([]);
+        setConversation(null);
+      } else if (finalizeResponse.sessionSummary) {
+        // Immediate response with summary (legacy path)
+        setSessionSummary(finalizeResponse.sessionSummary);
+        setShowCompleteSummary(true);
+
+        // Reset sandbox for new session
+        setMessages([]);
+        setExtractedIdeas([]);
+        setConversation(null);
+      }
     } catch (error) {
-      console.error('Error finalizing session:', error);
+      console.error('[ConversationalSandbox] Error finalizing session:', error);
       alert('Failed to finalize session. Please try again.');
       throw error; // Re-throw to keep modal in loading state
     }
@@ -322,11 +391,11 @@ export const ConversationalSandbox: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass flex-1 overflow-hidden`}
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass flex-1 overflow-hidden flex flex-col`}
       >
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-0 overflow-hidden">
           {/* Chat Interface - 2/3 width on large screens */}
-          <div className={`lg:col-span-2 h-full border-r ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}>
+          <div className={`lg:col-span-2 flex flex-col overflow-hidden border-r ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}>
             <ChatInterface
               messages={messages}
               onSendMessage={handleSendMessage}
@@ -336,11 +405,12 @@ export const ConversationalSandbox: React.FC = () => {
           </div>
 
           {/* Live Ideas Panel - 1/3 width on large screens */}
-          <div className="h-full">
+          <div className="flex flex-col overflow-hidden">
             <LiveIdeasPanel
               ideas={extractedIdeas}
               conversationId={conversation?.id}
               onEndSession={extractedIdeas.length > 0 ? handleEndSession : undefined}
+              onReviewConversation={handleReviewConversation}
             />
           </div>
         </div>

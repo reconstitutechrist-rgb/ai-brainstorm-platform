@@ -631,6 +631,14 @@ export const sandboxApi = {
     );
     return response.data;
   },
+
+  reviewConversation: async (conversationId: string) => {
+    const response = await api.post<{ success: boolean; message: string; currentIdeas: number }>(
+      '/sandbox/conversation/review',
+      { conversationId }
+    );
+    return response.data;
+  },
 };
 
 // Generated Documents API (AI-generated project documentation)
@@ -758,6 +766,21 @@ export const generatedDocumentsApi = {
 
 // Canvas API
 export const canvasApi = {
+  // Auto-generate and apply clustering to canvas
+  autoCluster: async (projectId: string, threshold: number = 5) => {
+    const response = await api.post<{
+      success: boolean;
+      clustered: boolean;
+      project?: Project;
+      clustersCreated?: number;
+      message: string;
+    }>(
+      `/canvas/${projectId}/auto-cluster`,
+      { threshold }
+    );
+    return response.data;
+  },
+
   // Apply clustering to canvas
   applyClustering: async (projectId: string, clusters: any[]) => {
     const response = await api.post<{ success: boolean; project: Project; message: string }>(
@@ -771,6 +794,15 @@ export const canvasApi = {
   archiveCards: async (projectId: string, cardIds: string[]) => {
     const response = await api.post<{ success: boolean; project: Project; message: string }>(
       `/canvas/${projectId}/archive`,
+      { cardIds }
+    );
+    return response.data;
+  },
+
+  // Restore (unarchive) cards
+  restoreCards: async (projectId: string, cardIds: string[]) => {
+    const response = await api.post<{ success: boolean; project: Project; message: string }>(
+      `/canvas/${projectId}/restore`,
       { cardIds }
     );
     return response.data;
@@ -946,12 +978,14 @@ export const sessionReviewApi = {
   },
 
   /**
-   * Finalize session and trigger document generation
+   * Finalize session and trigger document generation (background processing)
    */
   finalizeSession: async (conversationId: string, finalDecisions: any) => {
     const response = await api.post<{
       success: boolean;
-      sessionSummary: {
+      message?: string;
+      processing?: boolean;
+      sessionSummary?: {
         success: boolean;
         sessionId: string;
         sessionName: string;
@@ -1043,6 +1077,44 @@ export const brainstormSessionsApi = {
         mostRecentSession: any;
       };
     }>(`/brainstorm-sessions/stats/${projectId}`);
+    return response.data;
+  },
+};
+
+// Intelligence Hub API
+export const intelligenceHubApi = {
+  search: async (projectId: string, query: string, searchMode?: 'feature' | 'decision' | 'document' | 'general', filters?: any) => {
+    const response = await api.post<{
+      success: boolean;
+      results: {
+        summary: string;
+        decisions: any[];
+        documents: any[];
+        userDocuments: any[];
+        activityLog: any[];
+        relatedReferences: any[];
+        suggestedActions: string[];
+      };
+    }>(`/intelligence-hub/${projectId}/search`, {
+      query,
+      searchMode,
+      filters
+    });
+    return response.data;
+  },
+
+  saveAsDocument: async (projectId: string, data: {
+    title: string;
+    content: string;
+    documentType?: string;
+    isUserDocument?: boolean;
+    folderId?: string;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      document: any;
+      message: string;
+    }>(`/intelligence-hub/${projectId}/save-as-document`, data);
     return response.data;
   },
 };

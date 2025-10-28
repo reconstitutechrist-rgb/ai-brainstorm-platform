@@ -7,7 +7,7 @@ interface ChatContainerProps {
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({ children }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div className="flex flex-col gap-6">
       {children}
     </div>
   );
@@ -24,7 +24,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, clas
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`lg:col-span-2 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[calc(100vh-20rem)] flex flex-col ${className}`}
+      className={`flex-[7] ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[45vh] flex flex-col ${className}`}
     >
       {children}
     </motion.div>
@@ -36,7 +36,7 @@ export const CanvasPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, cl
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`lg:col-span-2 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[calc(100vh-20rem)] overflow-hidden ${className}`}
+      className={`w-full ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[45vh] overflow-hidden ${className}`}
     >
       {children}
     </motion.div>
@@ -48,7 +48,7 @@ export const TrackingPanel: React.FC<ChatPanelProps> = ({ children, className = 
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`lg:col-span-1 ${className}`}
+      className={`flex-[3] h-[45vh] ${className}`}
     >
       {children}
     </motion.div>

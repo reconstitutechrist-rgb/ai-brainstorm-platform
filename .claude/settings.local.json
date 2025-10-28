@@ -14,7 +14,19 @@
       "Bash(npm test:*)",
       "Bash(npm run test:coverage:*)",
       "Bash(taskkill //F //PID 1084)",
-      "Bash(taskkill //F //PID 40604)"
+      "Bash(taskkill //F //PID 40604)",
+      "Bash(timeout 15 bash:*)",
+      "Bash(/dev/null)",
+      "Bash(npx tsc:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(node test-project-count.js:*)",
+      "Bash(node apply-migration-015.js:*)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(python -c \"import sys, json; items = json.load(sys.stdin)[''''data''''][0][''''items'''']; print(json.dumps(items[0], indent=2))\")"
     ],
     "deny": [],
     "ask": []

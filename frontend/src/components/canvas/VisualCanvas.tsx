@@ -17,7 +17,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   isDarkMode,
   onArchive,
 }) => {
-  const { currentProject, updateItemPosition, updateItemFields } = useProjectStore();
+  const { currentProject, updateItemPosition, updateItemFields, selectedCardIds, toggleCardSelection } = useProjectStore();
 
   // Auto-position items that don't have a position
   useEffect(() => {
@@ -133,6 +133,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
                       onArchive={onArchive}
                       onPositionChange={handlePositionChange}
                       onStateChange={handleStateChange}
+                      isInCluster={true}
                     />
                   ))}
                 </ClusterContainer>
@@ -148,6 +149,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
                 onArchive={onArchive}
                 onPositionChange={handlePositionChange}
                 onStateChange={handleStateChange}
+                isSelected={selectedCardIds.has(item.id)}
+                onToggleSelection={toggleCardSelection}
               />
             ))}
           </>

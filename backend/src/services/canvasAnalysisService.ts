@@ -54,12 +54,14 @@ export class CanvasAnalysisService {
       index: index + 1,
     }));
 
+    console.log(`[CanvasAnalysis] Sample card IDs:`, cardData.slice(0, 3).map(c => c.id));
+
     // Build AI prompt
     const prompt = `You are an expert at organizing and clustering related ideas on a visual canvas.
 
 Analyze these ${cardData.length} cards and group them into meaningful clusters based on semantic similarity and context:
 
-${cardData.map(card => `[Card ${card.index}] (${card.state}): ${card.text}`).join('\n')}
+${cardData.map(card => `[Card ${card.index}] ID: "${card.id}" (${card.state}): ${card.text}`).join('\n')}
 
 CLUSTERING RULES:
 1. Create 2-5 clusters maximum (avoid too many small groups)
@@ -81,13 +83,15 @@ RESPONSE FORMAT (valid JSON only):
     {
       "name": "Cluster Name",
       "description": "Brief description of this theme",
-      "cardIds": ["card-id-1", "card-id-2"],
+      "cardIds": ["exact-card-id-from-above", "another-exact-card-id"],
       "position": { "x": 100, "y": 100 },
       "color": "#3B82F6",
       "reasoning": "Why these cards belong together"
     }
   ]
 }
+
+IMPORTANT: In the cardIds array, you MUST use the exact ID strings shown above (e.g., "item_1761045507143_nna9sek4i"). Do NOT make up new IDs or use card numbers.
 
 AVAILABLE COLORS (use these exact hex codes):
 - "#3B82F6" (Blue)
@@ -102,7 +106,7 @@ Return ONLY valid JSON, no explanation text.`;
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         messages: [
           {
@@ -264,6 +268,17 @@ Return ONLY valid JSON, no explanation text.`;
       }
 
       const items = project.items || [];
+
+      console.log(`[CanvasAnalysis] Applying clustering:`, {
+        totalItems: items.length,
+        totalClusters: clusters.length,
+        firstCluster: clusters[0] ? {
+          name: clusters[0].name,
+          cardIds: clusters[0].cardIds,
+          cardCount: clusters[0].cardIds?.length
+        } : null,
+        firstItemId: items[0]?.id
+      });
 
       // Update positions for all cards in clusters
       const updatedItems = items.map((item: any) => {

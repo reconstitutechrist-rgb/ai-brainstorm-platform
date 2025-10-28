@@ -83,60 +83,88 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
   const handleCanvasAction = async (suggestion: Suggestion) => {
     if (!currentProject) return;
 
+    // Set loading state
+    setIsLoading(true);
+
     try {
       const { actionData } = suggestion;
 
       if (!actionData || !actionData.action) {
-        console.error('Invalid canvas action data:', actionData);
+        console.error('[SuggestionsSidePanel] Invalid canvas action data:', actionData);
+        alert('Invalid canvas action data. Please try again.');
+        setIsLoading(false);
         return;
       }
 
       let result;
 
+      console.log('[SuggestionsSidePanel] Applying canvas action:', actionData.action);
+
       switch (actionData.action) {
         case 'cluster-cards':
-          if (!actionData.clusters) {
-            console.error('No clusters provided for clustering action');
+          if (!actionData.clusters || !Array.isArray(actionData.clusters)) {
+            console.error('[SuggestionsSidePanel] No clusters provided for clustering action');
+            alert('No clustering data available. Please try refreshing suggestions.');
+            setIsLoading(false);
             return;
           }
+          console.log(`[SuggestionsSidePanel] Clustering ${actionData.clusters.length} groups`);
           result = await canvasApi.applyClustering(currentProject.id, actionData.clusters);
           break;
 
         case 'archive-cards':
-          if (!actionData.cardIdsToArchive) {
-            console.error('No card IDs provided for archiving action');
+          if (!actionData.cardIdsToArchive || !Array.isArray(actionData.cardIdsToArchive)) {
+            console.error('[SuggestionsSidePanel] No card IDs provided for archiving action');
+            alert('No cards selected for archiving.');
+            setIsLoading(false);
             return;
           }
+          console.log(`[SuggestionsSidePanel] Archiving ${actionData.cardIdsToArchive.length} cards`);
           result = await canvasApi.archiveCards(currentProject.id, actionData.cardIdsToArchive);
           break;
 
         case 'optimize-layout':
           const layout = actionData.layout || 'grid';
+          console.log(`[SuggestionsSidePanel] Optimizing layout: ${layout}`);
           result = await canvasApi.optimizeLayout(currentProject.id, layout);
           break;
 
         default:
-          console.error('Unknown canvas action:', actionData.action);
+          console.error('[SuggestionsSidePanel] Unknown canvas action:', actionData.action);
+          alert(`Unknown action type: ${actionData.action}`);
+          setIsLoading(false);
           return;
       }
 
-      if (result?.success) {
-        // Refresh project data
-        const updatedProject = await projectsApi.getById(currentProject.id);
-        if (updatedProject.success) {
-          useProjectStore.setState({ currentProject: updatedProject.project });
-        }
+      console.log('[SuggestionsSidePanel] Canvas action result:', result);
+
+      if (result?.success && result?.project) {
+        // Update the project store with the new project data
+        const { updateProject } = useProjectStore.getState();
+        updateProject(currentProject.id, result.project);
+
+        console.log('[SuggestionsSidePanel] Project updated successfully');
+
+        // Show success message
+        alert(result.message || 'Canvas updated successfully!');
 
         // Remove suggestion after successful application
         handleDismiss(suggestion.id);
 
-        // Reload suggestions
+        // Reload suggestions after a short delay
         setTimeout(() => {
           loadSuggestions();
         }, 500);
+      } else {
+        console.error('[SuggestionsSidePanel] Canvas action failed:', result);
+        alert('Failed to apply canvas action. Please try again.');
       }
     } catch (error) {
-      console.error('Error applying canvas action:', error);
+      console.error('[SuggestionsSidePanel] Error applying canvas action:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error applying canvas action: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
