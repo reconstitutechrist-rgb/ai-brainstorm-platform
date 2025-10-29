@@ -42,6 +42,10 @@ export interface ResearchResults {
   }>;
   searchStrategy?: string;
   duration?: number;
+  // Metadata counts for consistency
+  totalSources?: number;
+  webSourcesCount?: number;
+  documentSourcesCount?: number;
 }
 
 // Document preview structure

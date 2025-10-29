@@ -520,6 +520,10 @@ async function performUnifiedResearchAsync(
           savedReferences: result.savedReferences,
           searchStrategy: result.metadata.searchStrategy,
           duration: result.metadata.duration,
+          // Add missing metadata fields for consistency
+          totalSources: result.metadata.totalSources,
+          webSourcesCount: result.metadata.webSourcesCount,
+          documentSourcesCount: result.metadata.documentSourcesCount,
           progress: {
             stage: 'completed',
             timestamp: new Date().toISOString(),
