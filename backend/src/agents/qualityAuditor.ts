@@ -1,5 +1,6 @@
 import { BaseAgent } from './base';
 import { AgentResponse } from '../types';
+import { AI_MODELS } from '../config/aiModels';
 
 /**
  * QualityAuditor Agent
@@ -144,7 +145,8 @@ Return ONLY valid JSON matching verify() format in system prompt.`,
       },
     ];
 
-    const response = await this.callClaude(messages, 600);
+    // Use Claude Haiku for fast verification - simple validation checklist
+    const response = await this.callClaude(messages, 600, AI_MODELS.HAIKU);
 
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const verification = JSON.parse(cleanResponse);
@@ -190,7 +192,8 @@ Return ONLY valid JSON matching scanAssumptions() format in system prompt.`,
       },
     ];
 
-    const response = await this.callClaude(messages, 700);
+    // Use Claude Haiku for fast assumption scanning - simple detection task
+    const response = await this.callClaude(messages, 700, AI_MODELS.HAIKU);
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const scan = JSON.parse(cleanResponse);
 

@@ -1,5 +1,6 @@
 import { BaseAgent } from './base';
 import { IntentClassification } from '../types';
+import { AI_MODELS } from '../config/aiModels';
 
 export class ContextManagerAgent extends BaseAgent {
   constructor() {
@@ -69,7 +70,9 @@ Always return valid JSON:
   "reasoning": "explanation"
 }`;
 
-    super('ContextManagerAgent', systemPrompt);
+    // Use Claude Haiku for fast intent classification (3-5x faster than Sonnet)
+    // This is a simple classification task that runs on EVERY user message
+    super('ContextManagerAgent', systemPrompt, AI_MODELS.HAIKU);
   }
 
   async classifyIntent(userMessage: string, conversationHistory: any[]): Promise<IntentClassification> {

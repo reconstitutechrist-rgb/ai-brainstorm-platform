@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import { AI_MODELS, getModelForAgent } from '../config/aiModels';
 
 dotenv.config();
 
@@ -20,24 +21,30 @@ export class BaseAgent {
   protected client: Anthropic;
   protected name: string;
   protected systemPrompt: string;
+  protected defaultModel: string;
 
-  constructor(name: string, systemPrompt: string) {
+  constructor(name: string, systemPrompt: string, model?: string) {
     // Use shared singleton client instead of creating new instance per agent
     this.client = getSharedAnthropicClient();
     this.name = name;
     this.systemPrompt = systemPrompt;
+    // Auto-select model based on agent name, or use provided model, or fallback to Sonnet
+    this.defaultModel = model || getModelForAgent(name) || AI_MODELS.SONNET;
+    this.log(`Initialized with model: ${this.defaultModel}`);
   }
 
   protected async callClaude(
     messages: Array<{ role: string; content: string }>,
-    maxTokens: number = 1000
+    maxTokens: number = 1000,
+    model?: string
   ): Promise<string> {
     try {
-      this.log(`Calling Claude API with ${messages.length} messages...`);
+      const selectedModel = model || this.defaultModel;
+      this.log(`Calling Claude API (${selectedModel}) with ${messages.length} messages...`);
       const startTime = Date.now();
 
       const response = await this.client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: selectedModel,
         max_tokens: maxTokens,
         system: this.systemPrompt,
         messages: messages.map(msg => ({
@@ -47,7 +54,7 @@ export class BaseAgent {
       });
 
       const duration = Date.now() - startTime;
-      this.log(`Claude API responded in ${duration}ms`);
+      this.log(`Claude API (${selectedModel}) responded in ${duration}ms`);
 
       const text = response.content[0].type === 'text' ? response.content[0].text : '';
       this.log(`Received ${text.length} characters`);

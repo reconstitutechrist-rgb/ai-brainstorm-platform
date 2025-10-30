@@ -1,5 +1,6 @@
 import { BaseAgent } from './base';
 import { AgentResponse } from '../types';
+import { AI_MODELS } from '../config/aiModels';
 
 /**
  * ConversationAgent
@@ -284,7 +285,8 @@ Return ONLY valid JSON:
       },
     ];
 
-    const response = await this.callClaude(messages, 800);
+    // Use Claude Haiku for fast gap detection - this is a simple JSON analysis task
+    const response = await this.callClaude(messages, 800, AI_MODELS.HAIKU);
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const gaps = JSON.parse(cleanResponse);
 
