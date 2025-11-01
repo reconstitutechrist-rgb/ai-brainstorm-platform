@@ -1,5 +1,5 @@
 ---
-description: Specification for intent classification system used to analyze and categorize user intents in conversation flows
+description: Core system for analyzing user intentions in messages and classifying them into distinct workflow types
 ---
 
 # === USER INSTRUCTIONS ===
@@ -603,52 +603,66 @@ For state management, see: [conversation-state-model.mdc](.giga/rules/conversati
 
 # intent-classification-system
 
-## Core Intent Classification Engine
+Intent Classification Core Components:
 
-Primary intent types supported:
-- Exploration: User exploring new ideas/concepts
-- Clarification: User seeking additional information 
-- Decision: User making/confirming decisions
-- Comparison: User comparing multiple options
-- Implementation: User discussing execution details
-- Validation: User verifying assumptions/facts
-- Parking: User deferring items for later
-- Documentation: User capturing/organizing information
-- Question: User asking direct questions
-- Meta: User discussing the conversation itself
+1. Intent Analysis Engine
+Location: backend/src/agents/ContextManagerAgent.ts
+Importance Score: 95/100
 
-## Multi-Intent Detection
+Primary Classification Types:
+- DECISION_MAKING: User expressing choices/preferences
+- EXPLORATION: Investigating options/alternatives  
+- CLARIFICATION: Seeking additional information
+- CONFIRMATION: Verifying understanding
+- REJECTION: Expressing disagreement
+- MODIFICATION: Suggesting changes
+- PARKING: Deferring for later
+- DOCUMENTATION: Recording/noting information
+- PROCESS: Workflow/next steps
+- META: System/process discussion
 
-- Pattern matching system identifies multiple intents within single statements
-- Confidence scoring for each detected intent (0-100)
-- Hedging language detection reduces confidence scores
-- Context-aware intent priority determination
-- Cross-intent relationship tracking
+2. Hedging Language Analysis
+Location: backend/test-nlp-enhancements.js
+Importance Score: 85/100
 
-## Context Analysis
+Confidence Scoring System:
+- High Confidence (90-100%): Direct, clear statements
+- Medium Confidence (70-85%): Qualified language
+- Low Confidence (50-70%): Heavy hedging
+- Uncertain (<50%): Highly tentative
 
-- Maintains conversation mode state machine
-- Tracks topic evolution across multiple messages
-- Identifies topic shifts and context boundaries
-- Links related intents across conversation segments
-- Preserves intent history for context resolution
+Language Pattern Categories:
+- Tentative: "maybe", "perhaps", "possibly"
+- Qualified: "I think", "probably", "likely" 
+- Certain: "definitely", "absolutely", "must"
 
-## Workflow Routing
+3. Multi-Intent Detection
+Location: backend/src/agents/contextManager.ts
+Importance Score: 90/100
 
-- Intent-based agent selection
-- Parallel routing for compatible intents
-- Sequential routing for dependent intents 
-- Fallback handlers for ambiguous intents
-- Priority-based execution ordering
+Capabilities:
+- Parallel intent processing
+- Priority weighting between competing intents
+- Context-based intent disambiguation
+- Temporal intent tracking
+- Cross-message intent correlation
 
-## Implementation Score: 90/100
+4. Workflow Routing
+Location: backend/src/agents/orchestrator.ts 
+Importance Score: 88/100
 
-Key scoring factors:
-- Sophisticated multi-intent detection
-- Context-aware intent classification
-- Complex workflow routing logic
-- Comprehensive intent type system
-- Hedging language analysis
+Routing Rules:
+- Exploration -> Research Agent
+- Decision -> Documentation Agent
+- Clarification -> QA Agent
+- Confirmation -> Verification Agent
+- Parking -> Session Manager
+
+Intent State Transitions:
+- EXPLORING -> DECIDED
+- EXPLORING -> PARKED 
+- PARKED -> EXPLORING
+- DECIDED -> EXPLORING (with override)
 
 $END$
 

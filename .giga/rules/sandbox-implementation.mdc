@@ -1,5 +1,5 @@
 ---
-description: Analysis of sandbox conversational implementation with background idea extraction and progressive refinement states.
+description: Technical specification for implementing an AI-driven conversational sandbox with progressive idea refinement and background analysis
 ---
 
 # === USER INSTRUCTIONS ===
@@ -491,49 +491,62 @@ interface SandboxIdea {
 For agent orchestration details, see: [agent-orchestration-system.mdc](.giga/rules/agent-orchestration-system.mdc)
 # === END USER INSTRUCTIONS ===
 
-# sandbox-implementation
+# sandbox-implementation 
 
-## Core Components
+## Core Sandbox Components
 
-### Background Idea Extraction
-Location: `/backend/src/agents/ConversationalIdeaAgent.ts`
+### Idea Evolution Pipeline (90/100)
+- Progressive refinement states: mentioned → exploring → refined → ready_to_extract
+- Background idea extraction with parallel agent analysis
+- Topic grouping based on semantic similarity and conversation context
+- Automatic state transitions based on conversation signals
+- Intent classification for idea progression
 
-Progressive refinement states for extracted ideas:
-- mentioned: Initial detection in conversation
-- exploring: Under active discussion/refinement
-- refined: Details and scope clarified 
-- ready_to_extract: Validated for project inclusion
+### Conversation Context Manager (85/100)
+- Real-time message analysis for idea extraction
+- Maintains conversation topics and groups
+- Links related ideas across conversation threads
+- Updates idea states based on user decisions
+- Manages clarification workflows for ambiguous ideas
 
-### Topic Grouping System
-Location: `/backend/src/services/ContextGroupingService.ts`
+### Background Analysis System (80/100)
+- Continuous analysis of conversation content
+- Automatic topic detection and grouping
+- Reference conflict detection
+- Quality scoring for extracted ideas
+- Confidence level tracking for decisions
 
-- Semantic clustering of related conversation topics
-- Real-time group formation as ideas emerge
-- Dynamic regrouping based on evolving context
-- Confidence scoring for group assignments
+### Instant Response Architecture (75/100)
+- Parallel processing of user messages
+- Background idea extraction while maintaining conversation
+- Progressive refinement without blocking user interaction
+- Staged analysis results delivery
+- Context-aware response generation
 
-### Instant Response Architecture
-Location: `/frontend/src/components/sandbox/ChatInterface.tsx`
+## Sandbox Workflows
 
-Multi-mode conversation handling:
-- exploration: Open-ended ideation
-- clarification: Gap/ambiguity resolution
-- generation: Concrete solution proposals
-- refinement: Idea enhancement
-- comparison: Alternative evaluation
-- validation: Assumption testing
-- implementation: Action planning
+### Idea Processing Pipeline
+1. Initial Mention Detection
+   - Continuous monitoring of conversation
+   - Preliminary idea classification
+   - Topic relationship mapping
 
-## Sandbox Orchestration
-Location: `/backend/src/agents/orchestrator.ts`
+2. Exploration Phase
+   - Deep analysis of mentioned concepts
+   - Related topic discovery
+   - Conflict detection with existing ideas
 
-- Maintains conversational state across modes
-- Routes messages to specialized agents based on intent
-- Tracks idea progression through refinement states
-- Manages parallel agent execution for responsive UX
-- Implements intelligent context pruning
+3. Refinement Stage
+   - Idea validation checks
+   - Quality scoring
+   - Reference verification
+   - Duplicate detection
 
-Importance Score: 95/100
+4. Extraction Preparation
+   - Final validation
+   - Context grouping
+   - Project integration checks
+   - State transition verification
 
 $END$
 

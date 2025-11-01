@@ -1,5 +1,5 @@
 ---
-description: Specification for implementing the conversation state management system with three-state decision tracking and verification modes
+description: Specifications for conversation state management system including decision tracking, verification, and context management
 ---
 
 # === USER INSTRUCTIONS ===
@@ -355,47 +355,54 @@ For intent classification details, see: [intent-classification-system.mdc](.giga
 
 # conversation-state-model
 
-The conversation state management system implements a three-state decision model with verification modes and context-aware approval detection:
-
-## Core State Model
-States:
-- DECIDED: Confirmed decisions with verification status
-- EXPLORING: Active topics under discussion/consideration
-- PARKED: Temporarily suspended items for later review
-
-## State Transitions
-- Implicit approval detection through natural language patterns
-- Automated state progression based on conversation context
-- Hedging language detection affects confidence scoring
-- Multi-intent recognition allows parallel state changes
+## Decision State Model
+- Three-state decision tracking system:
+  - DECIDED: Final approved items requiring no further discussion
+  - EXPLORING: Active items under consideration with ongoing discussion
+  - PARKED: Temporarily suspended items requiring future resolution
+- Each state includes confidence scoring (0-100) for tracking certainty levels
+- Automatic state transitions based on conversation analysis
 
 ## Verification System
-- Three-level verification modes:
-  - Quick: Basic pattern matching for clear approvals
-  - Standard: Context-aware approval detection
-  - Strict: Requires explicit confirmation patterns
-- Confidence scoring based on language patterns
-- Automatic verification triggers on state changes
+- Multi-mode verification for state transitions:
+  - Explicit verification through direct user confirmation
+  - Implicit verification through conversation context analysis
+  - AI-assisted verification through intent classification
+- Confidence thresholds required for state changes:
+  - High confidence (90+): Automatic transition allowed
+  - Medium confidence (70-89): Requires user verification
+  - Low confidence (<70): Requires explicit discussion
 
-## Cache Invalidation
-- State-based cache invalidation rules
-- Intelligent pruning of conversation context
-- Session-specific cache management
-- Cross-reference tracking between related decisions
+## Context Management
+- Session-level context tracking:
+  - Topic grouping with semantic relationship mapping
+  - Decision chain tracking with dependency analysis
+  - Blocker identification and resolution workflow
+- Context invalidation rules:
+  - Time-based expiration for stale contexts
+  - State-change triggered revalidation
+  - Cross-reference conflict detection
 
-## Context Management 
-- Topic grouping with semantic clustering
-- Related item detection through citation tracking
-- Decision confidence scoring with metadata
-- Automated topic detection and organization
+## Approval Detection
+- Natural language understanding for approval signals:
+  - Direct approval phrases
+  - Contextual approval indicators
+  - Hedging language detection
+- Multi-message approval tracking:
+  - Conversation thread analysis
+  - Cross-message intent reconciliation
+  - Temporal approval patterns
 
-## Implementation Paths:
-/frontend/src/components/sandbox/ChatInterface.tsx
-/frontend/src/components/sandbox/SessionReviewModal.tsx
-/backend/src/agents/contextManager.ts
-/backend/src/services/sessionCompletionService.ts
-
-Importance Score: 95/100
+## Cache Management
+- State-aware caching system:
+  - Per-state cache invalidation rules
+  - Context-based cache dependencies
+  - Progressive cache updates based on confidence scores
+- Cache invalidation triggers:
+  - State transitions
+  - Context changes
+  - Confidence score updates
+  - Related item modifications
 
 $END$
 

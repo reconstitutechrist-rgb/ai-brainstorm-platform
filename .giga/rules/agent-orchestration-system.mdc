@@ -1,5 +1,5 @@
 ---
-description: Specifications for multi-agent coordination, parallel execution patterns, and workflow orchestration in AI systems
+description: Guidelines for implementing and extending the multi-agent AI orchestration system with parallel execution and workflow patterns
 ---
 
 # === USER INSTRUCTIONS ===
@@ -251,63 +251,65 @@ For comprehensive agent documentation, see: [AGENTS_DOCUMENTATION.md](AGENTS_DOC
 
 # agent-orchestration-system
 
-Core Agent Orchestration Components:
+## Core Orchestration Components
 
-1. Integration Orchestrator
-Path: backend/src/agents/orchestrator.ts
-Importance Score: 95/100
+### Agent Coordination Framework
+Path: `backend/src/agents/orchestrator.ts`
+Importance: 95/100
 
-- Nine-agent coordination system:
-  - ContextManager: Intent classification and conversation routing
-  - ConversationAgent: Real-time idea generation and refinement
-  - QualityAuditor: Multi-stage verification and consistency checking
-  - UnifiedResearchAgent: Multi-source research synthesis
-  - ClarificationEngine: Information gap detection and resolution
-  - ConversationalIdeaAgent: Idea extraction and evolution tracking
-  - StrategicPlanner: Vision-to-specification translation
-  - AnalysisAgent: Reference conflict detection
-  - ValidationAgent: Cross-reference consistency verification
+- Manages parallel execution of 9 specialized AI agents:
+  - ContextManager: Message intent classification
+  - ConversationalIdeation: Core brainstorming
+  - QualityAuditor: Verification and validation 
+  - StrategicPlanner: High-level direction
+  - LiveResearch: Real-time information gathering
+  - SessionReviewer: Progress tracking
+  - ReferenceAnalyzer: Document processing
+  - UnifiedResearch: Multi-source synthesis
+  - IntegrationManager: Cross-agent coordination
 
-- Parallel Execution Framework:
-  - Dynamic workflow determination based on conversation context
-  - Concurrent agent task execution for compatible operations
-  - Intelligent context pruning to optimize agent interactions
-  - Response caching with state-based invalidation
-  - Cross-agent result aggregation and conflict resolution
+### Workflow Patterns
+Path: `backend/src/agents/ContextManagerAgent.ts`
+Importance: 90/100
 
-2. Context Management System
-Path: backend/src/services/contextPruner.ts
-Importance Score: 85/100
+- Progressive execution modes:
+  1. Exploration: Initial idea generation
+  2. Clarification: Detail gathering
+  3. Refinement: Idea enhancement
+  4. Verification: Quality checks
+  5. Integration: Cross-referencing
 
-- Agent-specific context filtering:
-  - Selective conversation history provision
-  - Relevance-based context preservation
-  - State-aware context optimization
-  - Cross-agent context sharing rules
+### Optimization Features
 
-3. Workflow Patterns
-Path: backend/src/agents/ConversationalIdeaAgent.ts
-Importance Score: 90/100
+Context Pruning System
+Path: `backend/src/services/agentCoordination.ts`
+Importance: 85/100
 
-- Progressive conversation modes:
-  - Exploration: Initial idea generation
-  - Clarification: Information gap resolution
-  - Generation: Concrete suggestion development
-  - Refinement: Idea improvement
-  - Comparison: Alternative analysis
-  - Validation: Consistency checking
-  - Implementation: Action planning
+- Per-agent context management:
+  - Core conversation history
+  - Agent-specific decision cache
+  - Relevant reference snippets
+  - Previous agent responses
 
-4. Agent Consolidation History
-Path: backend/src/agents/orchestrator.ts
-Importance Score: 80/100
+Response Caching
+Path: `backend/src/services/sessionService.ts`
+Importance: 80/100
 
-- Evolution from 17 to 9 specialized agents
-- Merged capabilities:
-  - Research and analysis agents combined
-  - Multiple verification agents consolidated
-  - Separate planning agents unified
-  - Documentation agents integrated
+- Caches identical inputs across:
+  - Intent classifications
+  - Quality checks
+  - Research queries
+  - Standard verifications
+
+### Agent Consolidation History
+Path: `backend/src/agents/orchestrator.ts`
+Importance: 85/100
+
+Previous iterations:
+- v1: 12 separate agents
+- v2: Consolidated to 9 agents
+- v3: Enhanced parallel execution
+- Current: Optimized workflows with context sharing
 
 $END$
 
