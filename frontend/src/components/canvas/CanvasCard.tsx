@@ -32,7 +32,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
         return {
           border: 'border-green-400',
           bg: isDarkMode ? 'bg-green-900/30' : 'bg-green-50/90',
-          text: 'text-green-500',
+          text: 'text-cyan-500',
           glow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]',
         };
       case 'exploring':

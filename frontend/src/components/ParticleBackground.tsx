@@ -59,7 +59,7 @@ export const ParticleBackground: React.FC = () => {
         // Draw particle with glow
         ctx.shadowBlur = 10;
         ctx.shadowColor = isDarkMode ? 'rgba(0, 255, 170, 0.6)' : 'rgba(0, 255, 170, 0.4)';
-        ctx.fillStyle = '#00ffaa';
+        ctx.fillStyle = '#00d4ff';
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
         ctx.fill();

@@ -362,7 +362,7 @@ const InteractiveAnalysis: React.FC<Props> = ({
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleExtractInsight(section.title + ': ' + section.summary)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-2 text-cyan-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Add to Canvas"
                       >
                         <Plus className="w-4 h-4" />
@@ -416,7 +416,7 @@ const InteractiveAnalysis: React.FC<Props> = ({
                 >
                   {copied ? (
                     <>
-                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <CheckCircle className="w-3 h-3 text-cyan-600" />
                       Copied
                     </>
                   ) : (

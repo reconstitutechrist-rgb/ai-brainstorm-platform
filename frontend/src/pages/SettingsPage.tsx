@@ -124,7 +124,7 @@ export const SettingsPage: React.FC = () => {
         className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl p-8 mb-8 shadow-glass`}
       >
         <div className="flex items-center space-x-3 mb-2">
-          <Settings className="text-green-metallic" size={32} />
+          <Settings className="text-cyan-primary" size={32} />
           <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Settings
           </h1>
@@ -148,9 +148,9 @@ export const SettingsPage: React.FC = () => {
               className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
             >
               {/* Section Header */}
-              <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-green-metallic/20">
-                <div className="w-10 h-10 rounded-xl bg-green-metallic/20 flex items-center justify-center">
-                  <Icon size={20} className="text-green-metallic" />
+              <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-cyan-primary/20">
+                <div className="w-10 h-10 rounded-xl bg-cyan-primary/20 flex items-center justify-center">
+                  <Icon size={20} className="text-cyan-primary" />
                 </div>
                 <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                   {section.title}
@@ -177,7 +177,7 @@ export const SettingsPage: React.FC = () => {
                       <button
                         onClick={(setting as ToggleSetting).onChange}
                         className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                          setting.value ? 'bg-green-metallic' : 'bg-gray-300'
+                          setting.value ? 'bg-cyan-primary' : 'bg-gray-300'
                         }`}
                       >
                         <span
@@ -196,7 +196,7 @@ export const SettingsPage: React.FC = () => {
                           isDarkMode
                             ? 'bg-white/10 text-white border-white/20'
                             : 'bg-white text-gray-800 border-gray-300'
-                        } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+                        } border focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
                       >
                         {(setting as SelectSetting).options.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -221,7 +221,7 @@ export const SettingsPage: React.FC = () => {
         className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass mt-6`}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <Database className="text-green-metallic" size={20} />
+          <Database className="text-cyan-primary" size={20} />
           <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             System Information
           </h3>
@@ -238,7 +238,7 @@ export const SettingsPage: React.FC = () => {
           <div className="flex justify-between">
             <span>Backend Status:</span>
             <span className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="w-2 h-2 rounded-full bg-cyan-500" />
               <span>Connected</span>
             </span>
           </div>

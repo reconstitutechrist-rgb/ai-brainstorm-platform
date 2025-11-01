@@ -281,7 +281,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={`fixed right-0 top-0 h-full w-full sm:w-[400px] lg:w-[420px] z-50 ${
               isDarkMode ? 'glass-dark' : 'glass'
-            } shadow-2xl border-l-2 border-green-metallic/30 flex flex-col`}
+            } shadow-2xl border-l-2 border-cyan-primary/30 flex flex-col`}
           >
             {/* Header */}
             <div
@@ -290,8 +290,8 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
               } flex items-center justify-between`}
             >
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-green-metallic/20 flex items-center justify-center">
-                  <Sparkles className="text-green-metallic" size={20} />
+                <div className="w-10 h-10 rounded-xl bg-cyan-primary/20 flex items-center justify-center">
+                  <Sparkles className="text-cyan-primary" size={20} />
                 </div>
                 <div>
                   <h2
@@ -347,7 +347,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                   onClick={() => setFilterType('all')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                     filterType === 'all'
-                      ? 'bg-green-metallic text-white'
+                      ? 'bg-cyan-primary text-white'
                       : isDarkMode
                       ? 'bg-white/10 text-gray-300 hover:bg-white/20'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -364,7 +364,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                       onClick={() => setFilterType(type.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center space-x-1 ${
                         filterType === type.id
-                          ? 'bg-green-metallic text-white'
+                          ? 'bg-cyan-primary text-white'
                           : isDarkMode
                           ? 'bg-white/10 text-gray-300 hover:bg-white/20'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -385,7 +385,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                   onClick={() => setFilterPriority('all')}
                   className={`px-2 py-1 rounded text-xs font-medium ${
                     filterPriority === 'all'
-                      ? 'bg-green-metallic text-white'
+                      ? 'bg-cyan-primary text-white'
                       : isDarkMode
                       ? 'bg-white/10 text-gray-300'
                       : 'bg-gray-100 text-gray-700'
@@ -430,7 +430,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
             <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-4">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <RefreshCw size={32} className="text-green-metallic animate-spin" />
+                  <RefreshCw size={32} className="text-cyan-primary animate-spin" />
                 </div>
               ) : filteredSuggestions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
@@ -457,7 +457,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                           isDarkMode ? 'bg-white/5' : 'bg-white/50'
                         } rounded-xl p-4 border ${
                           isDarkMode ? 'border-white/10' : 'border-gray-200'
-                        } hover:border-green-metallic/50 transition-all`}
+                        } hover:border-cyan-primary/50 transition-all`}
                       >
                         {/* Header */}
                         <div className="flex items-start justify-between mb-2">
@@ -531,7 +531,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleAccept(suggestion)}
-                            className="flex-1 px-3 py-2 rounded-lg bg-green-metallic hover:bg-green-metallic/80 text-white text-sm font-medium transition-all flex items-center justify-center space-x-1"
+                            className="flex-1 px-3 py-2 rounded-lg bg-cyan-primary hover:bg-cyan-primary/80 text-white text-sm font-medium transition-all flex items-center justify-center space-x-1"
                           >
                             <ThumbsUp size={14} />
                             <span>Apply</span>

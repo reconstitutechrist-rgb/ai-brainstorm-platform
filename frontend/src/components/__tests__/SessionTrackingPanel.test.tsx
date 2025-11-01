@@ -477,7 +477,7 @@ describe('SessionTrackingPanel', () => {
 
         await waitFor(() => {
           const confidenceBadge = screen.getByText(/Confidence: 90%/);
-          expect(confidenceBadge).toHaveClass('text-green-400');
+          expect(confidenceBadge).toHaveClass('text-cyan-400');
         });
       }
     });

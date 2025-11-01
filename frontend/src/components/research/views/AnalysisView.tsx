@@ -127,7 +127,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
             className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
             title="Copy analysis"
           >
-            {copied ? <CheckCircle size={20} className="text-green-metallic" /> : <Copy size={20} />}
+            {copied ? <CheckCircle size={20} className="text-cyan-primary" /> : <Copy size={20} />}
           </button>
           <button
             onClick={handleReanalyze}
@@ -182,7 +182,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
           <button
             onClick={handleAddTag}
             disabled={!tagInput.trim()}
-            className="px-4 py-2 rounded-lg bg-green-metallic text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-metallic/90 transition-colors"
+            className="px-4 py-2 rounded-lg bg-cyan-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-primary/90 transition-colors"
           >
             Add
           </button>
@@ -232,11 +232,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
 
           {/* Confirmations */}
           {reference.metadata?.contextualAnalysis?.projectAlignment?.confirmations?.length > 0 && (
-            <div className="border-l-4 border-green-500 bg-green-500/10 p-4 rounded-lg">
+            <div className="border-l-4 border-cyan-500 bg-cyan-500/10 p-4 rounded-lg">
               <div className="flex items-start gap-3">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={20} />
+                <CheckCircle className="text-cyan-500 flex-shrink-0 mt-1" size={20} />
                 <div className="flex-1">
-                  <h3 className="font-bold text-green-500 mb-2">Confirmations</h3>
+                  <h3 className="font-bold text-cyan-500 mb-2">Confirmations</h3>
                   {reference.metadata.contextualAnalysis.projectAlignment.confirmations.map((confirmation: any, idx: number) => (
                     <div key={idx} className="mb-2 last:mb-0">
                       <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -277,7 +277,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
         </div>
       ) : reference.analysis_status === 'processing' ? (
         <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="w-12 h-12 text-green-metallic animate-spin mb-4" />
+          <Loader2 className="w-12 h-12 text-cyan-primary animate-spin mb-4" />
           <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Analyzing reference...</p>
         </div>
       ) : reference.analysis_status === 'failed' ? (

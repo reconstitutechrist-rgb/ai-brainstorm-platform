@@ -3,11 +3,13 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 console.log('[DEBUG] About to import IntelligenceSearchAgent...');
 import { IntelligenceSearchAgent } from '../agents/intelligenceSearchAgent';
+import { ConversationalIntelligenceService } from '../services/conversationalIntelligenceService';
 console.log('[DEBUG] IntelligenceSearchAgent imported successfully');
 
 const router = Router();
 console.log('[DEBUG] Creating IntelligenceSearchAgent instance...');
 const searchAgent = new IntelligenceSearchAgent(supabase);
+const conversationalService = new ConversationalIntelligenceService(supabase);
 console.log('[DEBUG] IntelligenceSearchAgent instance created successfully');
 
 // Test route to verify routes are registered
@@ -170,6 +172,51 @@ router.post('/:projectId/save-as-document', async (req: Request, res: Response) 
       success: false,
       error: 'Failed to save document',
       details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Conversational intelligence - handles both Q&A and document generation
+ * POST /api/intelligence-hub/:projectId/conversation
+ */
+router.post('/:projectId/conversation', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { message, conversationHistory = [] } = req.body;
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required and must be a string'
+      });
+    }
+
+    console.log(`[IntelligenceHub] Conversation request for project ${projectId}: "${message}"`);
+
+    const response = await conversationalService.processConversation(
+      projectId,
+      message,
+      conversationHistory
+    );
+
+    res.json({
+      success: true,
+      response
+    });
+  } catch (error) {
+    console.error('[IntelligenceHub] Conversation error:', error);
+
+    // Detailed error logging
+    if (error instanceof Error) {
+      console.error('[IntelligenceHub] Error message:', error.message);
+      console.error('[IntelligenceHub] Error stack:', error.stack);
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process conversation',
+      details: error instanceof Error ? error.message : JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
   }
 });

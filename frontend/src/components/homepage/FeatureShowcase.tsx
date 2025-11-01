@@ -22,28 +22,28 @@ export const FeatureShowcase: React.FC = () => {
       title: '8 AI Agents',
       description: 'Collaborate with specialized AI agents that work together to brainstorm, verify, and refine your ideas with zero assumptions.',
       path: '/agents',
-      gradient: 'linear-gradient(135deg, #00ffaa 0%, #1affcc 100%)',
+      gradient: 'linear-gradient(135deg, #00d4ff 0%, #00ffff 100%)',
     },
     {
       icon: <TestTube size={64} strokeWidth={1.5} />,
       title: 'Sandbox Mode',
       description: 'Safely experiment with ideas in isolation. Test concepts, explore alternatives, and iterate without affecting your main project.',
       path: '/sandbox',
-      gradient: 'linear-gradient(135deg, #1affcc 0%, #00cc88 100%)',
+      gradient: 'linear-gradient(135deg, #00ffff 0%, #0099ff 100%)',
     },
     {
       icon: <Database size={64} strokeWidth={1.5} />,
       title: 'Intelligence Hub',
       description: 'Track all decisions, review conversations, and access generated documents with full citations and reasoning.',
       path: '/intelligence',
-      gradient: 'linear-gradient(135deg, #00cc88 0%, #00ffaa 100%)',
+      gradient: 'linear-gradient(135deg, #0099ff 0%, #00d4ff 100%)',
     },
     {
       icon: <FileText size={64} strokeWidth={1.5} />,
       title: 'Research Hub',
       description: 'Upload documents, analyze content, and let AI agents extract insights to inform your brainstorming sessions.',
       path: '/research',
-      gradient: 'linear-gradient(135deg, #00ffaa 0%, #00cc88 100%)',
+      gradient: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
     },
   ];
 
@@ -108,7 +108,7 @@ export const FeatureShowcase: React.FC = () => {
               </p>
 
               {/* Hover Arrow */}
-              <div className={`flex items-center gap-2 text-green-metallic group-hover:gap-4 transition-all ${
+              <div className={`flex items-center gap-2 text-cyan-primary group-hover:gap-4 transition-all ${
                 isDarkMode ? 'opacity-80' : 'opacity-90'
               }`}>
                 <span className="font-medium">Explore</span>

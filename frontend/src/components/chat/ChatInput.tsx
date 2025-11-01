@@ -25,7 +25,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isDarkMode,
 }) => {
   return (
-    <div className="p-6 border-t border-green-metallic/20">
+    <div className="p-6 border-t border-cyan-primary/20">
       <div className="flex items-end space-x-3">
         <button
           onClick={onUpload}
@@ -35,7 +35,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           title="Upload reference files"
           aria-label="Upload reference files"
         >
-          <Upload size={20} className="text-green-metallic" />
+          <Upload size={20} className="text-cyan-primary" />
         </button>
 
         <div className="flex-1 relative">
@@ -52,7 +52,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 : 'bg-white text-gray-800 placeholder-gray-500'
             } border ${
               isDarkMode ? 'border-white/20' : 'border-gray-300'
-            } focus:outline-none focus:ring-2 focus:ring-green-metallic/50 ${
+            } focus:outline-none focus:ring-2 focus:ring-cyan-primary/50 ${
               !isSessionActive ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             style={{ maxHeight: '120px' }}
@@ -66,7 +66,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           className={`p-3 rounded-xl ${
             !value.trim() || isSending || !isSessionActive
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-green-metallic hover:bg-green-metallic-dark'
+              : 'bg-cyan-primary hover:bg-cyan-primary-dark'
           } text-white transition-all`}
           aria-label="Send message"
         >

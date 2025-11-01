@@ -218,7 +218,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
 
       <button
         onClick={() => setCurrentStep('decisions')}
-        className="w-full px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all"
+        className="w-full px-4 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all"
       >
         Make Decisions
       </button>
@@ -337,7 +337,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
           onChange={(e) => setDecisionsInput(e.target.value)}
           placeholder="I want... I don't want..."
           rows={8}
-          className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-metallic ${
+          className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-cyan-primary ${
             isDarkMode
               ? 'bg-white/10 text-white placeholder-gray-500'
               : 'bg-white text-gray-800 placeholder-gray-400 border border-gray-300'
@@ -360,7 +360,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
           <button
             onClick={handleSubmitDecisions}
             disabled={!decisionsInput.trim() || isProcessing}
-            className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="flex-1 px-4 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isProcessing ? (
               <>
@@ -399,7 +399,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
         onChange={(e) => setClarificationInput(e.target.value)}
         placeholder="Clarify your decisions..."
         rows={4}
-        className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-metallic ${
+        className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-cyan-primary ${
           isDarkMode
             ? 'bg-white/10 text-white placeholder-gray-500'
             : 'bg-white text-gray-800 placeholder-gray-400 border border-gray-300'
@@ -422,7 +422,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
         <button
           onClick={handleSubmitClarification}
           disabled={!clarificationInput.trim() || isProcessing}
-          className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          className="flex-1 px-4 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
           {isProcessing ? (
             <>
@@ -447,7 +447,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
       <div className="space-y-4">
         <div
           className={`p-4 rounded-xl ${
-            isDarkMode ? 'bg-green-500/10' : 'bg-green-50'
+            isDarkMode ? 'bg-cyan-500/10' : 'bg-green-50'
           }`}
         >
           <p className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
@@ -463,7 +463,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
             }`}
           >
             <div className="flex items-center space-x-2 mb-3">
-              <CheckCircle2 size={20} className="text-green-400" />
+              <CheckCircle2 size={20} className="text-cyan-400" />
               <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Accepted ({parsedDecisions.accepted.length})
               </span>
@@ -476,7 +476,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
                     isDarkMode ? 'text-gray-300' : 'text-gray-700'
                   }`}
                 >
-                  <span className="text-green-400">✓</span>
+                  <span className="text-cyan-400">✓</span>
                   <span>{idea.idea.title}</span>
                 </li>
               ))}
@@ -557,7 +557,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
           <button
             onClick={handleConfirm}
             disabled={isProcessing}
-            className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="flex-1 px-4 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isProcessing ? (
               <>

@@ -137,7 +137,7 @@ const ReferenceLibraryDrawer: React.FC<ReferenceLibraryDrawerProps> = ({ onRefer
               {/* Status Icon */}
               <div className="flex-shrink-0">
                 {ref.analysis_status === 'completed' && (
-                  <CheckCircle size={16} className="text-green-500" />
+                  <CheckCircle size={16} className="text-cyan-500" />
                 )}
                 {ref.analysis_status === 'processing' && (
                   <Loader2 size={16} className="animate-spin text-yellow-500" />

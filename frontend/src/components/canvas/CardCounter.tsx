@@ -42,7 +42,7 @@ export const CardCounter: React.FC<CardCounterProps> = ({
       default:
         return {
           border: 'border-green-400',
-          text: 'text-green-500',
+          text: 'text-cyan-500',
           bg: isDarkMode ? 'bg-green-900/30' : 'bg-green-50/80',
           progress: 'bg-gradient-to-r from-green-500 to-green-600'
         };

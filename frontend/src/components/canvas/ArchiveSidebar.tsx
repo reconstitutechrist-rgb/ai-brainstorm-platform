@@ -39,8 +39,8 @@ export const ArchiveSidebar: React.FC<ArchiveSidebarProps> = ({
         className={`fixed right-0 top-1/2 -translate-y-1/2 ${
           isDarkMode ? 'glass-dark' : 'glass'
         } border-l-2 border-t-2 border-b-2 ${
-          isDarkMode ? 'border-green-400' : 'border-green-500'
-        } rounded-l-2xl p-4 shadow-glass z-40 hover:shadow-glow-green transition-all`}
+          isDarkMode ? 'border-cyan-400' : 'border-cyan-500'
+        } rounded-l-2xl p-4 shadow-glass z-40 hover:shadow-glow-cyan transition-all`}
       >
         <div className="flex flex-col items-center gap-2">
           <motion.span
@@ -73,7 +73,7 @@ export const ArchiveSidebar: React.FC<ArchiveSidebarProps> = ({
             className={`fixed right-0 top-0 h-full w-96 ${
               isDarkMode ? 'glass-dark' : 'glass'
             } border-l-2 ${
-              isDarkMode ? 'border-green-400' : 'border-green-500'
+              isDarkMode ? 'border-cyan-400' : 'border-cyan-500'
             } shadow-2xl z-30 backdrop-blur-2xl`}
           >
             <div className="flex flex-col h-full">
@@ -143,8 +143,8 @@ export const ArchiveSidebar: React.FC<ArchiveSidebarProps> = ({
                         transition={{ delay: index * 0.05 }}
                         className={`p-4 rounded-2xl border-2 hover:shadow-lg transition-all ${
                           isDarkMode
-                            ? 'bg-gray-800/40 border-gray-600 hover:border-green-400'
-                            : 'bg-white/60 border-gray-200 hover:border-green-500'
+                            ? 'bg-gray-800/40 border-gray-600 hover:border-cyan-400'
+                            : 'bg-white/60 border-gray-200 hover:border-cyan-500'
                         }`}
                       >
                         {/* Card Type Badge */}
@@ -212,7 +212,7 @@ export const ArchiveSidebar: React.FC<ArchiveSidebarProps> = ({
 function getTypeColor(type: ProjectItem['state'], isDarkMode: boolean): string {
   switch (type) {
     case 'decided':
-      return isDarkMode ? 'bg-green-900/40 text-green-400 border border-green-600' : 'bg-green-100 text-green-700 border border-green-300';
+      return isDarkMode ? 'bg-green-900/40 text-cyan-400 border border-green-600' : 'bg-green-100 text-green-700 border border-green-300';
     case 'exploring':
       return isDarkMode ? 'bg-blue-900/40 text-blue-400 border border-blue-600' : 'bg-blue-100 text-blue-700 border border-blue-300';
     case 'parked':

@@ -188,7 +188,7 @@ export const AgentQuestionBubble: React.FC<AgentQuestionBubbleProps> = ({
                       >
                         <div className="flex items-start gap-2">
                           <div className="flex-shrink-0 mt-1">
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <CheckCircle2 className="w-4 h-4 text-cyan-600" />
                           </div>
                           <div className="flex-1">
                             <p className="text-gray-700 text-sm line-through">

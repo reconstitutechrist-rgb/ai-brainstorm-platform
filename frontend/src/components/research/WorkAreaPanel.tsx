@@ -74,7 +74,7 @@ const WorkAreaPanel: React.FC<WorkAreaPanelProps> = ({
                 onClick={() => onViewChange(view.value)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                   activeView === view.value
-                    ? 'bg-green-metallic text-white shadow-lg'
+                    ? 'bg-cyan-primary text-white shadow-lg'
                     : isDarkMode
                     ? 'text-gray-400 hover:bg-white/10'
                     : 'text-gray-600 hover:bg-gray-100'

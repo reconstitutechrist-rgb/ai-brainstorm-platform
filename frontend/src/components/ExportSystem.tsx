@@ -268,7 +268,7 @@ export const ExportSystem: React.FC = () => {
       className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
     >
       <div className="flex items-center space-x-3 mb-6">
-        <Download className="text-green-metallic" size={24} />
+        <Download className="text-cyan-primary" size={24} />
         <div>
           <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Export Project
@@ -289,15 +289,15 @@ export const ExportSystem: React.FC = () => {
               disabled={exporting}
               className={`p-4 rounded-xl border text-left transition-all ${
                 isDarkMode
-                  ? 'bg-white/5 border-white/10 hover:border-green-metallic/50'
-                  : 'bg-white/50 border-white/30 hover:border-green-metallic/50'
+                  ? 'bg-white/5 border-white/10 hover:border-cyan-primary/50'
+                  : 'bg-white/50 border-white/30 hover:border-cyan-primary/50'
               } disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg`}
             >
               <div className="flex items-start space-x-3">
                 <div className={`w-10 h-10 rounded-lg ${
                   isDarkMode ? 'bg-white/10' : 'bg-gray-200'
                 } flex items-center justify-center flex-shrink-0`}>
-                  <Icon size={20} className="text-green-metallic" />
+                  <Icon size={20} className="text-cyan-primary" />
                 </div>
                 <div className="flex-1">
                   <h4 className={`font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -318,11 +318,11 @@ export const ExportSystem: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-4 rounded-xl bg-green-metallic/20 border border-green-metallic/50"
+          className="mt-4 p-4 rounded-xl bg-cyan-primary/20 border border-cyan-primary/50"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-5 h-5 border-2 border-green-metallic border-t-transparent rounded-full animate-spin" />
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+            <div className="w-5 h-5 border-2 border-cyan-primary border-t-transparent rounded-full animate-spin" />
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
               {exportStatus}
             </span>
           </div>
@@ -334,15 +334,15 @@ export const ExportSystem: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-4 rounded-xl bg-green-500/20 border border-green-500/50"
+          className="mt-4 p-4 rounded-xl bg-cyan-500/20 border border-cyan-500/50"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
               <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
               {exportStatus}
             </span>
           </div>

@@ -64,7 +64,7 @@ export const HeroSection: React.FC = () => {
         // Draw particle with glow
         ctx.shadowBlur = 15;
         ctx.shadowColor = isDarkMode ? 'rgba(0, 255, 170, 0.8)' : 'rgba(0, 255, 170, 0.6)';
-        ctx.fillStyle = '#00ffaa';
+        ctx.fillStyle = '#00d4ff';
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
         ctx.fill();
@@ -194,9 +194,9 @@ export const HeroSection: React.FC = () => {
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-6 h-10 border-2 border-green-400 rounded-full flex justify-center pt-2"
+            className="w-6 h-10 border-2 border-cyan-400 rounded-full flex justify-center pt-2"
           >
-            <div className="w-1 h-2 bg-green-400 rounded-full" />
+            <div className="w-1 h-2 bg-cyan-400 rounded-full" />
           </motion.div>
         </motion.div>
       </div>

@@ -335,7 +335,7 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 message.role === 'user'
-                  ? 'bg-green-metallic text-white'
+                  ? 'bg-cyan-primary text-white'
                   : message.role === 'system'
                   ? isDarkMode
                     ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
@@ -415,12 +415,12 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
                 isDarkMode
                   ? 'bg-white/5 border-gray-700 text-white placeholder-gray-500'
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-              } focus:ring-2 focus:ring-green-metallic focus:border-transparent disabled:opacity-50`}
+              } focus:ring-2 focus:ring-cyan-primary focus:border-transparent disabled:opacity-50`}
             />
             <button
               type="submit"
               disabled={!inputMessage.trim() || isProcessing}
-              className="absolute bottom-3 right-3 p-2 rounded-lg bg-green-metallic text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-metallic/90 transition-colors"
+              className="absolute bottom-3 right-3 p-2 rounded-lg bg-cyan-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-primary/90 transition-colors"
             >
               {isProcessing ? (
                 <Loader2 size={20} className="animate-spin" />

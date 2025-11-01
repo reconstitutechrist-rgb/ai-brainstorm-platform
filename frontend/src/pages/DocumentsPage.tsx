@@ -47,7 +47,7 @@ export const DocumentsPage: React.FC = () => {
   const stateConfig = {
     decided: {
       icon: CheckCircle,
-      color: 'text-green-400 bg-green-500/20',
+      color: 'text-cyan-400 bg-cyan-500/20',
       label: 'Decided',
       description: 'Confirmed decisions ready for implementation'
     },
@@ -98,7 +98,7 @@ export const DocumentsPage: React.FC = () => {
               onClick={() => setSelectedState(state as any)}
               className={`${
                 selectedState === state
-                  ? 'ring-2 ring-green-metallic'
+                  ? 'ring-2 ring-cyan-primary'
                   : ''
               } ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass hover:shadow-glass-hover transition-all text-left`}
             >
@@ -108,7 +108,7 @@ export const DocumentsPage: React.FC = () => {
                 </div>
                 <ChevronRight
                   size={20}
-                  className={selectedState === state ? 'text-green-metallic' : 'text-gray-400'}
+                  className={selectedState === state ? 'text-cyan-primary' : 'text-gray-400'}
                 />
               </div>
               <h3 className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -165,7 +165,7 @@ export const DocumentsPage: React.FC = () => {
                   isDarkMode ? 'bg-white/5' : 'bg-white/50'
                 } rounded-xl p-6 border ${
                   isDarkMode ? 'border-white/10' : 'border-white/30'
-                } hover:border-green-metallic/50 transition-all`}
+                } hover:border-cyan-primary/50 transition-all`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -185,7 +185,7 @@ export const DocumentsPage: React.FC = () => {
                           </span>
                           <span className={`px-2 py-0.5 rounded ${
                             item.citation.confidence === 100
-                              ? 'bg-green-500/20 text-green-400'
+                              ? 'bg-cyan-500/20 text-cyan-400'
                               : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
                             {item.citation.confidence}% confidence

@@ -90,7 +90,7 @@ const DocumentRendererView: React.FC<DocumentRendererViewProps> = ({ reference }
             href={reference.file_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 px-4 py-2 rounded-lg bg-green-metallic text-white hover:bg-green-metallic/90 transition-colors"
+            className="mt-4 px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-primary/90 transition-colors"
           >
             Download File
           </a>

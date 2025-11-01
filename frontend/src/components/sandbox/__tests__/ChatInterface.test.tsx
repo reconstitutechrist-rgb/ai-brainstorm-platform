@@ -356,7 +356,7 @@ describe('ChatInterface', () => {
 
       const inputContainer = textarea.closest('div');
       expect(inputContainer).toHaveClass('ring-2');
-      expect(inputContainer).toHaveClass('ring-green-metallic/50');
+      expect(inputContainer).toHaveClass('ring-cyan-primary/50');
     });
   });
 

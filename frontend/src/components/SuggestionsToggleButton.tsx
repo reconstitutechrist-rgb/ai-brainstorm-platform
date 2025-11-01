@@ -30,15 +30,15 @@ export const SuggestionsToggleButton: React.FC<SuggestionsToggleButtonProps> = (
             ? 'bg-gray-800/80 backdrop-blur-md border-2 border-gray-600/40'
             : 'bg-gray-100 border-2 border-gray-300/50'
           : isDarkMode
-          ? 'bg-green-metallic/20 backdrop-blur-md border-2 border-green-metallic/40'
-          : 'bg-white border-2 border-green-metallic/30'
+          ? 'bg-cyan-primary/20 backdrop-blur-md border-2 border-cyan-primary/40'
+          : 'bg-white border-2 border-cyan-primary/30'
       } flex items-center justify-center transition-all hover:shadow-xl group`}
       aria-label="Toggle suggestions panel"
     >
       {/* Pulse Animation for New Suggestions */}
       {hasNewSuggestions && (
         <motion.div
-          className="absolute inset-0 rounded-full bg-green-metallic/30"
+          className="absolute inset-0 rounded-full bg-cyan-primary/30"
           animate={{
             scale: [1, 1.3, 1],
             opacity: [0.5, 0, 0.5],
@@ -59,7 +59,7 @@ export const SuggestionsToggleButton: React.FC<SuggestionsToggleButtonProps> = (
             ? isDarkMode
               ? 'text-gray-500'
               : 'text-gray-400'
-            : 'text-green-metallic'
+            : 'text-cyan-primary'
         } group-hover:scale-110 transition-transform ${
           isEmpty ? 'opacity-60' : 'opacity-100'
         }`}

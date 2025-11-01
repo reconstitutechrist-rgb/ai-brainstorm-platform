@@ -90,7 +90,7 @@ export const StatsSection: React.FC = () => {
           transition={{ delay: 0.6 }}
           className="mt-12 text-center"
         >
-          <div className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-400/50">
+          <div className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-deep/30 to-blue-mid/30 border-2 border-cyan-400/50">
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-white'}`}>
               Zero Assumptions Policy
             </p>

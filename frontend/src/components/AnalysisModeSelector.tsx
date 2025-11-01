@@ -73,7 +73,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#00ffaa]/20">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#00d4ff]/20">
           <div>
             <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Choose Analysis Mode
@@ -100,7 +100,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
           <label
             className={`flex items-start space-x-4 p-4 rounded-xl cursor-pointer transition-all ${
               selectedMode === 'basic'
-                ? 'bg-[#00ffaa]/10 border-2 border-[#00ffaa] shadow-md shadow-[#00ffaa]/20'
+                ? 'bg-[#00d4ff]/10 border-2 border-[#00d4ff] shadow-md shadow-[#00d4ff]/20'
                 : isDarkMode
                 ? 'border-2 border-white/10 hover:border-white/20'
                 : 'border-2 border-gray-200 hover:border-gray-300'
@@ -116,7 +116,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
             />
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
-                <Sparkles className="text-[#00ffaa]" size={20} />
+                <Sparkles className="text-[#00d4ff]" size={20} />
                 <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Mode 1: Basic Analysis
                 </h3>
@@ -132,7 +132,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
           <label
             className={`flex items-start space-x-4 p-4 rounded-xl cursor-pointer transition-all ${
               selectedMode === 'context'
-                ? 'bg-[#00ffaa]/10 border-2 border-[#00ffaa] shadow-md shadow-[#00ffaa]/20'
+                ? 'bg-[#00d4ff]/10 border-2 border-[#00d4ff] shadow-md shadow-[#00d4ff]/20'
                 : isDarkMode
                 ? 'border-2 border-white/10 hover:border-white/20'
                 : 'border-2 border-gray-200 hover:border-gray-300'
@@ -149,7 +149,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
             />
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
-                <GitBranch className="text-[#00ffaa]" size={20} />
+                <GitBranch className="text-[#00d4ff]" size={20} />
                 <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Mode 2: Context-Aware Analysis
                 </h3>
@@ -170,7 +170,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
           <label
             className={`flex items-start space-x-4 p-4 rounded-xl cursor-pointer transition-all ${
               selectedMode === 'template'
-                ? 'bg-[#00ffaa]/10 border-2 border-[#00ffaa] shadow-md shadow-[#00ffaa]/20'
+                ? 'bg-[#00d4ff]/10 border-2 border-[#00d4ff] shadow-md shadow-[#00d4ff]/20'
                 : isDarkMode
                 ? 'border-2 border-white/10 hover:border-white/20'
                 : 'border-2 border-gray-200 hover:border-gray-300'
@@ -186,7 +186,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
             />
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
-                <FileText className="text-[#00ffaa]" size={20} />
+                <FileText className="text-[#00d4ff]" size={20} />
                 <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Mode 3: Template-Based Analysis
                 </h3>
@@ -230,7 +230,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-[#00ffaa]/20">
+        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-[#00d4ff]/20">
           <button
             onClick={onClose}
             className={`px-6 py-2 rounded-lg font-medium transition-colors ${
@@ -243,7 +243,7 @@ export const AnalysisModeSelector: React.FC<AnalysisModeSelectorProps> = ({
           </button>
           <button
             onClick={handleAnalyze}
-            className="px-6 py-2 bg-gradient-to-r from-[#00ffaa] to-[#00cc88] text-[#0a1f1a] rounded-lg font-semibold hover:shadow-lg hover:shadow-[#00ffaa]/30 transition-all"
+            className="px-6 py-2 bg-gradient-to-r from-[#00d4ff] to-[#0099ff] text-[#0a1f1a] rounded-lg font-semibold hover:shadow-lg hover:shadow-[#00d4ff]/30 transition-all"
           >
             Analyze Reference
           </button>

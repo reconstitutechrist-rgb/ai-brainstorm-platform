@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
@@ -24,7 +24,9 @@ import {
   Sparkles,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
@@ -79,7 +81,7 @@ export const ProjectIntelligenceHub: React.FC = () => {
         className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl p-8 mb-8 shadow-glass`}
       >
         <div className="flex items-center space-x-3 mb-2">
-          <Database className="text-green-metallic" size={32} />
+          <Database className="text-cyan-primary" size={32} />
           <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Project Intelligence Hub
           </h1>
@@ -99,10 +101,10 @@ export const ProjectIntelligenceHub: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center space-x-2 px-6 py-4 rounded-xl font-medium whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-green-metallic text-white shadow-md'
+                  ? 'bg-cyan-primary text-white shadow-md'
                   : isDarkMode
                   ? 'glass-dark text-gray-300 hover:bg-white/10'
-                  : 'glass text-gray-700 hover:bg-green-metallic/10'
+                  : 'glass text-gray-700 hover:bg-cyan-primary/10'
               }`}
             >
               <Icon size={20} />
@@ -164,7 +166,7 @@ const OverviewTab: React.FC = () => {
   const parkedCount = currentProject?.items?.filter((i: any) => i.state === 'parked').length || 0;
 
   const stats = [
-    { label: 'Decided', value: decidedCount, icon: TrendingUp, color: 'text-green-400', bgColor: 'bg-green-500/20' },
+    { label: 'Decided', value: decidedCount, icon: TrendingUp, color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
     { label: 'Exploring', value: exploringCount, icon: Eye, color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
     { label: 'Parked', value: parkedCount, icon: FolderOpen, color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
   ];
@@ -259,7 +261,7 @@ const QuickAccessButton: React.FC<{ icon: any; label: string }> = ({ icon: Icon,
     <button className={`p-4 rounded-xl text-center transition-all ${
       isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white/50 hover:bg-white/70'
     }`}>
-      <Icon size={24} className="mx-auto mb-2 text-green-metallic" />
+      <Icon size={24} className="mx-auto mb-2 text-cyan-primary" />
       <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
         {label}
       </span>
@@ -308,7 +310,7 @@ const ActivityTab: React.FC = () => {
             isDarkMode
               ? 'bg-white/10 text-white border-white/20'
               : 'bg-white text-gray-800 border-gray-300'
-          } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+          } border focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
         >
           <option value="all">All Agents</option>
           <option value="core">Core Agents</option>
@@ -319,7 +321,7 @@ const ActivityTab: React.FC = () => {
 
       {loading ? (
         <div className="text-center py-12">
-          <RefreshCw size={32} className="mx-auto mb-4 text-green-metallic animate-spin" />
+          <RefreshCw size={32} className="mx-auto mb-4 text-cyan-primary animate-spin" />
         </div>
       ) : activities.length === 0 ? (
         <div className="text-center py-12">
@@ -343,14 +345,14 @@ const ActivityLogEntry: React.FC<{ activity: any; isDarkMode: boolean }> = ({ ac
   return (
     <div className={`p-4 rounded-xl border ${
       isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'
-    } hover:border-green-metallic/50 transition-all`}>
+    } hover:border-cyan-primary/50 transition-all`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
             <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               {activity.agent_type}
             </span>
-            <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-xs font-medium">
+            <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 text-xs font-medium">
               {activity.action}
             </span>
           </div>
@@ -410,7 +412,7 @@ const DecisionTrailItem: React.FC<{ item: any; index: number; isDarkMode: boolea
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-medium">
+              <span className="px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 text-xs font-medium">
                 Decision #{index + 1}
               </span>
               <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
@@ -448,10 +450,24 @@ const GeneratedDocsTab: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [qualityScores, setQualityScores] = useState<Map<string, any>>(new Map());
+  const [isQualityScoreExpanded, setIsQualityScoreExpanded] = useState(false);
 
   // Smart folder system state
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['complete', 'incomplete']));
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  /**
+   * Strip project name from document title for cleaner display
+   * Handles format: "Project Name - Document Type" → "Document Type"
+   * Returns original if no separator found (already clean)
+   */
+  const stripProjectName = (title: string): string => {
+    const separatorIndex = title.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      return title.substring(separatorIndex + 3).trim();
+    }
+    return title;
+  };
 
   useEffect(() => {
     if (currentProject) {
@@ -466,13 +482,19 @@ const GeneratedDocsTab: React.FC = () => {
     setLoading(true);
     try {
       const response = await generatedDocumentsApi.getByProject(currentProject.id);
-      setDocuments(response.documents || []);
-      if (response.documents.length > 0 && !selectedDoc) {
-        setSelectedDoc(response.documents[0]);
+
+      // Filter out deprecated document types (vendor_comparison) as a safety net
+      const validDocuments = (response.documents || []).filter(
+        (doc: any) => doc.document_type !== 'vendor_comparison'
+      );
+
+      setDocuments(validDocuments);
+      if (validDocuments.length > 0 && !selectedDoc) {
+        setSelectedDoc(validDocuments[0]);
       }
 
       // Load quality scores for all documents
-      response.documents.forEach(async (doc: any) => {
+      validDocuments.forEach(async (doc: any) => {
         try {
           const scoreResponse = await generatedDocumentsApi.getQualityScore(doc.id);
           setQualityScores(prev => new Map(prev).set(doc.id, scoreResponse.qualityScore));
@@ -619,7 +641,6 @@ const GeneratedDocsTab: React.FC = () => {
     { type: 'technical_specs', label: '⚙️ Technical Specs', description: 'Technical details' },
     { type: 'rfp', label: '📄 Request for Proposal', description: 'Send to vendors' },
     { type: 'implementation_plan', label: '🗺️ Implementation Plan', description: 'Execution roadmap' },
-    { type: 'vendor_comparison', label: '🔍 Vendor Comparison', description: 'Vendor options' },
   ];
 
   // Category labels
@@ -640,8 +661,8 @@ const GeneratedDocsTab: React.FC = () => {
             disabled={generating}
             className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-medium transition-all ${
               generating
-                ? 'bg-green-metallic/50 cursor-not-allowed'
-                : 'bg-green-metallic hover:bg-green-metallic/90 shadow-lg hover:shadow-xl'
+                ? 'bg-cyan-primary/50 cursor-not-allowed'
+                : 'bg-cyan-primary hover:bg-cyan-primary/90 shadow-lg hover:shadow-xl'
             } text-white`}
           >
             <Sparkles size={18} className={generating ? 'animate-pulse' : ''} />
@@ -655,14 +676,14 @@ const GeneratedDocsTab: React.FC = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`mt-3 p-3 rounded-lg ${
-                isDarkMode ? 'bg-green-metallic/10' : 'bg-green-metallic/20'
+                isDarkMode ? 'bg-cyan-primary/10' : 'bg-cyan-primary/20'
               }`}
             >
               <div className="flex items-center space-x-2">
                 {generating ? (
-                  <Loader2 size={14} className="text-green-metallic animate-spin flex-shrink-0" />
+                  <Loader2 size={14} className="text-cyan-primary animate-spin flex-shrink-0" />
                 ) : (
-                  <Check size={14} className="text-green-metallic flex-shrink-0" />
+                  <Check size={14} className="text-cyan-primary flex-shrink-0" />
                 )}
                 <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {generatingProgress}
@@ -691,11 +712,11 @@ const GeneratedDocsTab: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <FolderOpen size={18} className="text-green-400" />
+                  <FolderOpen size={18} className="text-cyan-400" />
                   <span className="text-sm font-medium">Complete (100%)</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded">
                     {completeCount}
                   </span>
                   <span className={`transform transition-transform ${expandedFolders.has('complete') ? 'rotate-90' : ''}`}>
@@ -738,18 +759,18 @@ const GeneratedDocsTab: React.FC = () => {
                                 onClick={() => setSelectedDoc(doc)}
                                 className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
                                   selectedDoc?.id === doc.id
-                                    ? 'bg-green-metallic text-white'
+                                    ? 'bg-cyan-primary text-white'
                                     : isDarkMode
                                     ? 'hover:bg-white/10 text-gray-400'
                                     : 'hover:bg-gray-100 text-gray-600'
                                 }`}
                               >
-                                <div className="flex items-center justify-between">
-                                  <span className="truncate">{doc.title}</span>
-                                  <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate min-w-0 flex-1" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
+                                  <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${
                                     selectedDoc?.id === doc.id
                                       ? 'bg-white/20 text-white'
-                                      : 'bg-green-500/20 text-green-400'
+                                      : 'bg-cyan-500/20 text-cyan-400'
                                   }`}>
                                     100%
                                   </span>
@@ -818,7 +839,7 @@ const GeneratedDocsTab: React.FC = () => {
                             {docs.map((doc) => {
                               const completionPercent = doc.completion_percent ?? 0;
                               const completionColor =
-                                completionPercent >= 75 ? 'text-green-400 bg-green-500/20' :
+                                completionPercent >= 75 ? 'text-cyan-400 bg-cyan-500/20' :
                                 completionPercent >= 50 ? 'text-yellow-400 bg-yellow-500/20' :
                                 'text-red-400 bg-red-500/20';
                               return (
@@ -827,15 +848,15 @@ const GeneratedDocsTab: React.FC = () => {
                                   onClick={() => setSelectedDoc(doc)}
                                   className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
                                     selectedDoc?.id === doc.id
-                                      ? 'bg-green-metallic text-white'
+                                      ? 'bg-cyan-primary text-white'
                                       : isDarkMode
                                       ? 'hover:bg-white/10 text-gray-400'
                                       : 'hover:bg-gray-100 text-gray-600'
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <span className="truncate">{doc.title}</span>
-                                    <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="truncate min-w-0 flex-1" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
+                                    <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${
                                       selectedDoc?.id === doc.id
                                         ? 'bg-white/20 text-white'
                                         : completionColor
@@ -863,18 +884,18 @@ const GeneratedDocsTab: React.FC = () => {
         <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass`}>
           {selectedDoc && (
             <>
-              <div className="p-6 border-b border-green-metallic/20">
+              <div className="p-6 border-b border-cyan-primary/20">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                        {selectedDoc.title}
+                        {stripProjectName(selectedDoc.title)}
                       </h2>
                       {/* Completion Badge */}
                       {selectedDoc.completion_percent !== undefined && (
                         <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
                           selectedDoc.completion_percent === 100
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                            ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
                             : selectedDoc.completion_percent >= 75
                             ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
                             : selectedDoc.completion_percent >= 50
@@ -898,7 +919,7 @@ const GeneratedDocsTab: React.FC = () => {
                       title="Copy to clipboard"
                     >
                       {copied ? (
-                        <Check size={20} className="text-green-500" />
+                        <Check size={20} className="text-cyan-500" />
                       ) : (
                         <Copy size={20} />
                       )}
@@ -960,61 +981,110 @@ const GeneratedDocsTab: React.FC = () => {
                   </motion.div>
                 )}
 
-                {/* Quality Score Panel */}
+                {/* Quality Score Panel - Expandable */}
                 {qualityScores.get(selectedDoc.id) && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}
+                    className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                        Document Quality Score
-                      </h3>
-                      <div className="text-2xl font-bold text-green-metallic">
-                        {qualityScores.get(selectedDoc.id)?.overall_score}/100
+                    {/* Clickable Header Button */}
+                    <button
+                      onClick={() => setIsQualityScoreExpanded(!isQualityScoreExpanded)}
+                      className={`w-full p-4 flex items-center justify-between transition-colors ${
+                        isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                          Document Quality Score: {qualityScores.get(selectedDoc.id)?.overall_score}/100
+                        </h3>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-                      {[
-                        { label: 'Complete', value: qualityScores.get(selectedDoc.id)?.completeness },
-                        { label: 'Consistent', value: qualityScores.get(selectedDoc.id)?.consistency },
-                        { label: 'Citations', value: qualityScores.get(selectedDoc.id)?.citation_coverage },
-                        { label: 'Readable', value: qualityScores.get(selectedDoc.id)?.readability },
-                        { label: 'Confidence', value: qualityScores.get(selectedDoc.id)?.confidence },
-                      ].map((metric) => (
-                        <div key={metric.label} className="text-center">
-                          <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {metric.label}
-                          </div>
-                          <div className={`text-lg font-bold ${
-                            metric.value >= 80 ? 'text-green-500' :
-                            metric.value >= 60 ? 'text-yellow-500' :
-                            'text-red-500'
-                          }`}>
-                            {metric.value}
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-2xl font-bold text-cyan-primary">
+                          {qualityScores.get(selectedDoc.id)?.overall_score}
                         </div>
-                      ))}
-                    </div>
-                    {qualityScores.get(selectedDoc.id)?.issues?.length > 0 && (
-                      <div className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'} mb-2`}>
-                        <strong>Issues:</strong> {qualityScores.get(selectedDoc.id)?.issues.join(', ')}
+                        {isQualityScoreExpanded ? (
+                          <ChevronUp className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} size={20} />
+                        ) : (
+                          <ChevronDown className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} size={20} />
+                        )}
                       </div>
-                    )}
-                    {qualityScores.get(selectedDoc.id)?.suggestions?.length > 0 && (
-                      <div className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                        <strong>Suggestions:</strong> {qualityScores.get(selectedDoc.id)?.suggestions.join(', ')}
-                      </div>
-                    )}
+                    </button>
+
+                    {/* Expandable Details */}
+                    <AnimatePresence>
+                      {isQualityScoreExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4">
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                              {[
+                                { label: 'Complete', value: qualityScores.get(selectedDoc.id)?.completeness },
+                                { label: 'Consistent', value: qualityScores.get(selectedDoc.id)?.consistency },
+                                { label: 'Citations', value: qualityScores.get(selectedDoc.id)?.citation_coverage },
+                                { label: 'Readable', value: qualityScores.get(selectedDoc.id)?.readability },
+                                { label: 'Confidence', value: qualityScores.get(selectedDoc.id)?.confidence },
+                              ].map((metric) => (
+                                <div key={metric.label} className="text-center p-3 rounded-lg bg-white/5">
+                                  <div className={`text-sm mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {metric.label}
+                                  </div>
+                                  <div className={`text-2xl font-bold ${
+                                    metric.value >= 80 ? 'text-cyan-500' :
+                                    metric.value >= 60 ? 'text-yellow-500' :
+                                    'text-red-500'
+                                  }`}>
+                                    {metric.value}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Issues */}
+                            {qualityScores.get(selectedDoc.id)?.issues?.length > 0 && (
+                              <div className={`p-3 rounded-lg mb-3 ${isDarkMode ? 'bg-red-500/10' : 'bg-red-50'}`}>
+                                <div className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>
+                                  Issues Detected:
+                                </div>
+                                <ul className={`text-sm space-y-1 list-disc list-inside ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                                  {qualityScores.get(selectedDoc.id)?.issues.map((issue: string, idx: number) => (
+                                    <li key={idx}>{issue}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Suggestions */}
+                            {qualityScores.get(selectedDoc.id)?.suggestions?.length > 0 && (
+                              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-cyan-500/10' : 'bg-cyan-50'}`}>
+                                <div className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                                  Suggestions for Improvement:
+                                </div>
+                                <ul className={`text-sm space-y-1 list-disc list-inside ${isDarkMode ? 'text-cyan-300' : 'text-cyan-600'}`}>
+                                  {qualityScores.get(selectedDoc.id)?.suggestions.map((suggestion: string, idx: number) => (
+                                    <li key={idx}>{suggestion}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
               </div>
 
               <div className="p-6 max-h-[600px] overflow-y-auto scrollbar-thin">
-                {/* Key Sections Panel - extracted insights */}
-                {/* Only show for documents that aren't already dedicated section documents */}
-                {!['next_steps', 'open_questions', 'risk_assessment'].includes(selectedDoc.document_type) && (() => {
+                {/* Key Sections Panel - Hidden per user request */}
+                {/* {!['next_steps', 'open_questions', 'risk_assessment'].includes(selectedDoc.document_type) && (() => {
                   const sections = extractKeySections(selectedDoc.content);
                   return (
                     <KeySectionsPanel
@@ -1024,11 +1094,66 @@ const GeneratedDocsTab: React.FC = () => {
                       isDarkMode={isDarkMode}
                     />
                   );
-                })()}
+                })()} */}
 
-                {/* Full Document Content */}
-                <div className={`prose ${isDarkMode ? 'prose-invert' : ''} max-w-none`}>
-                  <ReactMarkdown>{selectedDoc.content}</ReactMarkdown>
+                {/* Full Document Content with Enhanced Section Styling */}
+                <div className={`prose ${isDarkMode ? 'prose-invert' : ''} max-w-none prose-headings:scroll-mt-4`}>
+                  <ReactMarkdown
+                    components={{
+                      // Custom H2 component with visual separator
+                      h2: ({ children, ...props }) => (
+                        <div className="mt-12 mb-6 first:mt-0">
+                          <div className={`border-t-2 ${isDarkMode ? 'border-cyan-500/30' : 'border-cyan-500/40'} mb-4`} />
+                          <h2
+                            className={`text-2xl font-bold ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'} pb-2 border-b-2 ${isDarkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}
+                            {...props}
+                          >
+                            {children}
+                          </h2>
+                        </div>
+                      ),
+                      // Custom H3 component with subtle styling
+                      h3: ({ children, ...props }) => (
+                        <h3
+                          className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mt-8 mb-4 pl-4 border-l-4 ${isDarkMode ? 'border-cyan-500/40' : 'border-cyan-500/50'}`}
+                          {...props}
+                        >
+                          {children}
+                        </h3>
+                      ),
+                      // Enhanced paragraph spacing
+                      p: ({ children, ...props }) => (
+                        <p className="mb-4 leading-relaxed" {...props}>
+                          {children}
+                        </p>
+                      ),
+                      // Enhanced list styling
+                      ul: ({ children, ...props }) => (
+                        <ul className="mb-6 space-y-2 list-disc pl-6" {...props}>
+                          {children}
+                        </ul>
+                      ),
+                      ol: ({ children, ...props }) => (
+                        <ol className="mb-6 space-y-2 list-decimal pl-6" {...props}>
+                          {children}
+                        </ol>
+                      ),
+                      // Enhanced code blocks
+                      code: ({ inline, children, ...props }: any) => (
+                        inline ? (
+                          <code className={`px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-gray-800 text-cyan-400' : 'bg-gray-100 text-cyan-600'}`} {...props}>
+                            {children}
+                          </code>
+                        ) : (
+                          <code className={`block p-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} overflow-x-auto`} {...props}>
+                            {children}
+                          </code>
+                        )
+                      ),
+                    }}
+                  >
+                    {selectedDoc.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             </>
@@ -1045,7 +1170,7 @@ const GeneratedDocsTab: React.FC = () => {
 
           {loading && (
             <div className="p-12 text-center">
-              <RefreshCw size={32} className="mx-auto mb-4 text-green-metallic animate-spin" />
+              <RefreshCw size={32} className="mx-auto mb-4 text-cyan-primary animate-spin" />
             </div>
           )}
         </div>
@@ -1190,7 +1315,7 @@ const UserDocsTab: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin text-green-metallic" size={32} />
+        <Loader2 className="animate-spin text-cyan-primary" size={32} />
       </div>
     );
   }
@@ -1209,7 +1334,7 @@ const UserDocsTab: React.FC = () => {
               onClick={() => setSelectedFolder('all')}
               className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
                 selectedFolder === 'all'
-                  ? 'bg-green-metallic text-white'
+                  ? 'bg-cyan-primary text-white'
                   : isDarkMode
                   ? 'hover:bg-white/10 text-gray-300'
                   : 'hover:bg-gray-100 text-gray-700'
@@ -1231,7 +1356,7 @@ const UserDocsTab: React.FC = () => {
                 onClick={() => setSelectedFolder(folder.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
                   selectedFolder === folder.id
-                    ? 'bg-green-metallic text-white'
+                    ? 'bg-cyan-primary text-white'
                     : isDarkMode
                     ? 'hover:bg-white/10 text-gray-300'
                     : 'hover:bg-gray-100 text-gray-700'
@@ -1346,7 +1471,7 @@ const UserDocsTab: React.FC = () => {
                 isDarkMode
                   ? 'bg-white/10 border-white/20 text-white placeholder-gray-400'
                   : 'bg-white border-gray-300 text-gray-800 placeholder-gray-500'
-              } focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+              } focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
               onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
               autoFocus
             />
@@ -1415,7 +1540,7 @@ const DocumentItem: React.FC<{
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border ${
       isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'
-    } hover:border-green-metallic/50 transition-all`}>
+    } hover:border-cyan-primary/50 transition-all`}>
       <div className="flex items-center space-x-3 flex-1 min-w-0">
         <span className="text-2xl">{getFileIcon()}</span>
         <div className="flex-1 min-w-0">
@@ -1460,297 +1585,364 @@ const DocumentItem: React.FC<{
 const SearchTab: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
-  const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any>(null);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveTitle, setSaveTitle] = useState('');
-  const [saveType, setSaveType] = useState<'user' | 'generated'>('user');
+  const [messages, setMessages] = useState<Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    type: 'qa' | 'document';
+    timestamp: Date;
+    metadata?: any;
+  }>>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [rightPanelContent, setRightPanelContent] = useState<{
+    type: 'empty' | 'answer' | 'document';
+    data: any;
+  } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = async () => {
-    if (!query.trim() || !currentProject) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-    setIsSearching(true);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !currentProject || isProcessing) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setIsProcessing(true);
+
+    // Add user message to chat
+    const newUserMessage = {
+      role: 'user' as const,
+      content: userMessage,
+      type: 'qa' as const,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, newUserMessage]);
+
     try {
-      const response = await intelligenceHubApi.search(currentProject.id, query);
+      const response = await intelligenceHubApi.conversation(
+        currentProject.id,
+        userMessage,
+        messages.map(m => ({ role: m.role, content: m.content }))
+      );
+
       if (response.success) {
-        setSearchResults(response.results);
+        // Add AI response to chat
+        const aiMessage = {
+          role: 'assistant' as const,
+          content: response.response.content,
+          type: response.response.type,
+          timestamp: new Date(),
+          metadata: response.response.metadata
+        };
+        setMessages(prev => [...prev, aiMessage]);
+
+        // Update right panel
+        if (response.response.type === 'qa') {
+          setRightPanelContent({
+            type: 'answer',
+            data: {
+              content: response.response.content,
+              sources: response.response.metadata.sources || [],
+              relatedTopics: response.response.metadata.relatedTopics || []
+            }
+          });
+        } else {
+          setRightPanelContent({
+            type: 'document',
+            data: {
+              content: response.response.content,
+              ...response.response.metadata
+            }
+          });
+        }
       }
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch (error: any) {
+      console.error('Conversation error:', error);
+
+      // Extract error message
+      let errorText = 'Sorry, I encountered an error processing your request. Please try again.';
+      if (error.response?.data?.details) {
+        errorText = `Error: ${error.response.data.details}`;
+      } else if (error.message) {
+        errorText = `Error: ${error.message}`;
+      }
+
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: errorText,
+        type: 'qa' as const,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsSearching(false);
+      setIsProcessing(false);
     }
   };
 
-  const handleSaveAsDocument = async () => {
-    if (!currentProject || !searchResults || !saveTitle.trim()) return;
+  const handleDownloadDocument = () => {
+    if (!rightPanelContent || rightPanelContent.type !== 'document') return;
 
-    try {
-      // Format search results as markdown
-      const content = `# ${saveTitle}\n\n## Search Query\n${query}\n\n## Summary\n${searchResults.summary}\n\n## Results\n\n### Decisions (${searchResults.decisions.length})\n${searchResults.decisions.map((d: any) => `- ${d.idea || d.title}`).join('\n')}\n\n### Documents (${searchResults.documents.length})\n${searchResults.documents.map((d: any) => `- ${d.title}`).join('\n')}\n\n### Activity (${searchResults.activityLog.length} entries)\n\n## Suggested Actions\n${searchResults.suggestedActions.map((a: string) => `- ${a}`).join('\n')}`;
-
-      await intelligenceHubApi.saveAsDocument(currentProject.id, {
-        title: saveTitle,
-        content,
-        isUserDocument: saveType === 'user',
-        documentType: saveType === 'generated' ? 'search_results' : undefined
-      });
-
-      setShowSaveModal(false);
-      setSaveTitle('');
-      alert('Document saved successfully!');
-    } catch (error) {
-      console.error('Save error:', error);
-      alert('Failed to save document');
-    }
+    const blob = new Blob([rightPanelContent.data.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${rightPanelContent.data.title || 'document'}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
+
+  const examplePrompts = [
+    { type: 'qa', text: "What are our main technical decisions?", icon: "💬" },
+    { type: 'qa', text: "Show me all security-related concerns", icon: "💬" },
+    { type: 'qa', text: "What's the status of our implementation?", icon: "💬" },
+    { type: 'doc', text: "Create a vendor proposal for database providers", icon: "📄" },
+    { type: 'doc', text: "Generate investor documentation", icon: "📄" },
+    { type: 'doc', text: "Build API documentation for developers", icon: "📄" },
+  ];
+
+  // Show message if no project is selected
+  if (!currentProject) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-300px)]">
+        <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-12 shadow-glass text-center max-w-md`}>
+          <Database size={64} className={`mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+          <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            No Project Selected
+          </h3>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Please create or select a project to use the conversational intelligence feature.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-6 h-[calc(100vh-300px)]">
-      {/* Chat/Search Panel */}
-      <div className={`flex-1 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
+      {/* Left Panel - Chat Interface (60%) */}
+      <div className={`w-[60%] ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
         <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Search Your Project
+          Conversational Intelligence
         </h2>
 
+        {/* Messages Area */}
         <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-          {!searchResults && (
+          {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <Search size={64} className={`mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              <Sparkles size={64} className={`mb-4 ${isDarkMode ? 'text-cyan-primary' : 'text-cyan-500'}`} />
               <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                Ask About Your Project
+                Ask Questions or Generate Documents
               </h3>
-              <p className={`mb-4 max-w-md ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Search across decisions, documents, activities, and references. Try asking:
+              <p className={`mb-6 max-w-md ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                I can help you understand your project or create custom documents for any audience.
               </p>
-              <div className={`text-sm space-y-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                <p>"What features have we decided on?"</p>
-                <p>"Show me all authentication-related decisions"</p>
-                <p>"What documents mention the user interface?"</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                {examplePrompts.map((prompt, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputMessage(prompt.text)}
+                    className={`p-3 rounded-lg text-left text-sm transition-all ${
+                      isDarkMode
+                        ? 'bg-white/5 hover:bg-white/10 text-gray-300'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <span className="mr-2">{prompt.icon}</span>
+                    {prompt.text}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {searchResults && (
-            <div className="space-y-4">
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                <p className={`font-semibold mb-2 ${isDarkMode ? 'text-green-metallic' : 'text-green-600'}`}>
-                  Your Question:
-                </p>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                  {query}
-                </p>
+          {/* Chat Messages */}
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] p-4 rounded-xl ${
+                  message.role === 'user'
+                    ? 'bg-cyan-primary text-white'
+                    : isDarkMode
+                    ? 'bg-white/5 text-gray-200'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {message.role === 'assistant' && (
+                  <div className="flex items-center gap-2 mb-2 text-xs opacity-70">
+                    <span>{message.type === 'qa' ? '💬 Answer' : '📄 Document'}</span>
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap">{message.content.substring(0, 300)}{message.content.length > 300 ? '...' : ''}</p>
+                {message.role === 'assistant' && message.content.length > 300 && (
+                  <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-cyan-100' : 'opacity-70'}`}>
+                    View full response in the preview panel →
+                  </p>
+                )}
               </div>
+            </div>
+          ))}
 
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                <p className={`font-semibold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                  Summary:
-                </p>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                  {searchResults.summary}
-                </p>
-              </div>
-
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                <p className={`font-semibold mb-3 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                  Suggested Actions:
-                </p>
-                <ul className={`space-y-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {searchResults.suggestedActions.map((action: string, idx: number) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{action}</span>
-                    </li>
-                  ))}
-                </ul>
+          {/* Typing Indicator */}
+          {isProcessing && (
+            <div className="flex justify-start">
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+                <div className="flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin text-cyan-primary" />
+                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                    Thinking...
+                  </span>
+                </div>
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
 
+        {/* Input Area */}
         <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Ask about your project..."
-              disabled={isSearching}
-              className={`w-full pl-10 pr-4 py-3 rounded-xl ${
-                isDarkMode
-                  ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
-                  : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
-              } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50 disabled:opacity-50`}
-            />
-          </div>
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+            placeholder="Ask a question or request a document..."
+            disabled={isProcessing}
+            className={`flex-1 px-4 py-3 rounded-xl ${
+              isDarkMode
+                ? 'bg-white/10 text-white placeholder-gray-500'
+                : 'bg-gray-100 text-gray-900 placeholder-gray-500'
+            } focus:outline-none focus:ring-2 focus:ring-cyan-primary disabled:opacity-50`}
+          />
           <button
-            onClick={handleSearch}
-            disabled={isSearching || !query.trim()}
-            className="px-6 py-3 bg-green-metallic text-white rounded-xl hover:bg-green-metallic/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            onClick={handleSendMessage}
+            disabled={isProcessing || !inputMessage.trim()}
+            className="px-6 py-3 rounded-xl bg-cyan-primary text-white hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            <Sparkles size={18} />
+            <span>Send</span>
           </button>
         </div>
       </div>
 
-      {/* Results Panel */}
-      {searchResults && (
-        <div className={`w-96 ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              Results
+      {/* Right Panel - Dynamic Display (40%) */}
+      <div className={`w-[40%] ${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass flex flex-col`}>
+        {/* Empty State */}
+        {(!rightPanelContent || rightPanelContent.type === 'empty') && (
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <Database size={64} className={`mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+            <h3 className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Preview Panel
             </h3>
-            <button
-              onClick={() => setShowSaveModal(true)}
-              className="px-3 py-1 text-sm bg-green-metallic text-white rounded-lg hover:bg-green-metallic/90 transition-colors"
-            >
-              Save as Document
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto space-y-4">
-            {/* Decisions */}
-            {searchResults.decisions.length > 0 && (
-              <div>
-                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                  Decisions ({searchResults.decisions.length})
-                </h4>
-                <div className="space-y-2">
-                  {searchResults.decisions.slice(0, 5).map((decision: any, idx: number) => (
-                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                      <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                        {decision.idea || decision.title || decision.content}
-                      </p>
-                    </div>
-                  ))}
+            <p className={`text-sm max-w-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Send a message to see answers with sources or generated documents displayed here.
+            </p>
+            <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+              <div className="text-xs space-y-2">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span>💬</span>
+                  <span>Q&A answers with source citations</span>
                 </div>
-              </div>
-            )}
-
-            {/* Documents */}
-            {searchResults.documents.length > 0 && (
-              <div>
-                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                  Documents ({searchResults.documents.length})
-                </h4>
-                <div className="space-y-2">
-                  {searchResults.documents.slice(0, 5).map((doc: any, idx: number) => (
-                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                      <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                        {doc.title}
-                      </p>
-                      {doc.document_type && (
-                        <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                          {doc.document_type}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span>📄</span>
+                  <span>Generated documents with metadata</span>
                 </div>
-              </div>
-            )}
-
-            {/* Activity */}
-            {searchResults.activityLog.length > 0 && (
-              <div>
-                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                  Recent Activity ({searchResults.activityLog.length})
-                </h4>
-                <div className="space-y-2">
-                  {searchResults.activityLog.slice(0, 3).map((activity: any, idx: number) => (
-                    <div key={idx} className={`p-2 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                      <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                        {activity.action} by {activity.agent_name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Save Modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 max-w-md w-full shadow-2xl`}>
-            <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              Save Search Results
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Document Title
-                </label>
-                <input
-                  type="text"
-                  value={saveTitle}
-                  onChange={(e) => setSaveTitle(e.target.value)}
-                  placeholder="Enter document title..."
-                  className={`w-full px-4 py-2 rounded-lg ${
-                    isDarkMode
-                      ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
-                      : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
-                  } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
-                />
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Save As
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      value="user"
-                      checked={saveType === 'user'}
-                      onChange={(e) => setSaveType(e.target.value as 'user')}
-                      className="mr-2"
-                    />
-                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>User Document</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      value="generated"
-                      checked={saveType === 'generated'}
-                      onChange={(e) => setSaveType(e.target.value as 'generated')}
-                      className="mr-2"
-                    />
-                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Generated Document</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowSaveModal(false)}
-                  className={`flex-1 px-4 py-2 rounded-lg ${
-                    isDarkMode
-                      ? 'bg-white/10 text-white hover:bg-white/20'
-                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  } transition-colors`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveAsDocument}
-                  disabled={!saveTitle.trim()}
-                  className="flex-1 px-4 py-2 bg-green-metallic text-white rounded-lg hover:bg-green-metallic/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Save
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Q&A Answer Display */}
+        {rightPanelContent && rightPanelContent.type === 'answer' && (
+            <div className="flex-1 overflow-y-auto">
+              <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Answer
+              </h3>
+              <div className={`p-4 rounded-xl mb-4 ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                <ReactMarkdown className="prose prose-sm max-w-none">
+                  {rightPanelContent.data.content}
+                </ReactMarkdown>
+              </div>
+
+              {/* Sources */}
+              {rightPanelContent.data.sources && rightPanelContent.data.sources.length > 0 && (
+                <div className="mt-4">
+                  <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Sources:
+                  </h4>
+                  <div className="space-y-2">
+                    {rightPanelContent.data.sources.map((source: any, idx: number) => (
+                      <div key={idx} className={`p-3 rounded-lg text-sm ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+                        <div className={`font-medium ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                          {source.title}
+                        </div>
+                        <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
+                          {source.type}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        {/* Document Display */}
+        {rightPanelContent && rightPanelContent.type === 'document' && (
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                    {rightPanelContent.data.title || 'Generated Document'}
+                  </h3>
+                  <div className="flex gap-2 mt-2">
+                    <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'}`}>
+                      {rightPanelContent.data.documentType}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-700'}`}>
+                      {rightPanelContent.data.audience}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDownloadDocument}
+                  className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+                  title="Download document"
+                >
+                  <Download size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <ReactMarkdown className="prose prose-sm max-w-none">
+                    {rightPanelContent.data.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+
+              {/* Document Metadata */}
+              {rightPanelContent.data.sources && rightPanelContent.data.sources.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200/10">
+                  <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Generated from {rightPanelContent.data.sources.length} source{rightPanelContent.data.sources.length !== 1 ? 's' : ''}
+                  </h4>
+                </div>
+              )}
+            </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -192,7 +192,7 @@ export const SandboxPage: React.FC = () => {
             <button
               onClick={extractSelectedIdeas}
               disabled={selectedIdeas.size === 0}
-              className="px-4 py-2 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-4 py-2 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               <Download size={18} />
               <span>Extract ({selectedIdeas.size})</span>
@@ -223,7 +223,7 @@ export const SandboxPage: React.FC = () => {
         className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 mb-8 shadow-glass`}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <Sparkles className="text-green-metallic" size={24} />
+          <Sparkles className="text-cyan-primary" size={24} />
           <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             AI Idea Generator
           </h2>
@@ -242,7 +242,7 @@ export const SandboxPage: React.FC = () => {
                 isDarkMode
                   ? 'bg-white/10 text-white border-white/20'
                   : 'bg-white text-gray-800 border-gray-300'
-              } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+              } border focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
             >
               <option value="innovative">🚀 Innovative - Cutting-edge ideas</option>
               <option value="practical">⚙️ Practical - Realistic solutions</option>
@@ -257,7 +257,7 @@ export const SandboxPage: React.FC = () => {
             <button
               onClick={generateIdeas}
               disabled={generating}
-              className="w-full px-6 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full px-6 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {generating ? (
                 <>
@@ -350,7 +350,7 @@ const IdeaCard: React.FC<{
       className={`${
         isDarkMode ? 'glass-dark' : 'glass'
       } rounded-2xl p-6 shadow-glass hover:shadow-glass-hover transition-all relative ${
-        isSelected ? 'ring-2 ring-green-metallic' : ''
+        isSelected ? 'ring-2 ring-cyan-primary' : ''
       }`}
     >
       {/* Selection Checkbox */}
@@ -358,10 +358,10 @@ const IdeaCard: React.FC<{
         onClick={onToggleSelect}
         className={`absolute top-4 right-4 w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
           isSelected
-            ? 'bg-green-metallic border-green-metallic'
+            ? 'bg-cyan-primary border-cyan-primary'
             : isDarkMode
-            ? 'border-white/30 hover:border-green-metallic/50'
-            : 'border-gray-300 hover:border-green-metallic/50'
+            ? 'border-white/30 hover:border-cyan-primary/50'
+            : 'border-gray-300 hover:border-cyan-primary/50'
         }`}
       >
         {isSelected && (
@@ -372,8 +372,8 @@ const IdeaCard: React.FC<{
       </button>
 
       {/* Icon */}
-      <div className="w-12 h-12 rounded-xl bg-green-metallic/20 flex items-center justify-center mb-4">
-        <Lightbulb size={24} className="text-green-metallic" />
+      <div className="w-12 h-12 rounded-xl bg-cyan-primary/20 flex items-center justify-center mb-4">
+        <Lightbulb size={24} className="text-cyan-primary" />
       </div>
 
       {/* Title */}

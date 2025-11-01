@@ -22,7 +22,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isDarkMod
         {/* Avatar */}
         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
           isUser
-            ? 'bg-green-metallic'
+            ? 'bg-cyan-primary'
             : isDarkMode
             ? 'bg-white/10'
             : 'bg-gray-200'
@@ -47,7 +47,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isDarkMod
           <div
             className={`rounded-2xl px-4 py-3 ${
               isUser
-                ? 'bg-green-metallic text-white'
+                ? 'bg-cyan-primary text-white'
                 : isDarkMode
                 ? 'bg-white/10 text-gray-100'
                 : 'bg-white text-gray-800'

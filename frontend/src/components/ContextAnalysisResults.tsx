@@ -76,7 +76,7 @@ export const ContextAnalysisResults: React.FC<ContextAnalysisResultsProps> = ({
       className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-xl p-6 space-y-6`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#00ffaa]/20">
+      <div className="flex items-center justify-between pb-4 border-b border-[#00d4ff]/20">
         <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Context-Aware Analysis Results
         </h3>
@@ -151,7 +151,7 @@ export const ContextAnalysisResults: React.FC<ContextAnalysisResultsProps> = ({
       {contextAnalysis.confirmations.length > 0 && (
         <div>
           <div className="flex items-center space-x-2 mb-3">
-            <CheckCircle className="text-green-500" size={20} />
+            <CheckCircle className="text-cyan-500" size={20} />
             <h4 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Confirmations ({contextAnalysis.confirmations.length})
             </h4>
@@ -163,8 +163,8 @@ export const ContextAnalysisResults: React.FC<ContextAnalysisResultsProps> = ({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={`p-4 rounded-lg border-2 border-green-500/30 ${
-                  isDarkMode ? 'bg-green-500/10' : 'bg-green-50'
+                className={`p-4 rounded-lg border-2 border-cyan-500/30 ${
+                  isDarkMode ? 'bg-cyan-500/10' : 'bg-green-50'
                 }`}
               >
                 <div className="space-y-2">
@@ -195,7 +195,7 @@ export const ContextAnalysisResults: React.FC<ContextAnalysisResultsProps> = ({
       {contextAnalysis.newInsights.length > 0 && (
         <div>
           <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="text-[#00ffaa]" size={20} />
+            <Lightbulb className="text-[#00d4ff]" size={20} />
             <h4 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               New Insights ({contextAnalysis.newInsights.length})
             </h4>

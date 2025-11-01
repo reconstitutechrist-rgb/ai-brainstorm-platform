@@ -71,7 +71,7 @@ export const WorkflowVisualization: React.FC = () => {
                   <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
                     <path
                       d="M0 12H38M38 12L28 2M38 12L28 22"
-                      stroke="#00ffaa"
+                      stroke="#00d4ff"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"

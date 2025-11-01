@@ -98,7 +98,7 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-green-metallic/20 flex items-center justify-between">
+          <div className="p-6 border-b border-cyan-primary/20 flex items-center justify-between">
             <div>
               <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Session History
@@ -121,7 +121,7 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
           <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="w-12 h-12 border-4 border-t-transparent border-green-metallic rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-t-transparent border-cyan-primary rounded-full animate-spin" />
               </div>
             ) : sessions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -168,7 +168,7 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                                 Session {sessions.length - index}
                               </h3>
                               {isActive && (
-                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-400">
                                   Active
                                 </span>
                               )}
@@ -192,7 +192,7 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                             {/* Quick Stats */}
                             <div className="flex items-center space-x-4 mt-3">
                               <div className="flex items-center space-x-2">
-                                <CheckCircle2 size={16} className="text-green-500" />
+                                <CheckCircle2 size={16} className="text-cyan-500" />
                                 <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                   {stats.decided} decided
                                 </span>
@@ -242,7 +242,7 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                                 <SessionStateSection
                                   title="Decisions Made"
                                   icon={CheckCircle2}
-                                  iconColor="text-green-500"
+                                  iconColor="text-cyan-500"
                                   items={session.snapshot_at_start.decided}
                                   isDarkMode={isDarkMode}
                                 />

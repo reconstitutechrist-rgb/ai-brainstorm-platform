@@ -778,14 +778,6 @@ async generateImplementationPlan(
 ): Promise<string>
 ```
 
-**Generate Vendor Comparison:**
-```typescript
-async generateVendorComparison(
-  projectTitle: string,
-  vendors: any[]
-): Promise<string>
-```
-
 ##### 4. Prioritization Analysis
 ```typescript
 async prioritize(projectState: any): Promise<AgentResponse>
@@ -842,18 +834,6 @@ Combines translation, research, and prioritization into a single comprehensive p
 ## 6. Risk Assessment
 ## 7. Success Criteria
 ## 8. Next Steps
-```
-
-**3. Vendor Comparison**
-```markdown
-# Vendor Comparison: [Project]
-
-## Overview
-## Comparison Matrix
-## Detailed Vendor Profiles
-## Recommendations
-## Cost Analysis
-## Timeline Comparison
 ```
 
 #### Example Workflows

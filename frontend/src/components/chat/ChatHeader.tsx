@@ -8,7 +8,7 @@ interface ChatHeaderProps {
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ title, description, isDarkMode }) => {
   return (
-    <div className="p-6 border-b border-green-metallic/20">
+    <div className="p-6 border-b border-cyan-primary/20">
       <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
         {title}
       </h2>

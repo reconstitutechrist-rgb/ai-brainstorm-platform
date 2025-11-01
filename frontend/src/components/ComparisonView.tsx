@@ -145,7 +145,7 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({
               }`}
               title="Copy to clipboard"
             >
-              {copied ? <CheckCircle size={20} className="text-green-metallic" /> : <Copy size={20} />}
+              {copied ? <CheckCircle size={20} className="text-cyan-primary" /> : <Copy size={20} />}
             </button>
             <button
               onClick={handleExport}
@@ -220,7 +220,7 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({
                   >
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-1 rounded-full bg-green-metallic text-white text-xs font-medium">
+                        <span className="px-2 py-1 rounded-full bg-cyan-primary text-white text-xs font-medium">
                           {idx + 1}
                         </span>
                         <h3 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>

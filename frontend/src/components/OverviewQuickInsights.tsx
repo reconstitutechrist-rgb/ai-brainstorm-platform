@@ -132,10 +132,13 @@ const OverviewQuickInsights: React.FC<OverviewQuickInsightsProps> = ({
                       ${isDarkMode ? 'bg-white/5' : 'bg-white/50'}
                       rounded-lg p-3
                     `}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <FileText size={14} className={scheme.text} />
-                          <span className={`text-xs font-medium ${scheme.text}`}>
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileText size={14} className={`${scheme.text} flex-shrink-0`} />
+                          <span
+                            className={`text-xs font-medium ${scheme.text} truncate`}
+                            title={section.source}
+                          >
                             {section.source}
                           </span>
                         </div>
@@ -146,7 +149,7 @@ const OverviewQuickInsights: React.FC<OverviewQuickInsightsProps> = ({
                               const docType = documents.find(d => d.title === section.source)?.document_type;
                               if (docType) onViewDocument(docType);
                             }}
-                            className={`text-xs ${scheme.text} hover:underline`}
+                            className={`text-xs ${scheme.text} hover:underline flex-shrink-0 whitespace-nowrap`}
                           >
                             View →
                           </button>

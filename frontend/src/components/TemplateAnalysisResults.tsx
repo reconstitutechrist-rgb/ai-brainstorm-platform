@@ -95,7 +95,7 @@ export const TemplateAnalysisResults: React.FC<TemplateAnalysisResultsProps> = (
               Structured Data
             </h4>
             {renderStructuredData()}
-            <div className="mt-6 pt-6 border-t border-[#00ffaa]/20">
+            <div className="mt-6 pt-6 border-t border-[#00d4ff]/20">
               <h4 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 Full Analysis
               </h4>
@@ -129,9 +129,9 @@ export const TemplateAnalysisResults: React.FC<TemplateAnalysisResultsProps> = (
       className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-xl p-6 space-y-6`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#00ffaa]/20">
+      <div className="flex items-center justify-between pb-4 border-b border-[#00d4ff]/20">
         <div className="flex items-center space-x-3">
-          <FileText className="text-[#00ffaa]" size={24} />
+          <FileText className="text-[#00d4ff]" size={24} />
           <div>
             <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {templateAnalysis.templateInfo.name}
@@ -162,7 +162,7 @@ export const TemplateAnalysisResults: React.FC<TemplateAnalysisResultsProps> = (
 
       {/* Footer Info */}
       <div
-        className={`mt-6 pt-4 border-t border-[#00ffaa]/20 text-xs ${
+        className={`mt-6 pt-4 border-t border-[#00d4ff]/20 text-xs ${
           isDarkMode ? 'text-gray-400' : 'text-gray-600'
         }`}
       >

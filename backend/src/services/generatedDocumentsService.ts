@@ -10,7 +10,7 @@ const anthropic = new Anthropic({
 export interface GeneratedDocument {
   id: string;
   project_id: string;
-  document_type: 'project_brief' | 'decision_log' | 'rejection_log' | 'technical_specs' | 'project_establishment' | 'rfp' | 'implementation_plan' | 'vendor_comparison' | 'next_steps' | 'open_questions' | 'risk_assessment';
+  document_type: 'project_brief' | 'decision_log' | 'rejection_log' | 'technical_specs' | 'project_establishment' | 'rfp' | 'implementation_plan' | 'next_steps' | 'open_questions' | 'risk_assessment';
   title: string;
   content: string;
   version: number;
@@ -74,12 +74,14 @@ export class GeneratedDocumentsService {
 
   /**
    * Get all generated documents for a project
+   * Excludes deprecated document types (vendor_comparison)
    */
   async getByProject(projectId: string): Promise<GeneratedDocument[]> {
     const { data, error } = await this.supabase
       .from('generated_documents')
       .select('*')
       .eq('project_id', projectId)
+      .neq('document_type', 'vendor_comparison')
       .order('document_type', { ascending: true });
 
     if (error) {
@@ -155,7 +157,6 @@ export class GeneratedDocumentsService {
       'risk_assessment',
       'rfp',
       'implementation_plan',
-      'vendor_comparison',
     ];
 
     const generatedDocs: GeneratedDocument[] = [];
@@ -440,51 +441,6 @@ Generate a detailed IMPLEMENTATION PLAN document in markdown format. Include:
 
 Write this as a professional, actionable implementation plan.`;
 
-      case 'vendor_comparison':
-        return `${baseContext}
-
-Generate a VENDOR COMPARISON document in markdown format. Based on project requirements, research and compare potential vendors. Include:
-
-# Vendor Comparison: ${project.title}
-
-## Overview
-- Summary of vendor evaluation process
-- Key criteria used for comparison
-
-## Recommended Vendor Types
-Based on the decided requirements, identify what types of vendors/companies would be best suited:
-- Development agencies vs. freelancers
-- Specialized firms vs. generalists
-- Required expertise areas
-
-## Comparison Matrix
-Create a comparison table with:
-- Vendor categories/types
-- Typical cost ranges
-- Typical timelines
-- Pros and cons
-- Best for (use cases)
-
-## Evaluation Criteria
-How to evaluate vendors:
-- Technical expertise match
-- Portfolio/case studies
-- Cost structure
-- Timeline capabilities
-- Communication and support
-
-## Recommendations
-- Which vendor type(s) to pursue
-- Why they're the best fit
-- What to look for in proposals
-
-## Next Steps
-- How to find and vet vendors
-- What questions to ask
-- How to request proposals
-
-Write this as an objective, helpful guide for vendor selection.`;
-
       case 'next_steps':
         return `${baseContext}
 
@@ -600,6 +556,7 @@ Write this as a professional risk assessment that helps stakeholders make inform
 
   /**
    * Get the appropriate title for each document type
+   * Note: Project name is not included as it's already clear from context
    */
   private getTitleForDocumentType(
     documentType: GeneratedDocument['document_type'],
@@ -607,29 +564,27 @@ Write this as a professional risk assessment that helps stakeholders make inform
   ): string {
     switch (documentType) {
       case 'project_brief':
-        return `${projectTitle} - Project Brief`;
+        return 'Project Brief';
       case 'decision_log':
-        return `${projectTitle} - Decision Log`;
+        return 'Decision Log';
       case 'rejection_log':
-        return `${projectTitle} - Rejection Log`;
+        return 'Rejection Log';
       case 'technical_specs':
-        return `${projectTitle} - Technical Specifications`;
+        return 'Technical Specifications';
       case 'project_establishment':
-        return `${projectTitle} - Project Establishment`;
+        return 'Project Establishment';
       case 'rfp':
-        return `${projectTitle} - Request for Proposal`;
+        return 'Request for Proposal';
       case 'implementation_plan':
-        return `${projectTitle} - Implementation Plan`;
-      case 'vendor_comparison':
-        return `${projectTitle} - Vendor Comparison`;
+        return 'Implementation Plan';
       case 'next_steps':
-        return `${projectTitle} - Next Steps`;
+        return 'Next Steps';
       case 'open_questions':
-        return `${projectTitle} - Open Questions`;
+        return 'Open Questions';
       case 'risk_assessment':
-        return `${projectTitle} - Risk Assessment`;
+        return 'Risk Assessment';
       default:
-        return `${projectTitle} - Document`;
+        return 'Document';
     }
   }
 
@@ -906,10 +861,9 @@ Available document types:
 5. project_establishment - Charter and governance
 6. rfp - Request for Proposal
 7. implementation_plan - Step-by-step execution plan
-8. vendor_comparison - Vendor evaluation matrix
-9. next_steps - Immediate action items
-10. open_questions - Unresolved questions
-11. risk_assessment - Risks and mitigation strategies
+8. next_steps - Immediate action items
+9. open_questions - Unresolved questions
+10. risk_assessment - Risks and mitigation strategies
 
 Recent activity snippet:
 ${messages?.slice(0, 5).map((m: any) => `${m.role}: ${m.content.substring(0, 100)}...`).join('\n')}

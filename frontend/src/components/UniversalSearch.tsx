@@ -155,7 +155,7 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onNavigate, pr
   const getIcon = (type: string) => {
     switch (type) {
       case 'project':
-        return <FolderOpen size={18} className="text-green-400" />;
+        return <FolderOpen size={18} className="text-cyan-400" />;
       case 'message':
         return <MessageSquare size={18} className="text-blue-400" />;
       case 'document':
@@ -193,9 +193,9 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onNavigate, pr
               } rounded-2xl shadow-glass-strong overflow-hidden`}
             >
               {/* Search Input */}
-              <div className="p-4 border-b border-green-metallic/20">
+              <div className="p-4 border-b border-cyan-primary/20">
                 <div className="flex items-center space-x-3">
-                  <Search className="text-green-metallic" size={20} />
+                  <Search className="text-cyan-primary" size={20} />
                   <input
                     ref={inputRef}
                     type="text"
@@ -226,7 +226,7 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onNavigate, pr
               <div className="max-h-96 overflow-y-auto scrollbar-thin">
                 {searching ? (
                   <div className="p-8 text-center">
-                    <div className="inline-block w-8 h-8 border-4 border-green-metallic/30 border-t-green-metallic rounded-full animate-spin" />
+                    <div className="inline-block w-8 h-8 border-4 border-cyan-primary/30 border-t-cyan-primary rounded-full animate-spin" />
                   </div>
                 ) : results.length > 0 ? (
                   <div className="p-2">
@@ -237,8 +237,8 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onNavigate, pr
                         className={`w-full text-left p-4 rounded-xl mb-2 transition-all ${
                           index === selectedIndex
                             ? isDarkMode
-                              ? 'bg-green-metallic/20 border-2 border-green-metallic'
-                              : 'bg-green-50 border-2 border-green-metallic'
+                              ? 'bg-cyan-primary/20 border-2 border-cyan-primary'
+                              : 'bg-green-50 border-2 border-cyan-primary'
                             : isDarkMode
                             ? 'hover:bg-white/5'
                             : 'hover:bg-white/50'
@@ -281,7 +281,7 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onNavigate, pr
                                 <Clock size={12} />
                                 <span>{result.date}</span>
                               </span>
-                              <span className="text-green-400">
+                              <span className="text-cyan-400">
                                 {result.relevance}% match
                               </span>
                             </div>

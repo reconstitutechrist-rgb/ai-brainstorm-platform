@@ -77,14 +77,14 @@ export const SessionControls: React.FC<SessionControlsProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             className={`flex items-center space-x-2 px-4 py-3 rounded-xl ${
               isDarkMode ? 'glass-dark' : 'glass'
-            } border-2 border-green-500/50`}
+            } border-2 border-cyan-500/50`}
           >
             <div className="relative flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              <div className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping" />
+              <div className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse" />
+              <div className="absolute w-3 h-3 bg-cyan-500 rounded-full animate-ping" />
             </div>
             <div className="flex items-center space-x-2">
-              <Clock size={16} className="text-green-500" />
+              <Clock size={16} className="text-cyan-500" />
               <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 {getSessionDuration()}
               </span>

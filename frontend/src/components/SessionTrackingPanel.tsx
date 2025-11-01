@@ -82,7 +82,7 @@ export const SessionTrackingPanel: React.FC = () => {
       } rounded-3xl shadow-glass h-[calc(100vh-20rem)] flex flex-col`}
     >
       {/* Header */}
-      <div className="p-6 border-b border-green-metallic/20">
+      <div className="p-6 border-b border-cyan-primary/20">
         <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
           Session Tracking
         </h3>
@@ -92,7 +92,7 @@ export const SessionTrackingPanel: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-green-metallic/20">
+      <div className="flex border-b border-cyan-primary/20">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -113,7 +113,7 @@ export const SessionTrackingPanel: React.FC = () => {
                 size={18}
                 className={`${
                   tab.color === 'green'
-                    ? 'text-green-500'
+                    ? 'text-cyan-500'
                     : tab.color === 'blue'
                     ? 'text-blue-500'
                     : 'text-yellow-500'
@@ -125,7 +125,7 @@ export const SessionTrackingPanel: React.FC = () => {
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                   tab.color === 'green'
-                    ? 'bg-green-500/20 text-green-400'
+                    ? 'bg-cyan-500/20 text-cyan-400'
                     : tab.color === 'blue'
                     ? 'bg-blue-500/20 text-blue-400'
                     : 'bg-yellow-500/20 text-yellow-600'
@@ -140,7 +140,7 @@ export const SessionTrackingPanel: React.FC = () => {
                   layoutId="activeTab"
                   className={`absolute bottom-0 left-0 right-0 h-1 ${
                     tab.color === 'green'
-                      ? 'bg-green-500'
+                      ? 'bg-cyan-500'
                       : tab.color === 'blue'
                       ? 'bg-blue-500'
                       : 'bg-yellow-500'
@@ -259,7 +259,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({
               <span
                 className={`px-2 py-1 rounded text-xs font-medium ${
                   color === 'green'
-                    ? 'bg-green-500/20 text-green-400'
+                    ? 'bg-cyan-500/20 text-cyan-400'
                     : color === 'blue'
                     ? 'bg-blue-500/20 text-blue-400'
                     : 'bg-yellow-500/20 text-yellow-600'
@@ -301,7 +301,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
                       item.citation.confidence >= 0.8
-                        ? 'bg-green-500/20 text-green-400'
+                        ? 'bg-cyan-500/20 text-cyan-400'
                         : item.citation.confidence >= 0.6
                         ? 'bg-yellow-500/20 text-yellow-600'
                         : 'bg-red-500/20 text-red-400'
@@ -323,7 +323,7 @@ const SessionItemCard: React.FC<SessionItemCardProps> = ({
                     <div className="space-y-1.5">
                       {relatedItems.map((relatedItem) => {
                         const stateColor = relatedItem.state === 'decided'
-                          ? 'text-green-400'
+                          ? 'text-cyan-400'
                           : relatedItem.state === 'exploring'
                           ? 'text-blue-400'
                           : 'text-yellow-600';

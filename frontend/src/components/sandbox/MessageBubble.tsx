@@ -35,14 +35,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onActionC
         <div
           className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
             isAssistant
-              ? 'bg-green-metallic/20 border-2 border-green-metallic/30'
+              ? 'bg-cyan-primary/20 border-2 border-cyan-primary/30'
               : isDarkMode
               ? 'bg-white/10 border-2 border-white/20'
               : 'bg-gray-200 border-2 border-gray-300'
           }`}
         >
           {isAssistant ? (
-            <Bot className="text-green-metallic" size={20} />
+            <Bot className="text-cyan-primary" size={20} />
           ) : (
             <User className={isDarkMode ? 'text-white' : 'text-gray-700'} size={20} />
           )}
@@ -56,7 +56,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onActionC
                 ? isDarkMode
                   ? 'bg-white/10 border border-white/20'
                   : 'bg-gray-100 border border-gray-200'
-                : 'bg-green-metallic text-white'
+                : 'bg-cyan-primary text-white'
             }`}
           >
             {/* Message Text */}
@@ -76,7 +76,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onActionC
                 className="mt-3 pt-3 border-t border-white/10"
               >
                 <div className="flex items-center space-x-2 text-xs">
-                  <Lightbulb size={14} className="text-green-metallic" />
+                  <Lightbulb size={14} className="text-cyan-primary" />
                   <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
                     {message.metadata.extractedIdeas.length} idea{message.metadata.extractedIdeas.length > 1 ? 's' : ''} extracted
                   </span>

@@ -461,11 +461,6 @@ These rejected ideas are documented for future reference. They may be reconsider
       toRegenerate.add('risk_assessment');
     }
 
-    // Check for vendor/comparison content
-    if (combinedText.match(/vendor|provider|service|tool|platform|compare/)) {
-      toRegenerate.add('vendor_comparison');
-    }
-
     return Array.from(toRegenerate);
   }
 
@@ -661,7 +656,6 @@ Be actionable and detailed.`,
       technical_specs: 'Technical Specifications',
       implementation_plan: 'Implementation Plan',
       risk_assessment: 'Risk Assessment',
-      vendor_comparison: 'Vendor Comparison',
     };
 
     return titles[docType] || 'Generated Document';

@@ -33,17 +33,17 @@ const categoryColors = {
   core: {
     bg: 'rgba(0, 255, 170, 0.1)',
     border: 'rgba(0, 255, 170, 0.3)',
-    text: '#00ffaa',
+    text: '#00d4ff',
   },
   quality: {
     bg: 'rgba(26, 255, 204, 0.1)',
     border: 'rgba(26, 255, 204, 0.3)',
-    text: '#1affcc',
+    text: '#00ffff',
   },
   support: {
     bg: 'rgba(0, 204, 136, 0.1)',
     border: 'rgba(0, 204, 136, 0.3)',
-    text: '#00cc88',
+    text: '#0099ff',
   },
   orchestrator: {
     bg: 'rgba(255, 170, 0, 0.1)',

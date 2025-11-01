@@ -111,7 +111,7 @@ export const CreateProjectModal: React.FC = () => {
                       isDarkMode
                         ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
                         : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
-                    } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+                    } border focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
                   />
                 </div>
 
@@ -134,7 +134,7 @@ export const CreateProjectModal: React.FC = () => {
                       isDarkMode
                         ? 'bg-white/10 text-white placeholder-gray-400 border-white/20'
                         : 'bg-white text-gray-800 placeholder-gray-500 border-gray-300'
-                    } border focus:outline-none focus:ring-2 focus:ring-green-metallic/50`}
+                    } border focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
                   />
                 </div>
 
@@ -161,7 +161,7 @@ export const CreateProjectModal: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isCreating}
-                    className="flex-1 px-6 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    className="flex-1 px-6 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
                     {isCreating ? (
                       <>

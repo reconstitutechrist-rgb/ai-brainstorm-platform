@@ -335,12 +335,12 @@ export const ConversationalSandbox: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl p-6 mb-6 shadow-glass border-2 border-green-metallic/30`}
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl p-6 mb-6 shadow-glass border-2 border-cyan-primary/30`}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <TestTube className="text-green-metallic" size={28} />
+              <TestTube className="text-cyan-primary" size={28} />
               <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Conversational Sandbox
               </h1>

@@ -185,49 +185,4 @@ Write this as a professional, actionable implementation plan.`,
     const response = await this.callClaude(messages, 3000);
     return response;
   }
-
-  async generateVendorComparison(
-    projectTitle: string,
-    vendors: any[]
-  ): Promise<string> {
-    this.log('Generating Vendor Comparison document');
-
-    const messages = [
-      {
-        role: 'user',
-        content: `Generate a Vendor Comparison document in markdown format.
-
-PROJECT: ${projectTitle}
-
-VENDORS:
-${JSON.stringify(vendors, null, 2)}
-
-Create a professional comparison document that includes:
-# Vendor Comparison: ${projectTitle}
-
-## Overview
-[Summary of vendor evaluation]
-
-## Comparison Matrix
-[Table comparing vendors across key criteria]
-
-## Detailed Vendor Profiles
-[In-depth look at each vendor with pros/cons]
-
-## Recommendations
-[Which vendor(s) to proceed with and why]
-
-## Cost Analysis
-[Comparison of pricing and value]
-
-## Timeline Comparison
-[How long each vendor estimates]
-
-Write this as a professional, objective comparison to aid decision-making.`,
-      },
-    ];
-
-    const response = await this.callClaude(messages, 2500);
-    return response;
-  }
 }

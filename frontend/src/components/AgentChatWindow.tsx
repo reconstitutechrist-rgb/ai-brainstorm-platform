@@ -169,7 +169,7 @@ export const AgentChatWindow: React.FC<AgentChatWindowProps> = ({
                     ? isDarkMode
                       ? 'bg-gray-800 text-gray-300'
                       : 'bg-gray-100 text-gray-700'
-                    : 'bg-green-metallic text-white'
+                    : 'bg-cyan-primary text-white'
                 }`}
               >
                 {msg.content}
@@ -196,14 +196,14 @@ export const AgentChatWindow: React.FC<AgentChatWindowProps> = ({
               rows={2}
               className={`flex-1 px-3 py-2 rounded-lg border resize-none focus:outline-none focus:ring-2 text-sm ${
                 isDarkMode
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:ring-green-metallic'
-                  : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:ring-green-metallic'
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:ring-cyan-primary'
+                  : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:ring-cyan-primary'
               }`}
             />
             <button
               onClick={handleSend}
               disabled={!message.trim()}
-              className="px-4 py-2 rounded-lg bg-green-metallic text-white hover:bg-green-metallic/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Send size={16} />
             </button>

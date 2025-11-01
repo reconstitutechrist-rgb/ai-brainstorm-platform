@@ -53,7 +53,7 @@ export const SessionCompleteSummary: React.FC<SessionCompleteSummaryProps> = ({
         }`}
       >
         {/* Success Header */}
-        <div className="px-6 py-8 bg-gradient-to-r from-green-metallic to-green-metallic-dark text-white">
+        <div className="px-6 py-8 bg-gradient-to-r from-cyan-primary to-cyan-primary-dark text-white">
           <div className="flex items-center justify-center mb-4">
             <motion.div
               initial={{ scale: 0 }}
@@ -139,11 +139,11 @@ export const SessionCompleteSummary: React.FC<SessionCompleteSummaryProps> = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
               className={`p-4 rounded-xl ${
-                isDarkMode ? 'bg-green-500/10' : 'bg-green-50'
+                isDarkMode ? 'bg-cyan-500/10' : 'bg-green-50'
               }`}
             >
               <div className="flex items-center space-x-3 mb-2">
-                <TrendingUp size={24} className={isDarkMode ? 'text-green-400' : 'text-green-600'} />
+                <TrendingUp size={24} className={isDarkMode ? 'text-cyan-400' : 'text-cyan-600'} />
                 <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                   {summary.projectItemsAdded}
                 </div>
@@ -151,7 +151,7 @@ export const SessionCompleteSummary: React.FC<SessionCompleteSummaryProps> = ({
               <div className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
                 Ideas Added
               </div>
-              <div className={`text-xs mt-1 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+              <div className={`text-xs mt-1 ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
                 To your main project
               </div>
             </motion.div>
@@ -267,7 +267,7 @@ export const SessionCompleteSummary: React.FC<SessionCompleteSummaryProps> = ({
             </button>
             <button
               onClick={onNewSession}
-              className="flex-1 px-4 py-3 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all flex items-center justify-center space-x-2"
+              className="flex-1 px-4 py-3 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all flex items-center justify-center space-x-2"
             >
               <Plus size={18} />
               <span>New Session</span>

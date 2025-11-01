@@ -76,8 +76,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         className="absolute inset-0 opacity-10"
         style={{
           backgroundImage: `
-            linear-gradient(to right, ${isDarkMode ? '#00ffaa' : '#1a7f7f'} 1px, transparent 1px),
-            linear-gradient(to bottom, ${isDarkMode ? '#00ffaa' : '#1a7f7f'} 1px, transparent 1px)
+            linear-gradient(to right, ${isDarkMode ? '#00d4ff' : '#00d4ff'} 1px, transparent 1px),
+            linear-gradient(to bottom, ${isDarkMode ? '#00d4ff' : '#00d4ff'} 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px',
         }}

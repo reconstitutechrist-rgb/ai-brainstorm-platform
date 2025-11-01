@@ -2,15 +2,16 @@
 @import "./styles/theme.css";
 
 @theme {
-  --color-teal-bg: #b8d8d8;
-  --color-teal-bg-dark: #0a2f2f;
-  --color-green-metallic: #1a7f7f;
-  --color-green-metallic-light: #2da3a3;
-  --color-green-metallic-dark: #0d5555;
+  --color-cyan-bg: #4a9aba;
+  --color-cyan-bg-dark: #001a33;
+  --color-cyan-primary: #00d4ff;
+  --color-cyan-secondary: #0099ff;
+  --color-cyan-accent: #00ffff;
+  --color-blue-deep: #001a33;
 }
 
 /* ===================================
-   BODY & HTML - Teal Ocean Background
+   BODY & HTML - Cyan/Blue Futuristic Background
    =================================== */
 html {
   scroll-behavior: smooth;
@@ -25,15 +26,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  background: linear-gradient(135deg, #0d3d30 0%, #1a6b54 25%, #0f4d3d 50%, #1a6b54 75%, #0d3d30 100%) !important;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a3a52 25%, #2a5a7a 50%, #1a3a52 75%, #0a0e27 100%) !important;
   background-size: 400% 400% !important;
-  animation: gradientShift 15s ease infinite !important;
+  animation: gradientShift 30s ease infinite !important; /* Slower: 15s → 30s */
   transition: background 0.3s ease;
 }
 
 body.dark,
 html.dark body {
-  background: linear-gradient(135deg, #000000 0%, #0a1a15 25%, #000000 50%, #0a1a15 75%, #000000 100%) !important;
+  background: linear-gradient(135deg, #000000 0%, #001a33 25%, #000000 50%, #001a33 75%, #000000 100%) !important;
   background-size: 400% 400% !important;
 }
 
@@ -41,65 +42,65 @@ html.dark body {
    GLASSMORPHISM - Frosted Glass Panels
    =================================== */
 
-/* Light Mode - Frosted White Glass */
+/* Light Mode - Frosted White Glass (Cleaner & Lighter) */
 .glass {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15) !important;
+  background: rgba(255, 255, 255, 0.75) !important; /* Increased opacity: 0.7 → 0.75 */
+  backdrop-filter: blur(8px) !important; /* Reduced blur: 12px → 8px */
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important; /* Softer border: 0.4 → 0.3 */
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important; /* Lighter shadow: 0.15 → 0.08 */
 }
 
-/* Dark Mode - Smoky Black Glass */
+/* Dark Mode - Smoky Black Glass (Cleaner & Lighter) */
 .dark .glass {
-  background: rgba(26, 26, 26, 0.7) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15) !important;
+  background: rgba(26, 26, 26, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important;
 }
 
 /* Separate classes for conditional dark mode */
 .glass-dark {
-  background: rgba(26, 26, 26, 0.7) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15) !important;
+  background: rgba(26, 26, 26, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important;
 }
 
-/* Stronger Glass - Extra Blur */
+/* Stronger Glass - Extra Blur (Refined) */
 .glass-strong {
   background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.30) !important;
+  backdrop-filter: blur(12px) !important; /* Reduced: 16px → 12px */
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important; /* Softer: 0.5 → 0.4 */
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.12) !important; /* Lighter: 0.30 → 0.12 */
 }
 
 .dark .glass-strong,
 .glass-dark-strong {
   background: rgba(26, 26, 26, 0.85) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.30) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* Softer: 0.2 → 0.15 */
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.12) !important;
 }
 
-/* Subtle Glass - Light Touch */
+/* Subtle Glass - Light Touch (Minimal) */
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important; /* Increased: 0.5 → 0.6 */
+  backdrop-filter: blur(6px) !important; /* Reduced: 8px → 6px */
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important; /* Softer: 0.3 → 0.25 */
 }
 
 .dark .glass-subtle,
 .glass-dark-subtle {
-  background: rgba(26, 26, 26, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(26, 26, 26, 0.6) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* ===================================
@@ -116,8 +117,8 @@ html.dark body {
   left: 0;
   width: 20px;
   height: 20px;
-  border-left: 3px solid #1a7f7f;
-  border-top: 3px solid #1a7f7f;
+  border-left: 3px solid #00d4ff;
+  border-top: 3px solid #00d4ff;
   z-index: 10;
 }
 
@@ -128,14 +129,14 @@ html.dark body {
   right: 0;
   width: 20px;
   height: 20px;
-  border-right: 3px solid #1a7f7f;
-  border-bottom: 3px solid #1a7f7f;
+  border-right: 3px solid #00d4ff;
+  border-bottom: 3px solid #00d4ff;
   z-index: 10;
 }
 
 .dark .angular-accent::before,
 .dark .angular-accent::after {
-  border-color: #2da3a3;
+  border-color: #00ffff;
 }
 
 /* Large angular accents for hero sections */
@@ -147,19 +148,19 @@ html.dark body {
 }
 
 /* ===================================
-   3D HOVER EFFECTS - Lift and Glow
+   3D HOVER EFFECTS - Lift and Glow (Subtle)
    =================================== */
 .hover-lift {
   transition: transform 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 .hover-lift:hover {
-  transform: translateY(-6px) !important;
-  box-shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.30) !important;
+  transform: translateY(-3px) !important; /* Reduced: -6px → -3px */
+  box-shadow: 0 8px 20px 0 rgba(31, 38, 135, 0.12) !important; /* Lighter: 0.30 → 0.12 */
 }
 
 .hover-lift:active {
-  transform: translateY(-2px) !important;
+  transform: translateY(-1px) !important; /* Reduced: -2px → -1px */
 }
 
 .hover-scale {
@@ -167,7 +168,7 @@ html.dark body {
 }
 
 .hover-scale:hover {
-  transform: scale(1.03) !important;
+  transform: scale(1.02) !important; /* Reduced: 1.03 → 1.02 */
 }
 
 .hover-glow {
@@ -175,11 +176,11 @@ html.dark body {
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 25px rgba(26, 127, 127, 0.6) !important;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.4) !important; /* Softer: 0.6 → 0.4 */
 }
 
 /* ===================================
-   CUSTOM SCROLLBAR - Metallic Green
+   CUSTOM SCROLLBAR - Cyan/Blue
    =================================== */
 .scrollbar-thin::-webkit-scrollbar {
   width: 8px;
@@ -191,28 +192,28 @@ html.dark body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(26, 127, 127, 0.4);
+  background: rgba(0, 212, 255, 0.4);
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 127, 127, 0.6);
+  background: rgba(0, 212, 255, 0.6);
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(45, 163, 163, 0.4);
+  background: rgba(0, 255, 255, 0.4);
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(45, 163, 163, 0.6);
+  background: rgba(0, 255, 255, 0.6);
 }
 
 /* ===================================
    TEXT EFFECTS
    =================================== */
-.text-gradient-green {
-  background: linear-gradient(135deg, #1a7f7f 0%, #2da3a3 100%);
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -227,48 +228,48 @@ html.dark body {
 }
 
 /* ===================================
-   GLOW EFFECTS - Metallic Shimmer
+   GLOW EFFECTS - Cyan Shimmer (Subtle)
    =================================== */
-.glow-green {
-  box-shadow: 0 0 20px rgba(26, 127, 127, 0.5);
+.glow-cyan {
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3); /* Softer: 0.5 → 0.3 */
 }
 
-.glow-green-strong {
-  box-shadow: 0 0 35px rgba(26, 127, 127, 0.8);
+.glow-cyan-strong {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); /* Softer: 0.8 → 0.5 */
 }
 
 .glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+  animation: glow-pulse 3s ease-in-out infinite; /* Slower: 2s → 3s */
 }
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(26, 127, 127, 0.4);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3); /* Softer: 0.4 → 0.3 */
   }
   50% {
-    box-shadow: 0 0 25px rgba(26, 127, 127, 0.7);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.5); /* Softer: 0.7 → 0.5 */
   }
 }
 
 /* ===================================
    GRADIENT BACKGROUNDS
    =================================== */
-.gradient-teal {
-  background: linear-gradient(135deg, #b8d8d8 0%, #8fbfbf 100%);
+.gradient-cyan {
+  background: linear-gradient(135deg, #4a9aba 0%, #2a5a7a 100%);
 }
 
-.gradient-green {
-  background: linear-gradient(135deg, #1a7f7f 0%, #0d5555 100%);
+.gradient-blue {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
 }
 
 .gradient-dark {
-  background: linear-gradient(135deg, #0a2f2f 0%, #051818 100%);
+  background: linear-gradient(135deg, #001a33 0%, #000000 100%);
 }
 
 .gradient-animated {
-  background: linear-gradient(270deg, #b8d8d8, #1a7f7f, #b8d8d8);
+  background: linear-gradient(270deg, #4a9aba, #00d4ff, #4a9aba);
   background-size: 400% 400%;
-  animation: gradient-shift 15s ease infinite;
+  animation: gradient-shift 30s ease infinite; /* Slower: 15s → 30s */
 }
 
 @keyframes gradient-shift {
@@ -278,29 +279,29 @@ html.dark body {
 }
 
 /* ===================================
-   BUTTON COMPONENTS - Metallic Green
+   BUTTON COMPONENTS - Cyan/Blue
    =================================== */
 .btn-primary {
   padding: 0.75rem 1.75rem;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #1a7f7f 0%, #0d5555 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
   color: white;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(26, 127, 127, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
   border: none;
   cursor: pointer;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #2da3a3 0%, #1a7f7f 100%);
-  box-shadow: 0 6px 25px rgba(26, 127, 127, 0.5);
+  background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
+  box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
   transform: translateY(-2px);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(26, 127, 127, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
 }
 
 .btn-primary:disabled {
@@ -314,27 +315,27 @@ html.dark body {
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
-  color: #1a7f7f;
+  color: #00d4ff;
   font-weight: 600;
   transition: all 0.2s;
-  border: 1px solid rgba(26, 127, 127, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.3);
   cursor: pointer;
 }
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.25);
-  border-color: #1a7f7f;
+  border-color: #00d4ff;
 }
 
 .dark .btn-secondary {
-  color: #2da3a3;
+  color: #00ffff;
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(45, 163, 163, 0.3);
+  border-color: rgba(0, 255, 255, 0.3);
 }
 
 .dark .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: #2da3a3;
+  border-color: #00ffff;
 }
 
 /* ===================================
@@ -348,16 +349,16 @@ html.dark body {
   display: inline-block;
 }
 
-.badge-green {
-  background: rgba(26, 127, 127, 0.2);
-  color: #1a7f7f;
-  border: 1px solid rgba(26, 127, 127, 0.4);
+.badge-cyan {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.4);
 }
 
-.dark .badge-green {
-  background: rgba(45, 163, 163, 0.2);
-  color: #2da3a3;
-  border: 1px solid rgba(45, 163, 163, 0.4);
+.dark .badge-cyan {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.4);
 }
 
 .badge-blue {
@@ -396,11 +397,11 @@ html.dark body {
    =================================== */
 .focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(26, 127, 127, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.5);
 }
 
 .dark .focus-ring:focus {
-  box-shadow: 0 0 0 3px rgba(45, 163, 163, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.5);
 }
 
 /* ===================================
@@ -420,7 +421,7 @@ html.dark body {
 }
 
 /* ===================================
-   ANIMATIONS
+   ANIMATIONS (Slower & Smoother)
    =================================== */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
@@ -428,7 +429,7 @@ html.dark body {
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite; /* Slower: 3s → 4s */
 }
 
 /* ===================================
@@ -511,18 +512,18 @@ button, a, input, textarea, select {
   overflow: hidden;
 }
 
-/* Canvas card glow effects */
+/* Canvas card glow effects (Subtle) */
 @keyframes card-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(0, 255, 170, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.25); /* Softer: 0.3 → 0.25 */
   }
   50% {
-    box-shadow: 0 0 40px rgba(0, 255, 170, 0.6);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.4); /* Softer: 0.6 → 0.4 */
   }
 }
 
 .canvas-card-dragging {
-  animation: card-glow 1.5s ease-in-out infinite;
+  animation: card-glow 2s ease-in-out infinite; /* Slower: 1.5s → 2s */
 }
 
 /* ===================================

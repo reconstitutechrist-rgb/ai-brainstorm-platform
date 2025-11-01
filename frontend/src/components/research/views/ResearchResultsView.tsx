@@ -90,9 +90,9 @@ const ResearchResultsView: React.FC<ResearchResultsViewProps> = ({ results }) =>
             </div>
           )}
           {results.documentSources && results.documentSources.length > 0 && (
-            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'}`}>
+            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-green-50 border border-green-200'}`}>
               <div className="flex items-center gap-2 mb-1">
-                <FolderOpen size={20} className="text-green-400" />
+                <FolderOpen size={20} className="text-cyan-400" />
                 <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                   {results.documentSources.length} Documents
                 </span>
@@ -121,7 +121,7 @@ const ResearchResultsView: React.FC<ResearchResultsViewProps> = ({ results }) =>
                 }`}
                 title="Copy synthesis"
               >
-                {copied ? <CheckCircle size={18} className="text-green-500" /> : <Copy size={18} />}
+                {copied ? <CheckCircle size={18} className="text-cyan-500" /> : <Copy size={18} />}
               </button>
               <button
                 onClick={exportResults}
@@ -202,7 +202,7 @@ const ResearchResultsView: React.FC<ResearchResultsViewProps> = ({ results }) =>
       {results.documentSources && results.documentSources.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <FolderOpen className="text-green-500" size={20} />
+            <FolderOpen className="text-cyan-500" size={20} />
             <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               Relevant Documents ({results.documentSources.length})
             </h3>
@@ -235,7 +235,7 @@ const ResearchResultsView: React.FC<ResearchResultsViewProps> = ({ results }) =>
       {results.suggestedDocuments && results.suggestedDocuments.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <FileQuestion className="text-green-500" size={20} />
+            <FileQuestion className="text-cyan-500" size={20} />
             <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               Suggested Documents ({results.suggestedDocuments.length})
             </h3>

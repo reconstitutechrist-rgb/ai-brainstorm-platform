@@ -80,10 +80,10 @@ export const ReferenceUpload: React.FC = () => {
           isDarkMode ? 'glass-dark' : 'glass'
         } rounded-2xl p-8 border-2 border-dashed transition-all cursor-pointer ${
           isDragActive
-            ? 'border-green-metallic bg-green-metallic/10'
+            ? 'border-cyan-primary bg-cyan-primary/10'
             : isDarkMode
-            ? 'border-white/20 hover:border-green-metallic/50'
-            : 'border-gray-300 hover:border-green-metallic/50'
+            ? 'border-white/20 hover:border-cyan-primary/50'
+            : 'border-gray-300 hover:border-cyan-primary/50'
         }`}
       >
         <input {...getInputProps()} />
@@ -92,7 +92,7 @@ export const ReferenceUpload: React.FC = () => {
           <div className={`w-16 h-16 mx-auto mb-4 rounded-full ${
             isDarkMode ? 'bg-white/10' : 'bg-gray-200'
           } flex items-center justify-center`}>
-            <Upload size={32} className={isDragActive ? 'text-green-metallic' : isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+            <Upload size={32} className={isDragActive ? 'text-cyan-primary' : isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
           </div>
 
           {isDragActive ? (
@@ -152,7 +152,7 @@ export const ReferenceUpload: React.FC = () => {
                   </div>
 
                   {file.status === 'uploaded' ? (
-                    <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
+                    <CheckCircle size={20} className="text-cyan-500 flex-shrink-0" />
                   ) : (
                     <X size={20} className="text-red-500 flex-shrink-0" />
                   )}
@@ -167,7 +167,7 @@ export const ReferenceUpload: React.FC = () => {
       {uploading && (
         <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-4 shadow-glass`}>
           <div className="flex items-center space-x-3">
-            <Loader2 size={20} className="text-green-metallic animate-spin" />
+            <Loader2 size={20} className="text-cyan-primary animate-spin" />
             <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Uploading files...
             </span>

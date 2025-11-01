@@ -12,13 +12,14 @@ import '../styles/homepage.css';
 
 export const Dashboard: React.FC = () => {
   const { isDarkMode } = useThemeStore();
-  const { user } = useUserStore();
+  const { user, isLoading: authLoading } = useUserStore();
   const { projects, setProjects, setCurrentProject, loading, setLoading } = useProjectStore();
   const { openCreateProjectModal } = useUIStore();
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Apply homepage background
   useEffect(() => {
@@ -28,22 +29,33 @@ export const Dashboard: React.FC = () => {
     };
   }, []);
 
+  // Load projects when user becomes available
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (!authLoading && user) {
+      loadProjects();
+    }
+  }, [user, authLoading]);
 
   const loadProjects = async () => {
+    if (!user?.id) {
+      console.warn('Cannot load projects: No authenticated user');
+      setLoadError('Please sign in to view your projects');
+      return;
+    }
+
     try {
       setLoading(true);
-      // Use actual authenticated user ID or fallback to demo
-      const userId = user?.id || 'demo-user-123';
-      console.log('Loading projects for user:', userId);
-      const response = await projectsApi.getAll(userId);
+      setLoadError(null);
+      console.log('Loading projects for user:', user.id);
+      const response = await projectsApi.getAll(user.id);
       if (response.success) {
         setProjects(response.projects);
+      } else {
+        setLoadError('Failed to load projects');
       }
     } catch (error) {
       console.error('Failed to load projects:', error);
+      setLoadError('Failed to load projects. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -93,8 +105,8 @@ export const Dashboard: React.FC = () => {
         className={`${isDarkMode ? 'glass-dark' : 'glass'} p-12 mb-8 rounded-3xl shadow-glass`}
       >
         <div className="flex items-center space-x-4 mb-4">
-          <div className="p-3 rounded-2xl bg-green-metallic/20 glow-green">
-            <Sparkles className="text-green-metallic" size={36} />
+          <div className="p-3 rounded-2xl bg-cyan-primary/20 glow-cyan">
+            <Sparkles className="text-cyan-primary" size={36} />
           </div>
           <h1 className={`text-5xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             AI Brainstorm Platform
@@ -114,7 +126,7 @@ export const Dashboard: React.FC = () => {
           onClick={openCreateProjectModal}
           className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 text-left rounded-2xl shadow-glass`}
         >
-          <div className="w-14 h-14 rounded-xl gradient-green flex items-center justify-center mb-4 glow-green">
+          <div className="w-14 h-14 rounded-xl gradient-green flex items-center justify-center mb-4 glow-cyan">
             <Plus className="text-white" size={28} />
           </div>
           <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -132,8 +144,8 @@ export const Dashboard: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className={`${isDarkMode ? 'glass-dark' : 'glass'} p-8 rounded-2xl shadow-glass`}
         >
-          <div className="w-12 h-12 rounded-xl bg-green-metallic/20 flex items-center justify-center mb-4">
-            <Folder className="text-green-metallic" size={24} />
+          <div className="w-12 h-12 rounded-xl bg-cyan-primary/20 flex items-center justify-center mb-4">
+            <Folder className="text-cyan-primary" size={24} />
           </div>
           <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             Your Projects
@@ -173,9 +185,27 @@ export const Dashboard: React.FC = () => {
           Recent Projects
         </h2>
 
-        {loading ? (
+        {authLoading || loading ? (
           <div className="text-center py-8">
-            <div className="inline-block w-8 h-8 border-4 border-green-metallic/30 border-t-green-metallic rounded-full animate-spin" />
+            <div className="inline-block w-8 h-8 border-4 border-cyan-primary/30 border-t-cyan-primary rounded-full animate-spin" />
+            <p className={`mt-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {authLoading ? 'Authenticating...' : 'Loading projects...'}
+            </p>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-12">
+            <Folder size={48} className={`mx-auto mb-4 text-red-500/50`} />
+            <p className={`text-lg mb-4 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+              {loadError}
+            </p>
+            {user && (
+              <button
+                onClick={loadProjects}
+                className="px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-600 transition-colors"
+              >
+                Try Again
+              </button>
+            )}
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
@@ -223,7 +253,7 @@ export const Dashboard: React.FC = () => {
                   <span
                     className={`px-2 py-1 rounded ${
                       project.status === 'decided'
-                        ? 'bg-green-500/20 text-green-400'
+                        ? 'bg-cyan-500/20 text-cyan-400'
                         : project.status === 'exploring'
                         ? 'bg-blue-500/20 text-blue-400'
                         : 'bg-gray-500/20 text-gray-400'

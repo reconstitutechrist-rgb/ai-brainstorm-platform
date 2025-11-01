@@ -22,7 +22,7 @@ export const DarkModeToggle: React.FC = () => {
         {isDarkMode ? (
           <Sun size={20} className="text-yellow-300" />
         ) : (
-          <Moon size={20} className="text-green-metallic" />
+          <Moon size={20} className="text-cyan-primary" />
         )}
       </motion.div>
     </button>

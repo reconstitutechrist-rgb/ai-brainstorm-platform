@@ -1117,6 +1117,21 @@ export const intelligenceHubApi = {
     }>(`/intelligence-hub/${projectId}/save-as-document`, data);
     return response.data;
   },
+
+  conversation: async (projectId: string, message: string, conversationHistory: Array<{role: 'user' | 'assistant'; content: string}> = []) => {
+    const response = await api.post<{
+      success: boolean;
+      response: {
+        type: 'qa' | 'document';
+        content: string;
+        metadata: any;
+      };
+    }>(`/intelligence-hub/${projectId}/conversation`, {
+      message,
+      conversationHistory
+    });
+    return response.data;
+  },
 };
 
 export default api;

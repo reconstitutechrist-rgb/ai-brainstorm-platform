@@ -207,7 +207,6 @@ export class EmbeddingService {
       project_establishment: 'project charter, governance, stakeholders, team structure',
       rfp: 'vendor requirements, procurement, request for proposal',
       implementation_plan: 'execution plan, timeline, milestones, tasks',
-      vendor_comparison: 'vendor options, comparisons, evaluations',
       next_steps: 'action items, next steps, to-do, follow-up tasks',
       open_questions: 'questions, uncertainties, unresolved issues',
       risk_assessment: 'risks, challenges, concerns, potential problems',

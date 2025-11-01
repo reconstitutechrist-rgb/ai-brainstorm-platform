@@ -118,7 +118,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
               <div className="px-8 pb-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className={`p-5 rounded-xl ${isDarkMode ? 'glass-dark-subtle' : 'glass-subtle'} text-center`}>
-                    <div className={`text-4xl font-bold ${sessionSummary.itemsDecided > 0 ? 'text-green-500' : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <div className={`text-4xl font-bold ${sessionSummary.itemsDecided > 0 ? 'text-cyan-500' : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}>
                       {sessionSummary.itemsDecided}
                     </div>
                     <div className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>

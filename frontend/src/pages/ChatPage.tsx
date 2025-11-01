@@ -505,7 +505,7 @@ export const ChatPage: React.FC = () => {
                     disabled={isArchiving}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
                       isDarkMode
-                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-500/30'
+                        ? 'bg-green-600/20 text-cyan-400 hover:bg-green-600/30 border border-cyan-500/30'
                         : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >

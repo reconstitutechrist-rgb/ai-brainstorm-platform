@@ -96,7 +96,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         description: 'Understanding your needs',
       },
       generation: {
-        color: 'text-green-400',
+        color: 'text-cyan-400',
         label: 'Generating',
         description: 'Creating concrete ideas',
       },
@@ -169,7 +169,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 isDarkMode ? 'bg-white/10' : 'bg-gray-100'
               }`}
             >
-              <Loader2 size={16} className="animate-spin text-green-metallic" />
+              <Loader2 size={16} className="animate-spin text-cyan-primary" />
               <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 AI is thinking...
               </span>
@@ -215,7 +215,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div
           className={`relative rounded-2xl transition-all ${
             isFocused
-              ? 'ring-2 ring-green-metallic/50'
+              ? 'ring-2 ring-cyan-primary/50'
               : isDarkMode
               ? 'border border-white/20'
               : 'border border-gray-300'
@@ -245,7 +245,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             disabled={!inputValue.trim() || isLoading}
             className={`absolute right-2 bottom-2 p-2 rounded-xl transition-all ${
               inputValue.trim() && !isLoading
-                ? 'bg-green-metallic hover:bg-green-metallic-dark text-white'
+                ? 'bg-cyan-primary hover:bg-cyan-primary-dark text-white'
                 : isDarkMode
                 ? 'bg-white/10 text-gray-600'
                 : 'bg-gray-200 text-gray-400'

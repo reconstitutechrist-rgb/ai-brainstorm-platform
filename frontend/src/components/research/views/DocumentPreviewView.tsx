@@ -69,7 +69,7 @@ const DocumentPreviewView: React.FC<DocumentPreviewViewProps> = ({
                   isDarkMode
                     ? 'bg-white/5 border-gray-700 text-white'
                     : 'bg-white border-gray-300 text-gray-800'
-                } focus:ring-2 focus:ring-green-metallic focus:border-transparent`}
+                } focus:ring-2 focus:ring-cyan-primary focus:border-transparent`}
               />
             ) : (
               <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -119,7 +119,7 @@ const DocumentPreviewView: React.FC<DocumentPreviewViewProps> = ({
             <>
               <button
                 onClick={handleSaveEdit}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-metallic text-white hover:bg-green-metallic/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-primary/90 transition-colors"
               >
                 <Save size={18} />
                 <span>Save Edits</span>
@@ -138,7 +138,7 @@ const DocumentPreviewView: React.FC<DocumentPreviewViewProps> = ({
             <>
               <button
                 onClick={handleAccept}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-metallic text-white hover:bg-green-metallic/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-primary/90 transition-colors"
               >
                 <CheckCircle size={18} />
                 <span>Accept & Save to Project</span>
@@ -191,7 +191,7 @@ const DocumentPreviewView: React.FC<DocumentPreviewViewProps> = ({
               isDarkMode
                 ? 'bg-white/5 border-gray-700 text-white'
                 : 'bg-white border-gray-300 text-gray-800'
-            } focus:ring-2 focus:ring-green-metallic focus:border-transparent`}
+            } focus:ring-2 focus:ring-cyan-primary focus:border-transparent`}
           />
         ) : (
           <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert' : ''}`}>

@@ -157,7 +157,7 @@ export const AgentSuggestions: React.FC = () => {
         <div
           className={`${
             isDarkMode ? 'glass-dark' : 'glass'
-          } rounded-2xl shadow-glass-strong overflow-hidden border-2 border-green-metallic/30`}
+          } rounded-2xl shadow-glass-strong overflow-hidden border-2 border-cyan-primary/30`}
         >
           {/* Header */}
           <div
@@ -167,8 +167,8 @@ export const AgentSuggestions: React.FC = () => {
             onClick={toggleExpanded}
           >
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-green-metallic/20 flex items-center justify-center">
-                <Sparkles className="text-green-metallic" size={16} />
+              <div className="w-8 h-8 rounded-lg bg-cyan-primary/20 flex items-center justify-center">
+                <Sparkles className="text-cyan-primary" size={16} />
               </div>
               <div>
                 <h3
@@ -276,7 +276,7 @@ export const AgentSuggestions: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleAccept(suggestion)}
-                          className="flex-1 px-3 py-2 rounded-lg bg-green-metallic hover:bg-green-metallic-dark text-white text-sm font-medium transition-all flex items-center justify-center space-x-1"
+                          className="flex-1 px-3 py-2 rounded-lg bg-cyan-primary hover:bg-cyan-primary-dark text-white text-sm font-medium transition-all flex items-center justify-center space-x-1"
                         >
                           <ThumbsUp size={14} />
                           <span>Apply</span>

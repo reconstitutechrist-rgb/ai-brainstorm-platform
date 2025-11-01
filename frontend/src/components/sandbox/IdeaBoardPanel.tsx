@@ -90,8 +90,8 @@ export const IdeaBoardPanel: React.FC<IdeaBoardPanelProps> = ({
     ready_to_extract: {
       label: 'Ready to Extract',
       icon: CheckCircle2,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/10',
       emoji: '✅',
     },
   };
@@ -131,7 +131,7 @@ export const IdeaBoardPanel: React.FC<IdeaBoardPanelProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={onExtract}
-            className="w-full px-4 py-2.5 rounded-xl bg-green-metallic hover:bg-green-metallic-dark text-white font-medium transition-all flex items-center justify-center space-x-2"
+            className="w-full px-4 py-2.5 rounded-xl bg-cyan-primary hover:bg-cyan-primary-dark text-white font-medium transition-all flex items-center justify-center space-x-2"
           >
             <Download size={18} />
             <span>Extract {selectedIdeaIds.size} to Project</span>
@@ -195,14 +195,14 @@ export const IdeaBoardPanel: React.FC<IdeaBoardPanelProps> = ({
                           exit={{ opacity: 0, x: -10 }}
                           className={`relative rounded-xl p-3 cursor-pointer transition-all ${
                             isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-50 hover:bg-gray-100'
-                          } ${isSelected ? 'ring-2 ring-green-metallic' : ''}`}
+                          } ${isSelected ? 'ring-2 ring-cyan-primary' : ''}`}
                           onClick={() => onToggleSelect(idea.id)}
                         >
                           {/* Selection Checkbox */}
                           <div
                             className={`absolute top-3 right-3 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                               isSelected
-                                ? 'bg-green-metallic border-green-metallic'
+                                ? 'bg-cyan-primary border-cyan-primary'
                                 : isDarkMode
                                 ? 'border-white/30'
                                 : 'border-gray-300'
@@ -291,7 +291,7 @@ export const IdeaBoardPanel: React.FC<IdeaBoardPanelProps> = ({
                                     e.stopPropagation();
                                     onUpdateStatus(idea.id, 'ready_to_extract');
                                   }}
-                                  className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all"
+                                  className="text-xs px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-all"
                                 >
                                   Mark Ready
                                 </button>
