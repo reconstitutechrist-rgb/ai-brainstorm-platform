@@ -7,7 +7,7 @@ interface ChatContainerProps {
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({ children }) => {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-12">
       {children}
     </div>
   );

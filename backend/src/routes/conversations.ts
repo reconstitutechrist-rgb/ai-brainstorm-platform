@@ -205,60 +205,24 @@ router.post('/:projectId/message', async (req: Request, res: Response) => {
       // Continue with empty responses - will trigger fallback below
     }
 
-    // Save agent responses (only those with showToUser=true)
-    const agentMessages = [];
-    for (const response of responses.filter((r: any) => r.showToUser)) {
-      const { data: agentMsg, error } = await supabase
-        .from('messages')
-        .insert([
-          {
-            project_id: projectId,
-            user_id: userId,
-            role: 'assistant',
-            content: response.message,
-            agent_type: response.agent, // Now using the agent_type column
-            metadata: response.metadata || {},
-          },
-        ])
-        .select()
-        .single();
+    // Create response payload with agent messages (but not saved to DB yet)
+    const agentMessages = responses
+      .filter((r: any) => r.showToUser)
+      .map((response: any) => ({
+        project_id: projectId,
+        user_id: userId,
+        role: 'assistant',
+        content: response.message,
+        agent_type: response.agent,
+        metadata: response.metadata || {},
+        created_at: new Date().toISOString(), // Add timestamp for frontend display
+      }));
 
-      if (!error && agentMsg) {
-        agentMessages.push(agentMsg);
-        console.log(`[Conversations] Saved message from ${response.agent}`);
-      } else if (error) {
-        console.error('[Conversations] Failed to save agent message:', error);
-      }
-    }
+    const responseStartTime = Date.now();
+    console.log(`[Conversations] ⚡ NON-BLOCKING: Sending response immediately with ${agentMessages.length} agent messages`);
+    console.log(`[Conversations] ⏱️  Response being sent at ${new Date().toISOString()} (before DB saves)`);
 
-    // If no responses (agents hung), send a simple acknowledgment
-    if (agentMessages.length === 0) {
-      console.log('[Conversations] No agent responses, sending simple acknowledgment');
-      const { data: simpleMsg, error: fallbackError } = await supabase
-        .from('messages')
-        .insert([
-          {
-            project_id: projectId,
-            user_id: userId,
-            role: 'assistant',
-            content: `I received your message: "${message}". The full AI agent system is processing slowly. Your message has been recorded.`,
-            agent_type: 'system',
-            metadata: {
-              fallback: true,
-            },
-          },
-        ])
-        .select()
-        .single();
-
-      if (fallbackError) {
-        console.error('[Conversations] Failed to save fallback message:', fallbackError);
-      } else if (simpleMsg) {
-        console.log('[Conversations] Fallback message saved successfully');
-        agentMessages.push(simpleMsg);
-      }
-    }
-
+    // Send response to user IMMEDIATELY (don't wait for DB saves)
     res.json({
       success: true,
       userMessage,
@@ -268,6 +232,70 @@ router.post('/:projectId/message', async (req: Request, res: Response) => {
         intent: workflow.intent,
         confidence: workflow.confidence,
       },
+    });
+
+    // Save agent responses to database in background (non-blocking)
+    // This runs AFTER the response is sent to the user
+    (async () => {
+      const dbSaveStartTime = Date.now();
+      console.log(`[Conversations] 📝 Background DB save starting at ${new Date().toISOString()}`);
+      try {
+        if (agentMessages.length === 0) {
+          console.log('[Conversations] No agent responses, saving fallback acknowledgment');
+          const { data: simpleMsg, error: fallbackError } = await supabase
+            .from('messages')
+            .insert([
+              {
+                project_id: projectId,
+                user_id: userId,
+                role: 'assistant',
+                content: `I received your message: "${message}". The full AI agent system is processing slowly. Your message has been recorded.`,
+                agent_type: 'system',
+                metadata: {
+                  fallback: true,
+                },
+              },
+            ])
+            .select()
+            .single();
+
+          if (fallbackError) {
+            console.error('[Conversations] ❌ Failed to save fallback message:', fallbackError);
+          } else {
+            console.log('[Conversations] ✅ Fallback message saved');
+          }
+        } else {
+          // Save all agent messages in parallel
+          const savePromises = agentMessages.map(async (agentMessage: any) => {
+            const { data: agentMsg, error } = await supabase
+              .from('messages')
+              .insert([agentMessage])
+              .select()
+              .single();
+
+            if (error) {
+              console.error('[Conversations] ❌ Failed to save agent message:', error);
+            } else {
+              console.log(`[Conversations] ✅ Saved message from ${agentMessage.agent_type}`);
+
+              // Generate embedding for agent message asynchronously
+              embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, agentMessage.content).catch(err => {
+                console.error('Failed to generate embedding for agent message:', err);
+              });
+            }
+
+            return agentMsg;
+          });
+
+          await Promise.all(savePromises);
+          const dbSaveTime = Date.now() - dbSaveStartTime;
+          console.log(`[Conversations] ✅ All agent messages saved to database in ${dbSaveTime}ms`);
+        }
+      } catch (error) {
+        console.error('[Conversations] ❌ Background save failed (non-fatal):', error);
+      }
+    })().catch(err => {
+      console.error('[Conversations] Background save error (non-fatal):', err);
     });
   } catch (error: any) {
     console.error('Send message error:', error);

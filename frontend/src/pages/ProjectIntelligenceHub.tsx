@@ -1870,9 +1870,11 @@ const SearchTab: React.FC = () => {
                 Answer
               </h3>
               <div className={`p-4 rounded-xl mb-4 ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                <ReactMarkdown className="prose prose-sm max-w-none">
-                  {rightPanelContent.data.content}
-                </ReactMarkdown>
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown>
+                    {rightPanelContent.data.content}
+                  </ReactMarkdown>
+                </div>
               </div>
 
               {/* Sources */}
@@ -1926,9 +1928,11 @@ const SearchTab: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto">
                 <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-                  <ReactMarkdown className="prose prose-sm max-w-none">
-                    {rightPanelContent.data.content}
-                  </ReactMarkdown>
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown>
+                      {rightPanelContent.data.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
 

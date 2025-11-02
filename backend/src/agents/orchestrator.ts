@@ -87,13 +87,11 @@ export class IntegrationOrchestrator {
       brainstorming: [
         { agentName: 'brainstorming', action: 'reflect', parallel: true },
         { agentName: 'gapDetection', action: 'analyze', parallel: false }, // End parallel group
-        { agentName: 'recorder', action: 'record' }, // Record items from brainstorming
         { agentName: 'clarification', action: 'generateQuestion', condition: 'if_gaps_found' },
       ],
 
       deciding: [
         { agentName: 'brainstorming', action: 'reflect' },
-        { agentName: 'recorder', action: 'record' }, // Record decisions immediately
         // These 3 agents can run in parallel - they're all independent validation checks
         { agentName: 'verification', action: 'verify', parallel: true },
         { agentName: 'assumptionBlocker', action: 'scan', parallel: true },
@@ -113,12 +111,10 @@ export class IntegrationOrchestrator {
       exploring: [
         { agentName: 'brainstorming', action: 'reflect', parallel: true },
         { agentName: 'questioner', action: 'generateQuestion', parallel: false }, // End parallel group
-        { agentName: 'recorder', action: 'record' }, // Record exploring ideas
       ],
 
       reviewing: [
         { agentName: 'reviewer', action: 'review' },  // Review conversation for missing items
-        { agentName: 'recorder', action: 'record' },  // Record anything that was missed
         // Audit and prioritization can run in parallel
         { agentName: 'accuracyAuditor', action: 'audit', parallel: true },
         { agentName: 'prioritization', action: 'prioritize', parallel: false }, // End parallel group
@@ -132,25 +128,21 @@ export class IntegrationOrchestrator {
 
       general: [
         { agentName: 'brainstorming', action: 'reflect' },
-        { agentName: 'recorder', action: 'record' }, // Record items from general conversation
       ],
 
       parking: [
-        { agentName: 'brainstorming', action: 'reflect', parallel: true },
-        { agentName: 'recorder', action: 'record', parallel: false }, // End parallel group
+        { agentName: 'brainstorming', action: 'reflect' },
       ],
 
       reference_integration: [
         { agentName: 'referenceAnalysis', action: 'analyzeWithContext' },
         { agentName: 'consistencyGuardian', action: 'checkReferenceAgainstDecisions' },
         { agentName: 'clarification', action: 'generateQuestion', condition: 'if_conflicts_found' },
-        { agentName: 'recorder', action: 'updateConfidenceScores', condition: 'if_confirmations_found' },
       ],
 
       document_research: [
         { agentName: 'documentResearch', action: 'analyzeAndSuggest' },
         { agentName: 'qualityAuditor', action: 'validateSuggestions' },
-        { agentName: 'recorder', action: 'recordDocumentIntent' },
       ],
     };
 

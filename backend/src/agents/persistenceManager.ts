@@ -108,7 +108,7 @@ PROCESS:
 3. If recording: Track version automatically
 4. NO confirmation message needed - UI shows checkmarks
 
-JSON OUTPUT: {
+JSON OUTPUT (SINGLE ITEM): {
   "verified": bool,
   "shouldRecord": bool,
   "state": "decided|exploring|parked|rejected",
@@ -124,11 +124,32 @@ JSON OUTPUT: {
   }
 }
 
-CRITICAL: Set needsConfirmation to false and confirmationMessage to empty string.
-Recording happens silently - the UI displays visual feedback (checkmarks) automatically.
+JSON OUTPUT (MULTIPLE ITEMS - use when user responds to multiple suggestions): {
+  "itemsToRecord": [
+    {
+      "item": "Clear text to record",
+      "state": "decided|exploring|parked|rejected",
+      "userQuote": "exact relevant quote from user message",
+      "confidence": 85,
+      "reasoning": "why this should be recorded",
+      "verified": true,
+      "versionInfo": {
+        "versionNumber": 1,
+        "changeType": "created",
+        "reasoning": "Initial capture"
+      }
+    }
+  ],
+  "summary": "Brief summary (e.g., 'Recorded 3 features as decided')"
+}
 
-NOTE: When handling multi-suggestion responses, you may return multiple items.
-For each item, include the same JSON structure with its specific state.`;
+WHEN TO USE MULTI-ITEM FORMAT:
+- User says "all of them", "love all of these", "I want all 3", etc.
+- User's response addresses multiple suggestions from the previous AI message
+- Return itemsToRecord array with one object per suggestion
+
+CRITICAL: Set needsConfirmation to false and confirmationMessage to empty string.
+Recording happens silently - the UI displays visual feedback (checkmarks) automatically.`;
 
     super('PersistenceManagerAgent', systemPrompt);
   }
@@ -214,7 +235,29 @@ Return ONLY valid JSON matching the system prompt format.`,
     let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const analysis = JSON.parse(cleanResponse);
 
-    // Log verification result
+    // Check if Claude returned multi-item format
+    if (analysis.itemsToRecord && Array.isArray(analysis.itemsToRecord)) {
+      // Multi-item response - handle multiple suggestions
+      const itemCount = analysis.itemsToRecord.length;
+      this.log(`Multi-item recording: ${itemCount} items identified`);
+
+      analysis.itemsToRecord.forEach((item: any, idx: number) => {
+        this.log(`  ${idx + 1}. ${item.item} (state: ${item.state}, confidence: ${item.confidence})`);
+      });
+
+      return {
+        agent: this.name,
+        message: '', // Silent recording - UI shows checkmarks
+        showToUser: false,
+        metadata: {
+          itemsToRecord: analysis.itemsToRecord,
+          recordedCount: itemCount,
+          recordingSummary: analysis.summary || `Recorded ${itemCount} items`,
+        },
+      };
+    }
+
+    // Single-item response (backward compatibility)
     if (!analysis.verified) {
       this.log(`Verification FAILED: ${analysis.reasoning}`);
     } else {

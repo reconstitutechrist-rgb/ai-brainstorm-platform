@@ -73,7 +73,7 @@ export const OPERATION_MODEL_CONFIG = {
 export const AGENT_MODEL_CONFIG = {
   // Core agents
   'contextManager': AI_MODELS.HAIKU,          // Intent classification - runs on EVERY message
-  'conversation': AI_MODELS.SONNET,            // Main conversation handling
+  'conversation': AI_MODELS.HAIKU,             // Main conversation handling - Fast 2-3s responses
   'persistenceManager': AI_MODELS.SONNET,      // Data persistence and versioning
   'qualityAuditor': AI_MODELS.SONNET,          // Quality checks (mixed - some operations could use Haiku)
   'strategicPlanner': AI_MODELS.SONNET,        // Strategic planning and research

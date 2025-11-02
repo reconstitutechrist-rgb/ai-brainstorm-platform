@@ -75,22 +75,79 @@ export class AgentCoordinationService {
       const userFacingCount = responses.filter(r => r.showToUser).length;
       console.log(`[Coordination] ${userFacingCount} of ${responses.length} responses have showToUser=true`);
 
-      // 7. Process updates to project state
-      const updates = await this.processStateUpdates(projectId, responses, userMessage);
+      // 7. Fire background recording (don't await - let conversation respond immediately)
+      this.processStateUpdatesAsync(projectId, responses, userMessage, workflow).catch(err => {
+        console.error('[Coordination] Async recording error (non-fatal):', err);
+      });
 
-      // 8. Log agent activity
-      await this.logAgentActivity(projectId, workflow, responses);
-
-      // Return ALL responses - let the conversation route filter them
+      // Return ALL responses immediately - recording happens in background
       // This prevents double-filtering which was causing empty response arrays
       return {
         responses: responses,
-        updates,
+        updates: { itemsAdded: [], itemsModified: [], itemsMoved: [] }, // Empty for now - recording is async
         workflow,
       };
     } catch (error) {
       console.error('[Coordination] Error processing message:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Process state updates and logging asynchronously in the background
+   * This allows the conversation response to be sent immediately without waiting for recording
+   */
+  private async processStateUpdatesAsync(
+    projectId: string,
+    responses: AgentResponse[],
+    userMessage: string,
+    workflow: any
+  ): Promise<void> {
+    try {
+      console.log('[Coordination] 🚀 Starting background recording...');
+
+      // Invoke PersistenceManager agent directly to analyze and record items
+      const persistenceManager = this.orchestrator['agents'].get('persistenceManager');
+      if (!persistenceManager) {
+        console.error('[Coordination] ❌ PersistenceManager agent not found');
+        return;
+      }
+
+      // Get fresh project state and conversation history for recording
+      const [projectState, conversationHistory] = await Promise.all([
+        this.getProjectState(projectId),
+        this.getConversationHistory(projectId)
+      ]);
+
+      // Find the conversation response (the message to analyze for recording)
+      const conversationResponse = responses.find(r =>
+        r.agent && (r.agent.includes('ConversationAgent') || r.agent.includes('brainstorming'))
+      );
+
+      if (!conversationResponse) {
+        console.log('[Coordination] No conversation response to record from');
+        return;
+      }
+
+      console.log('[Coordination] Invoking PersistenceManager to analyze conversation response');
+
+      // Invoke recorder agent with conversation response
+      const recorderResponse = await persistenceManager.record(
+        { conversationResponse: conversationResponse.message },
+        projectState,
+        userMessage,
+        workflow.intent,
+        conversationHistory
+      );
+
+      // Process recorder response to update project state
+      const updates = await this.processStateUpdates(projectId, [recorderResponse], userMessage);
+
+      await this.logAgentActivity(projectId, workflow, [...responses, recorderResponse]);
+      console.log('[Coordination] ✅ Background recording complete:', updates);
+    } catch (error) {
+      console.error('[Coordination] ❌ Background recording failed:', error);
+      // Don't throw - recording failure shouldn't break conversation
     }
   }
 
