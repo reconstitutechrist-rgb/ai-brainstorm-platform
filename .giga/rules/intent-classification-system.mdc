@@ -1,5 +1,5 @@
 ---
-description: Core system for analyzing user intentions in messages and classifying them into distinct workflow types
+description: Defines the core intent classification system for analyzing user messages, determining workflow paths, and routing conversations
 ---
 
 # === USER INSTRUCTIONS ===
@@ -603,66 +603,52 @@ For state management, see: [conversation-state-model.mdc](.giga/rules/conversati
 
 # intent-classification-system
 
-Intent Classification Core Components:
+1. Core Intent Types (Importance: 95)
+- BRAINSTORMING: Ideation and creative exploration 
+- DECIDING: Making concrete choices/decisions
+- EXPLORING: Investigation of topics/options
+- CLARIFYING: Seeking additional context
+- COMPARING: Evaluating multiple options
+- VALIDATING: Verifying assumptions/facts
+- IMPLEMENTING: Action/execution planning
+- QUESTIONING: Information gathering
+- PARKING: Deferring topics
+- META: System/process queries
 
-1. Intent Analysis Engine
-Location: backend/src/agents/ContextManagerAgent.ts
-Importance Score: 95/100
+2. Context Analysis Engine (Importance: 90)
+- Multi-level hedging detection (uncertain, tentative, firm, definitive)
+- Compound intent recognition for messages containing multiple intents
+- Historical context weighting for intent disambiguation
+- Signal pattern matching against 57+ domain phrases
+- Context pruning for optimal intent analysis
 
-Primary Classification Types:
-- DECISION_MAKING: User expressing choices/preferences
-- EXPLORATION: Investigating options/alternatives  
-- CLARIFICATION: Seeking additional information
-- CONFIRMATION: Verifying understanding
-- REJECTION: Expressing disagreement
-- MODIFICATION: Suggesting changes
-- PARKING: Deferring for later
-- DOCUMENTATION: Recording/noting information
-- PROCESS: Workflow/next steps
-- META: System/process discussion
+3. Workflow Routing System (Importance: 88)
+- Dynamic agent selection based on detected intents
+- Parallel processing for compound intents
+- Context sharing between relevant agents
+- State-based routing decisions (EXPLORING, DECIDED, PARKED)
+- Automatic mode switching based on intent patterns
 
-2. Hedging Language Analysis
-Location: backend/test-nlp-enhancements.js
-Importance Score: 85/100
+4. Multi-Intent Processing (Importance: 85)
+- Primary/secondary intent classification
+- Intent confidence scoring (0-100)
+- Intent priority determination
+- Cross-intent dependency tracking
+- Conflict resolution for competing intents
 
-Confidence Scoring System:
-- High Confidence (90-100%): Direct, clear statements
-- Medium Confidence (70-85%): Qualified language
-- Low Confidence (50-70%): Heavy hedging
-- Uncertain (<50%): Highly tentative
+5. Hedging Language Analysis (Importance: 82)
+- Uncertainty level classification
+- Confidence modifier detection
+- Tentative vs definitive phrasing
+- Indirect signal recognition
+- Context-based certainty adjustment
 
-Language Pattern Categories:
-- Tentative: "maybe", "perhaps", "possibly"
-- Qualified: "I think", "probably", "likely" 
-- Certain: "definitely", "absolutely", "must"
-
-3. Multi-Intent Detection
-Location: backend/src/agents/contextManager.ts
-Importance Score: 90/100
-
-Capabilities:
-- Parallel intent processing
-- Priority weighting between competing intents
-- Context-based intent disambiguation
-- Temporal intent tracking
-- Cross-message intent correlation
-
-4. Workflow Routing
-Location: backend/src/agents/orchestrator.ts 
-Importance Score: 88/100
-
-Routing Rules:
-- Exploration -> Research Agent
-- Decision -> Documentation Agent
-- Clarification -> QA Agent
-- Confirmation -> Verification Agent
-- Parking -> Session Manager
-
-Intent State Transitions:
-- EXPLORING -> DECIDED
-- EXPLORING -> PARKED 
-- PARKED -> EXPLORING
-- DECIDED -> EXPLORING (with override)
+6. Workflow Selection Algorithm (Importance: 80)
+- Intent-based agent orchestration
+- Dynamic workflow generation
+- Context-aware routing rules
+- State transition validation
+- Blocker detection integration
 
 $END$
 

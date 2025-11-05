@@ -26,41 +26,48 @@ For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-AI-Powered Project Management Platform
+Core System Architecture
 
-Core Business Logic Components:
+1. Multi-Agent Orchestration Layer
+- Coordinates 9 specialized AI agents for project management
+- Workflow determination based on intent classification
+- Parallel execution system with dependency resolution
+- Context pruning and response caching optimizations
+- Located in: backend/src/agents/orchestrator.ts
 
-1. Agent Orchestration System (90/100)
-- Coordinates 17 specialized AI agents handling distinct project aspects
-- Dynamic workflow routing based on conversation context 
-- Parallel execution management with cross-agent knowledge sharing
-- Intelligent context pruning and state preservation
+2. Session Management Core
+- Natural language decision parsing workflow
+- End-of-session analysis and topic clustering
+- State transitions between decided/exploring/parked modes
+- Project snapshot generation with progress tracking
+- Located in: backend/src/services/sessionCompletionService.ts
 
-2. Conversation Intelligence (85/100)
-- Multi-stage intent classification with confidence scoring
-- Topic clustering and idea extraction from discussions
-- Hedging language detection and certainty analysis
-- Context-aware state transitions between decided/exploring/parked
+3. Research Intelligence Hub
+- Unified research orchestration combining multiple knowledge sources
+- Intelligent source selection based on query context
+- Cross-source synthesis with gap analysis
+- Document discovery intelligence system
+- Located in: backend/src/services/conversationalIntelligenceService.ts
 
-3. Session Management (85/100) 
-- Real-time session analytics and productivity metrics
-- Intelligent blocker detection and categorization
-- Smart suggestion generation based on project state
-- Multi-stage session review and completion workflow
+4. Idea Management Pipeline
+- Conversation mode management (exploration, clarification, refinement)
+- Idea state lifecycle tracking with version control
+- Innovation level classification system
+- Source attribution tracking
+- Located in: frontend/src/components/sandbox/IdeaBoardPanel.tsx
 
-4. Research Orchestration (80/100)
-- Multi-source research combining web and internal documents
-- Template-based analysis strategies for different content types
-- Gap identification and automated document regeneration
-- Cross-reference consistency validation
+5. Canvas Organization System
+- Intelligent clustering with hierarchical organization
+- Auto-positioning algorithm for new items
+- Capacity management with tiered warning thresholds
+- Located in: frontend/src/components/canvas/VisualCanvas.tsx
 
-5. Document Generation (75/100)
-- Project-specific document creation with type constraints
-- Version control and regeneration triggers
-- Access control based on project ownership
-- Template matching for different document categories
-
-The platform implements a sophisticated AI-driven project management system centered around intelligent agent coordination, natural language understanding, and automated research synthesis. The core value lies in the complex orchestration of specialized AI agents working together to manage projects while maintaining context and generating actionable insights.
+6. Context Analysis Engine
+- Intent detection across 8 workflow types
+- Conflict detection between references and decisions
+- Severity classification for inconsistencies
+- Cross-reference validation system
+- Located in: frontend/src/components/ContextAnalysisResults.tsx
 
 $END$
 

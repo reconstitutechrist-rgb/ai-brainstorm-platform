@@ -1,5 +1,5 @@
 ---
-description: Technical specification for implementing an AI-driven conversational sandbox with progressive idea refinement and background analysis
+description: Implements conversational sandbox with background idea extraction, progressive refinement, topic grouping, and instant response architecture
 ---
 
 # === USER INSTRUCTIONS ===
@@ -491,62 +491,53 @@ interface SandboxIdea {
 For agent orchestration details, see: [agent-orchestration-system.mdc](.giga/rules/agent-orchestration-system.mdc)
 # === END USER INSTRUCTIONS ===
 
-# sandbox-implementation 
+# sandbox-implementation
 
-## Core Sandbox Components
+Conversational Sandbox Core Components:
 
-### Idea Evolution Pipeline (90/100)
-- Progressive refinement states: mentioned → exploring → refined → ready_to_extract
-- Background idea extraction with parallel agent analysis
-- Topic grouping based on semantic similarity and conversation context
-- Automatic state transitions based on conversation signals
-- Intent classification for idea progression
+1. Progressive Idea Refinement System
+Path: backend/src/agents/ConversationalIdeaAgent.ts
+Importance Score: 95
+- Four-state idea progression tracking:
+  - mentioned: Initial capture from conversation
+  - exploring: Active discussion/development
+  - refined: Core concept established
+  - ready_to_extract: Validated for project integration
+- Automatic state transitions based on conversation analysis
+- Context grouping for related ideas
 
-### Conversation Context Manager (85/100)
-- Real-time message analysis for idea extraction
-- Maintains conversation topics and groups
-- Links related ideas across conversation threads
-- Updates idea states based on user decisions
-- Manages clarification workflows for ambiguous ideas
+2. Background Idea Extraction 
+Path: backend/src/services/ContextGroupingService.ts 
+Importance Score: 90
+- Real-time idea capture during natural conversation
+- Topic clustering using semantic similarity
+- Source attribution tracking:
+  - user_mention: Directly stated ideas
+  - ai_suggestion: Agent-generated concepts
+  - collaborative: Evolved through discussion
 
-### Background Analysis System (80/100)
-- Continuous analysis of conversation content
-- Automatic topic detection and grouping
-- Reference conflict detection
-- Quality scoring for extracted ideas
-- Confidence level tracking for decisions
-
-### Instant Response Architecture (75/100)
-- Parallel processing of user messages
-- Background idea extraction while maintaining conversation
-- Progressive refinement without blocking user interaction
-- Staged analysis results delivery
+3. Instant Response Architecture
+Path: backend/src/components/sandbox/ChatInterface.tsx
+Importance Score: 85
+- Parallel processing pipelines:
+  - Conversation continuation
+  - Idea extraction
+  - Topic organization
+  - State management
 - Context-aware response generation
+- Dynamic conversation mode switching
 
-## Sandbox Workflows
+4. Topic Organization System
+Path: backend/src/services/sessionCompletionService.ts
+Importance Score: 82
+- Hierarchical topic grouping
+- Innovation level classification:
+  - practical: Immediate implementation potential
+  - moderate: Medium-term possibilities
+  - experimental: Future-focused concepts
+- Relationship mapping between topics
 
-### Idea Processing Pipeline
-1. Initial Mention Detection
-   - Continuous monitoring of conversation
-   - Preliminary idea classification
-   - Topic relationship mapping
-
-2. Exploration Phase
-   - Deep analysis of mentioned concepts
-   - Related topic discovery
-   - Conflict detection with existing ideas
-
-3. Refinement Stage
-   - Idea validation checks
-   - Quality scoring
-   - Reference verification
-   - Duplicate detection
-
-4. Extraction Preparation
-   - Final validation
-   - Context grouping
-   - Project integration checks
-   - State transition verification
+The sandbox implements an intelligent conversational environment optimized for natural ideation while maintaining structured organization through background processing and progressive refinement states.
 
 $END$
 

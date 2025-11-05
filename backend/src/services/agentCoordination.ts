@@ -56,9 +56,72 @@ export class AgentCoordinationService {
       // 6. Determine workflow based on intent
       const workflow = await this.orchestrator.determineWorkflow(intent, userMessage);
 
-      // 7. Execute workflow (now includes references and documents)
+      // 7. QUICK FIX: Execute ONLY conversation agent for immediate response
+      console.log('[Coordination] ⚡ Quick response mode: executing conversation agent only');
       const allProjectContext = [...projectReferences, ...projectDocuments];
-      const responses = await this.orchestrator.executeWorkflow(
+      
+      // Get conversation agent directly
+      const conversationAgent = this.orchestrator['agents'].get('conversation');
+      if (!conversationAgent) {
+        throw new Error('Conversation agent not found');
+      }
+
+      // Execute conversation agent immediately
+      const conversationResponse = await conversationAgent.reflect(
+        userMessage,
+        conversationHistory,
+        allProjectContext
+      );
+
+      console.log(`[Coordination] Conversation agent responded in real-time: ${conversationResponse.message?.length || 0} chars`);
+
+      // Package as response array
+      const immediateResponses = [conversationResponse];
+
+      // 8. Fire background workflow execution (gap detection, clarification, recording)
+      // This runs AFTER we've already returned the conversation response
+      this.executeBackgroundWorkflow(
+        workflow,
+        userMessage,
+        projectState,
+        conversationHistory,
+        allProjectContext,
+        immediateResponses,
+        projectId
+      ).catch(err => {
+        console.error('[Coordination] Background workflow error (non-fatal):', err);
+      });
+
+      // Return conversation response immediately - background processing happens async
+      return {
+        responses: immediateResponses,
+        updates: { itemsAdded: [], itemsModified: [], itemsMoved: [] }, // Empty for now - recording is async
+        workflow,
+      };
+    } catch (error) {
+      console.error('[Coordination] Error processing message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute full workflow in background (gap detection, clarification, recording)
+   * This runs AFTER the conversation response has been returned to the user
+   */
+  private async executeBackgroundWorkflow(
+    workflow: any,
+    userMessage: string,
+    projectState: any,
+    conversationHistory: any[],
+    allProjectContext: any[],
+    conversationResponses: AgentResponse[],
+    projectId: string
+  ): Promise<void> {
+    try {
+      console.log('[Coordination] 🔄 Starting background workflow execution...');
+
+      // Execute the full workflow (gap detection, clarification, etc.)
+      const backgroundResponses = await this.orchestrator.executeWorkflow(
         workflow,
         userMessage,
         projectState,
@@ -66,30 +129,80 @@ export class AgentCoordinationService {
         allProjectContext
       );
 
-      console.log(`[Coordination] Orchestrator returned ${responses.length} responses`);
-      responses.forEach((r, i) => {
-        console.log(`[Coordination] Response ${i}: agent=${r.agent}, showToUser=${r.showToUser}, messageLength=${r.message?.length || 0}`);
-      });
+      console.log(`[Coordination] Background workflow completed: ${backgroundResponses.length} responses`);
 
-      // Count user-facing responses for logging
-      const userFacingCount = responses.filter(r => r.showToUser).length;
-      console.log(`[Coordination] ${userFacingCount} of ${responses.length} responses have showToUser=true`);
+      // Save background agent responses that contain questions to the database
+      // This allows the frontend AgentQuestionBubble to display them
+      await this.saveBackgroundAgentResponses(projectId, backgroundResponses);
 
-      // 7. Fire background recording (don't await - let conversation respond immediately)
-      this.processStateUpdatesAsync(projectId, responses, userMessage, workflow).catch(err => {
-        console.error('[Coordination] Async recording error (non-fatal):', err);
-      });
+      // Combine conversation + background responses for recording
+      const allResponses = [...conversationResponses, ...backgroundResponses];
 
-      // Return ALL responses immediately - recording happens in background
-      // This prevents double-filtering which was causing empty response arrays
-      return {
-        responses: responses,
-        updates: { itemsAdded: [], itemsModified: [], itemsMoved: [] }, // Empty for now - recording is async
-        workflow,
-      };
+      // Now fire recording with all responses
+      await this.processStateUpdatesAsync(projectId, allResponses, userMessage, workflow);
+
+      console.log('[Coordination] ✅ Background workflow complete');
+    } catch (error: any) {
+      console.error('[Coordination] ❌ Background workflow failed:', error);
+      // Don't throw - background failure shouldn't break the main flow
+    }
+  }
+
+  /**
+   * Save background agent responses (gap detection, clarification) that contain questions
+   * This allows the frontend to display agent questions in the AgentQuestionBubble
+   */
+  private async saveBackgroundAgentResponses(
+    projectId: string,
+    backgroundResponses: AgentResponse[]
+  ): Promise<void> {
+    try {
+      // Find responses with agentQuestions metadata
+      const responsesWithQuestions = backgroundResponses.filter(
+        r => r.metadata?.agentQuestions && r.metadata.agentQuestions.length > 0
+      );
+
+      if (responsesWithQuestions.length === 0) {
+        console.log('[Coordination] No background responses with questions to save');
+        return;
+      }
+
+      console.log(`[Coordination] Saving ${responsesWithQuestions.length} background responses with questions`);
+
+      // Get user ID from the project (we'll need this for message creation)
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError || !project) {
+        console.error('[Coordination] Failed to get project user_id:', projectError);
+        return;
+      }
+
+      // Save each response as a system message with metadata
+      const messagesToSave = responsesWithQuestions.map(response => ({
+        project_id: projectId,
+        user_id: project.user_id,
+        role: 'assistant',
+        content: response.message || '[Background agent analysis]',
+        agent_type: response.agent || 'system',
+        metadata: response.metadata || {},
+      }));
+
+      const { error: saveError } = await supabase
+        .from('messages')
+        .insert(messagesToSave);
+
+      if (saveError) {
+        console.error('[Coordination] Failed to save background agent responses:', saveError);
+      } else {
+        console.log(`[Coordination] ✅ Saved ${messagesToSave.length} background agent responses with questions`);
+      }
     } catch (error) {
-      console.error('[Coordination] Error processing message:', error);
-      throw error;
+      console.error('[Coordination] Error saving background agent responses:', error);
+      // Don't throw - this is non-critical
     }
   }
 
@@ -177,13 +290,15 @@ export class AgentCoordinationService {
 
   /**
    * Get conversation history
+   * FIXED: Now retrieves the MOST RECENT 50 messages, not the oldest 50
+   * This ensures the AI always has current context and responds to latest inputs
    */
   private async getConversationHistory(projectId: string): Promise<any[]> {
     const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('project_id', projectId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false }) // Get most recent first
       .limit(50); // Last 50 messages for context
 
     if (error) {
@@ -191,7 +306,9 @@ export class AgentCoordinationService {
       return [];
     }
 
-    return data || [];
+    // Reverse to maintain chronological order for AI context
+    // (oldest to newest, but only including the most recent 50 messages)
+    return (data || []).reverse();
   }
 
   /**

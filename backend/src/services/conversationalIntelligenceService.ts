@@ -114,7 +114,7 @@ export class ConversationalIntelligenceService {
               filename: d.filename
             }))
           }
-        };
+        } as QAResponse;
       }
     }
 

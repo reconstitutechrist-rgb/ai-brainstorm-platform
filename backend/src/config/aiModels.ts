@@ -10,12 +10,12 @@
  */
 export const AI_MODELS = {
   /**
-   * Claude Haiku 3.5 - Fast and cost-effective
-   * Best for: Simple classifications, validations, structured outputs
+   * Claude Haiku 4.5 - Fast and cost-effective
+   * Best for: Simple classifications, validations, structured outputs, conversations
    * Speed: 3-5x faster than Sonnet
    * Cost: $0.80 per 1M input tokens (73% cheaper than Sonnet)
    */
-  HAIKU: 'claude-3-5-haiku-20241022',
+  HAIKU: 'claude-haiku-4-5-20251001',
 
   /**
    * Claude Sonnet 4 - Balanced performance and quality
@@ -74,6 +74,7 @@ export const AGENT_MODEL_CONFIG = {
   // Core agents
   'contextManager': AI_MODELS.HAIKU,          // Intent classification - runs on EVERY message
   'conversation': AI_MODELS.HAIKU,             // Main conversation handling - Fast 2-3s responses
+  'ConversationAgent': AI_MODELS.HAIKU,        // Alias for exact match with agent name
   'persistenceManager': AI_MODELS.SONNET,      // Data persistence and versioning
   'qualityAuditor': AI_MODELS.SONNET,          // Quality checks (mixed - some operations could use Haiku)
   'strategicPlanner': AI_MODELS.SONNET,        // Strategic planning and research
@@ -144,11 +145,11 @@ export function getModelWithEnvOverride(
  */
 export const MODEL_CHARACTERISTICS = {
   [AI_MODELS.HAIKU]: {
-    name: 'Claude Haiku 3.5',
+    name: 'Claude Haiku 4.5',
     speed: 'fast',
     cost: 'low',
     quality: 'good',
-    bestFor: ['classification', 'validation', 'structured-output'],
+    bestFor: ['classification', 'validation', 'structured-output', 'conversation'],
     inputCostPer1M: 0.80,
     outputCostPer1M: 4.00
   },

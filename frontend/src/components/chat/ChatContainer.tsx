@@ -7,7 +7,7 @@ interface ChatContainerProps {
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({ children }) => {
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-6">
       {children}
     </div>
   );
@@ -24,7 +24,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, clas
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`flex-[7] ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[45vh] flex flex-col ${className}`}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={`flex-[7] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border h-[60vh] flex flex-col ${className}`}
     >
       {children}
     </motion.div>
@@ -36,19 +37,21 @@ export const CanvasPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, cl
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`w-full ${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl shadow-glass h-[45vh] overflow-hidden ${className}`}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={`w-full ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border h-[55vh] overflow-hidden ${className}`}
     >
       {children}
     </motion.div>
   );
 };
 
-export const TrackingPanel: React.FC<ChatPanelProps> = ({ children, className = '' }) => {
+export const TrackingPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, className = '' }) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`flex-[3] h-[45vh] ${className}`}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={`flex-[3] h-[60vh] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border ${className}`}
     >
       {children}
     </motion.div>

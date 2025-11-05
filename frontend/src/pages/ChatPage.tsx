@@ -485,42 +485,44 @@ export const ChatPage: React.FC = () => {
 
             {/* Bulk Action Buttons */}
             {activeItems.length > 0 && (
-              <div className="flex items-center gap-3 mt-4">
-                <button
-                  onClick={handleSelectAll}
-                  disabled={isArchiving || selectedCardIds.size === activeItems.length}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
-                    isDarkMode
-                      ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <CheckSquare size={16} />
-                  Select All ({activeItems.length})
-                </button>
-
-                {selectedCardIds.size > 0 && (
+              <div className="flex items-center justify-between gap-3 mt-4 mb-2">
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={handleArchiveSelected}
-                    disabled={isArchiving}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                    onClick={handleSelectAll}
+                    disabled={isArchiving || selectedCardIds.size === activeItems.length}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
                       isDarkMode
-                        ? 'bg-green-600/20 text-cyan-400 hover:bg-green-600/30 border border-cyan-500/30'
-                        : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                        ? 'bg-gradient-to-r from-blue-600/30 to-cyan-600/30 text-blue-300 hover:from-blue-600/40 hover:to-cyan-600/40 border border-blue-500/40'
+                        : 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 border border-blue-300'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <Archive size={16} />
-                    {isArchiving ? 'Archiving...' : `Archive Selected (${selectedCardIds.size})`}
+                    <CheckSquare size={16} />
+                    Select All ({activeItems.length})
                   </button>
-                )}
+
+                  {selectedCardIds.size > 0 && (
+                    <button
+                      onClick={handleArchiveSelected}
+                      disabled={isArchiving}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
+                        isDarkMode
+                          ? 'bg-gradient-to-r from-green-600/30 to-emerald-600/30 text-emerald-300 hover:from-green-600/40 hover:to-emerald-600/40 border border-green-500/40'
+                          : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 border border-green-300'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <Archive size={16} />
+                      {isArchiving ? 'Archiving...' : `Archive Selected (${selectedCardIds.size})`}
+                    </button>
+                  )}
+                </div>
 
                 <button
                   onClick={handleArchiveAll}
                   disabled={isArchiving}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
                     isDarkMode
-                      ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30'
-                      : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                      ? 'bg-gradient-to-r from-red-600/30 to-rose-600/30 text-red-300 hover:from-red-600/40 hover:to-rose-600/40 border border-red-500/40'
+                      : 'bg-gradient-to-r from-red-100 to-rose-100 text-red-700 hover:from-red-200 hover:to-rose-200 border border-red-300'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Trash2 size={16} />

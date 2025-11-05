@@ -30,38 +30,66 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
     switch (state) {
       case 'decided':
         return {
-          border: 'border-green-400',
-          bg: isDarkMode ? 'bg-green-900/30' : 'bg-green-50/90',
-          text: 'text-cyan-500',
-          glow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]',
+          border: 'border-blue-400/60',
+          bg: isDarkMode 
+            ? 'bg-gradient-to-br from-blue-900/40 via-blue-800/30 to-cyan-900/40' 
+            : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100/80',
+          text: 'text-blue-400',
+          badgeBg: isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100',
+          badgeText: isDarkMode ? 'text-blue-300' : 'text-blue-700',
+          glow: 'shadow-[0_0_25px_rgba(59,130,246,0.4)]',
+          hoverGlow: 'hover:shadow-[0_0_35px_rgba(59,130,246,0.6)]',
+          leftBorder: 'border-l-4 border-l-blue-500',
         };
       case 'exploring':
         return {
-          border: 'border-blue-400',
-          bg: isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50/90',
-          text: 'text-blue-500',
-          glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]',
+          border: 'border-purple-400/60',
+          bg: isDarkMode 
+            ? 'bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-pink-900/40' 
+            : 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100/80',
+          text: 'text-purple-400',
+          badgeBg: isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100',
+          badgeText: isDarkMode ? 'text-purple-300' : 'text-purple-700',
+          glow: 'shadow-[0_0_25px_rgba(168,85,247,0.4)]',
+          hoverGlow: 'hover:shadow-[0_0_35px_rgba(168,85,247,0.6)]',
+          leftBorder: 'border-l-4 border-l-purple-500',
         };
       case 'parked':
         return {
-          border: 'border-gray-400',
-          bg: isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/90',
-          text: 'text-gray-500',
-          glow: 'shadow-[0_0_20px_rgba(107,114,128,0.3)]',
+          border: 'border-amber-400/60',
+          bg: isDarkMode 
+            ? 'bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-amber-900/40' 
+            : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/80',
+          text: 'text-amber-400',
+          badgeBg: isDarkMode ? 'bg-amber-500/20' : 'bg-amber-100',
+          badgeText: isDarkMode ? 'text-amber-300' : 'text-amber-700',
+          glow: 'shadow-[0_0_25px_rgba(245,158,11,0.4)]',
+          hoverGlow: 'hover:shadow-[0_0_35px_rgba(245,158,11,0.6)]',
+          leftBorder: 'border-l-4 border-l-amber-500',
         };
       case 'rejected':
         return {
-          border: 'border-red-400',
-          bg: isDarkMode ? 'bg-red-900/30' : 'bg-red-50/90',
-          text: 'text-red-500',
-          glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+          border: 'border-red-400/60',
+          bg: isDarkMode 
+            ? 'bg-gradient-to-br from-red-900/40 via-red-800/30 to-red-900/40' 
+            : 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100/80',
+          text: 'text-red-400',
+          badgeBg: isDarkMode ? 'bg-red-500/20' : 'bg-red-100',
+          badgeText: isDarkMode ? 'text-red-300' : 'text-red-700',
+          glow: 'shadow-[0_0_25px_rgba(239,68,68,0.4)]',
+          hoverGlow: 'hover:shadow-[0_0_35px_rgba(239,68,68,0.6)]',
+          leftBorder: 'border-l-4 border-l-red-500',
         };
       default:
         return {
-          border: 'border-gray-400',
-          bg: isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/90',
-          text: 'text-gray-500',
+          border: 'border-gray-400/60',
+          bg: isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/90',
+          text: 'text-gray-400',
+          badgeBg: isDarkMode ? 'bg-gray-500/20' : 'bg-gray-100',
+          badgeText: isDarkMode ? 'text-gray-300' : 'text-gray-700',
           glow: '',
+          hoverGlow: '',
+          leftBorder: 'border-l-4 border-l-gray-500',
         };
     }
   };
@@ -139,13 +167,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
       )}
 
       <div
-        className={`p-4 rounded-2xl border-2 ${colors.border} ${colors.bg} backdrop-blur-xl ${
-          isDragging ? colors.glow : ''
-        } ${isSelected ? 'ring-2 ring-blue-400/50' : ''} transition-all`}
+        className={`p-5 rounded-2xl border-2 ${colors.border} ${colors.leftBorder} ${colors.bg} backdrop-blur-xl ${
+          isDragging ? colors.glow : isHovered ? colors.hoverGlow : ''
+        } ${isSelected ? 'ring-2 ring-blue-400/50' : ''} transition-all duration-300`}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${colors.text} bg-current/10 border border-current/30`}>
+          <span className={`text-xs px-3 py-1.5 rounded-full font-bold ${colors.badgeText} ${colors.badgeBg} border border-current/40 uppercase tracking-wide`}>
             {item.state}
           </span>
           <button

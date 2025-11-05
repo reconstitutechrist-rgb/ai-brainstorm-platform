@@ -54,21 +54,24 @@ export const SessionTrackingPanel: React.FC = () => {
       id: 'decided' as const,
       label: 'Decisions',
       icon: CheckCircle2,
-      color: 'green',
+      color: 'blue',
+      gradient: isDarkMode ? 'from-blue-600 to-cyan-600' : 'from-blue-400 to-cyan-400',
       count: currentProject.items.filter(i => i.state === 'decided').length
     },
     {
       id: 'exploring' as const,
       label: 'Exploring',
       icon: Brain,
-      color: 'blue',
+      color: 'purple',
+      gradient: isDarkMode ? 'from-purple-600 to-pink-600' : 'from-purple-400 to-pink-400',
       count: currentProject.items.filter(i => i.state === 'exploring').length
     },
     {
       id: 'parked' as const,
       label: 'Parked',
       icon: Archive,
-      color: 'yellow',
+      color: 'amber',
+      gradient: isDarkMode ? 'from-amber-600 to-yellow-600' : 'from-amber-400 to-yellow-400',
       count: currentProject.items.filter(i => i.state === 'parked').length
     }
   ];
@@ -112,24 +115,18 @@ export const SessionTrackingPanel: React.FC = () => {
               <Icon
                 size={18}
                 className={`${
-                  tab.color === 'green'
-                    ? 'text-cyan-500'
-                    : tab.color === 'blue'
-                    ? 'text-blue-500'
-                    : 'text-yellow-500'
+                  tab.color === 'blue'
+                    ? 'text-blue-400'
+                    : tab.color === 'purple'
+                    ? 'text-purple-400'
+                    : 'text-amber-400'
                 }`}
               />
               <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 {tab.label}
               </span>
               <span
-                className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  tab.color === 'green'
-                    ? 'bg-cyan-500/20 text-cyan-400'
-                    : tab.color === 'blue'
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : 'bg-yellow-500/20 text-yellow-600'
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tab.gradient} text-white shadow-lg`}
               >
                 {tab.count}
               </span>
@@ -138,13 +135,7 @@ export const SessionTrackingPanel: React.FC = () => {
               {isActive && (
                 <motion.div
                   layoutId="activeTab"
-                  className={`absolute bottom-0 left-0 right-0 h-1 ${
-                    tab.color === 'green'
-                      ? 'bg-cyan-500'
-                      : tab.color === 'blue'
-                      ? 'bg-blue-500'
-                      : 'bg-yellow-500'
-                  }`}
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${tab.gradient}`}
                 />
               )}
             </button>
