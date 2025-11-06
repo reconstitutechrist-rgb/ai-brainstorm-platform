@@ -2,6 +2,10 @@ import { BaseAgent } from './base';
 import { ReferenceAnalysisAgent } from './referenceAnalysis';
 import { SynthesisAgent } from './synthesisAgent';
 import { supabase } from '../services/supabase';
+import { GoogleSearchService } from '../services/googleSearchService';
+import { cacheService, CacheKeys } from '../services/cacheService';
+import { contentExtractionService } from '../services/contentExtractionService';
+import { sourceQualityService, SourceQualityScore } from '../services/sourceQualityService';
 
 export interface ResearchResult {
   query: string;
@@ -11,6 +15,7 @@ export interface ResearchResult {
     snippet: string;
     content?: string;
     analysis?: string;
+    qualityScore?: SourceQualityScore;
   }>;
   synthesis: string;
   savedReferences: string[]; // Reference IDs
@@ -19,12 +24,15 @@ export interface ResearchResult {
     successfulCrawls: number;
     failedCrawls: number;
     duration: number;
+    averageQualityScore?: number;
+    highQualitySources?: number;
   };
 }
 
 export class LiveResearchAgent extends BaseAgent {
   private referenceAnalysisAgent: ReferenceAnalysisAgent;
   private synthesisAgent: SynthesisAgent;
+  private googleSearchService: GoogleSearchService;
 
   constructor() {
     const systemPrompt = `You are the Live Research Agent.
@@ -49,6 +57,7 @@ RESEARCH PROCESS:
     super('LiveResearchAgent', systemPrompt);
     this.referenceAnalysisAgent = new ReferenceAnalysisAgent();
     this.synthesisAgent = new SynthesisAgent();
+    this.googleSearchService = new GoogleSearchService();
   }
 
   /**
@@ -62,18 +71,27 @@ RESEARCH PROCESS:
       maxSources?: number;
       includeAnalysis?: boolean;
       saveToDB?: boolean;
+      assessQuality?: boolean;
+      minQualityScore?: number;
     } = {},
     callbacks?: {
       onSearchComplete?: (count: number) => Promise<void>;
       onCrawlComplete?: (count: number) => Promise<void>;
       onAnalysisComplete?: (count: number) => Promise<void>;
+      onQualityAssessment?: (count: number) => Promise<void>;
     }
   ): Promise<ResearchResult> {
     const startTime = Date.now();
-    const { maxSources = 5, includeAnalysis = true, saveToDB = true } = options;
+    const { 
+      maxSources = 5, 
+      includeAnalysis = true, 
+      saveToDB = true,
+      assessQuality = true,
+      minQualityScore = 0
+    } = options;
 
     this.log(`Starting research for query: "${query}"`);
-    this.log(`Options: maxSources=${maxSources}, includeAnalysis=${includeAnalysis}, saveToDB=${saveToDB}`);
+    this.log(`Options: maxSources=${maxSources}, includeAnalysis=${includeAnalysis}, saveToDB=${saveToDB}, assessQuality=${assessQuality}, minQualityScore=${minQualityScore}`);
 
     try {
       // Step 1: Search the web
@@ -94,6 +112,60 @@ RESEARCH PROCESS:
         await callbacks.onCrawlComplete(crawledSources.filter(s => s.content).length);
       }
 
+      // Step 2.5: Assess source quality (if requested)
+      let qualityScores: SourceQualityScore[] = [];
+      if (assessQuality && crawledSources.length > 0) {
+        this.log(`Assessing quality for ${crawledSources.length} sources...`);
+        
+        const assessmentPromises = crawledSources
+          .filter(source => source.content)
+          .map(async (source) => {
+            try {
+              const score = await sourceQualityService.assessSource({
+                url: source.url,
+                title: source.title,
+                content: source.content || '',
+              });
+              return score;
+            } catch (error) {
+              this.log(`Failed to assess quality for ${source.url}: ${error}`);
+              return null;
+            }
+          });
+
+        const scores = await Promise.all(assessmentPromises);
+        qualityScores = scores.filter(s => s !== null) as SourceQualityScore[];
+
+        this.log(`Quality assessment complete: ${qualityScores.length} sources scored`);
+        
+        // Callback: Quality assessment complete
+        if (callbacks?.onQualityAssessment) {
+          await callbacks.onQualityAssessment(qualityScores.length);
+        }
+
+        // Filter by minimum quality score if specified
+        if (minQualityScore > 0) {
+          const beforeCount = crawledSources.length;
+          const filteredIndices = new Set<number>();
+          
+          qualityScores.forEach((score, index) => {
+            if (score.overall >= minQualityScore) {
+              filteredIndices.add(index);
+            }
+          });
+
+          const filtered = crawledSources.filter((_, index) => filteredIndices.has(index));
+          const filteredScores = qualityScores.filter(score => score.overall >= minQualityScore);
+
+          this.log(`Filtered ${beforeCount - filtered.length} sources below quality threshold (${minQualityScore})`);
+          
+          // Update sources and scores
+          crawledSources.length = 0;
+          crawledSources.push(...filtered);
+          qualityScores = filteredScores;
+        }
+      }
+
       // Step 3: Analyze each source (if requested)
       const sourcesWithAnalysis: Array<{
         url: string;
@@ -101,6 +173,7 @@ RESEARCH PROCESS:
         snippet: string;
         content?: string;
         analysis?: string;
+        qualityScore?: SourceQualityScore;
       }> = [];
 
       let analyses: Array<{ filename: string; analysis: string; type?: string }> = [];
@@ -149,15 +222,19 @@ RESEARCH PROCESS:
           await callbacks.onAnalysisComplete(analyses.length);
         }
 
-        // Merge sources with analyses using URL matching (not index matching)
-        crawledSources.forEach((source) => {
+        // Merge sources with analyses and quality scores using URL matching
+        crawledSources.forEach((source, index) => {
           sourcesWithAnalysis.push({
             ...source,
             analysis: analysisMap.get(source.url),
+            qualityScore: qualityScores[index],
           });
         });
       } else {
-        crawledSources.forEach(source => sourcesWithAnalysis.push(source));
+        crawledSources.forEach((source, index) => sourcesWithAnalysis.push({
+          ...source,
+          qualityScore: qualityScores[index],
+        }));
       }
 
       // Step 4: Generate synthesis
@@ -192,6 +269,13 @@ RESEARCH PROCESS:
       const duration = Date.now() - startTime;
       this.log(`Research completed in ${duration}ms`);
 
+      // Calculate quality statistics
+      const averageQualityScore = qualityScores.length > 0
+        ? qualityScores.reduce((sum, s) => sum + s.overall, 0) / qualityScores.length
+        : undefined;
+      
+      const highQualitySources = qualityScores.filter(s => s.overall >= 80).length;
+
       return {
         query,
         sources: sourcesWithAnalysis,
@@ -202,6 +286,8 @@ RESEARCH PROCESS:
           successfulCrawls: sourcesWithAnalysis.filter(s => s.content).length,
           failedCrawls: searchResults.length - sourcesWithAnalysis.filter(s => s.content).length,
           duration,
+          averageQualityScore,
+          highQualitySources,
         },
       };
     } catch (error) {
@@ -211,8 +297,8 @@ RESEARCH PROCESS:
   }
 
   /**
-   * Search the web for relevant content
-   * Note: This is a simplified implementation. In production, use a proper search API
+   * Search the web for relevant content using Google Custom Search API
+   * Results are cached for 1 hour to save API quota
    */
   private async searchWeb(
     query: string,
@@ -220,43 +306,45 @@ RESEARCH PROCESS:
   ): Promise<Array<{ url: string; title: string; snippet: string }>> {
     this.log(`Searching web for: "${query}"`);
 
-    // Use Claude to generate relevant URLs based on the query
-    // In production, you'd use a real search API (Google Custom Search, Bing, etc.)
-    const searchPrompt = `Given this research query: "${query}"
+    // Check cache first
+    const cacheKey = CacheKeys.search(query, maxResults);
+    const cachedResults = cacheService.get<Array<{ url: string; title: string; snippet: string }>>(cacheKey);
+    
+    if (cachedResults) {
+      this.log(`Using cached search results (${cachedResults.length} results)`);
+      return cachedResults;
+    }
 
-Generate ${maxResults} highly relevant, real URLs that would contain valuable information about this topic.
-For each URL, provide:
-1. A realistic, working URL (preferably documentation, official sites, or reputable sources)
-2. A title for the page
-3. A brief snippet describing what would be found there
-
-Return ONLY a JSON array in this exact format:
-[
-  {
-    "url": "https://example.com/page",
-    "title": "Page Title",
-    "snippet": "Brief description of content"
-  }
-]`;
-
-    try {
-      const response = await this.callClaude(
-        [{ role: 'user', content: searchPrompt }],
-        2000
-      );
-
-      // Extract JSON from response
-      const jsonMatch = response.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const results = JSON.parse(jsonMatch[0]);
-        return results.slice(0, maxResults);
+    // Use Google Search if configured
+    if (this.googleSearchService.isConfigured()) {
+      try {
+        this.log('Using Google Custom Search API');
+        const results = await this.googleSearchService.search(query, maxResults);
+        this.log(`Google Search returned ${results.length} results`);
+        
+        // Cache the results for 1 hour
+        cacheService.set(cacheKey, results, 3600);
+        
+        return results;
+      } catch (error) {
+        this.log(`Google Search failed: ${error}`);
+        this.log('Falling back to mock search results');
+        const fallbackResults = this.getDefaultSearchResults(query, maxResults);
+        
+        // Cache fallback results for shorter time (5 minutes)
+        cacheService.set(cacheKey, fallbackResults, 300);
+        
+        return fallbackResults;
       }
-
-      // Fallback: Return some default results
-      return this.getDefaultSearchResults(query, maxResults);
-    } catch (error) {
-      this.log(`Search web error: ${error}`);
-      return this.getDefaultSearchResults(query, maxResults);
+    } else {
+      this.log('Google Search not configured, using fallback mock results');
+      this.log('To enable real search, set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID in .env');
+      const fallbackResults = this.getDefaultSearchResults(query, maxResults);
+      
+      // Cache fallback results for shorter time (5 minutes)
+      cacheService.set(cacheKey, fallbackResults, 300);
+      
+      return fallbackResults;
     }
   }
 
@@ -324,47 +412,46 @@ Return ONLY a JSON array in this exact format:
   }
 
   /**
-   * Extract content from a URL
+   * Extract content from a URL using enhanced extraction service
+   * Supports: Readability, Playwright (for JS sites), and basic extraction
    */
   private async extractUrlContent(url: string): Promise<string> {
     try {
       this.log(`Fetching content from: ${url}`);
 
-      // Use fetch with timeout
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; ResearchBot/1.0)',
-        },
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use enhanced content extraction service
+      const result = await contentExtractionService.extractFromUrl(url);
+      
+      this.log(`Extracted ${result.length} characters from ${url} using ${result.method}`);
+      
+      // Log additional metadata if available
+      if (result.title) {
+        this.log(`  Title: ${result.title}`);
+      }
+      if (result.byline) {
+        this.log(`  Author: ${result.byline}`);
+      }
+      if (result.siteName) {
+        this.log(`  Site: ${result.siteName}`);
       }
 
-      const html = await response.text();
-
-      // Simple HTML text extraction (remove tags)
-      let text = html
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      // Limit to first 5000 characters
-      text = text.substring(0, 5000);
-
-      this.log(`Extracted ${text.length} characters from ${url}`);
-      return text;
+      return result.textContent;
     } catch (error: any) {
-      this.log(`Error extracting content from ${url}: ${error.message || error}`);
-      throw error;
+      // Provide detailed error logging
+      this.log(`Failed to extract content from ${url}: ${error.message || error}`);
+      
+      // Re-throw with context
+      if (error.message?.includes('timeout')) {
+        throw new Error(`Timeout: ${url} took too long to respond`);
+      } else if (error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNREFUSED')) {
+        throw new Error(`Network error: Cannot reach ${url}`);
+      } else if (error.message?.includes('403')) {
+        throw new Error(`Access denied: ${url} blocks automated access`);
+      } else if (error.message?.includes('Insufficient content')) {
+        throw new Error(`Low quality: ${url} has insufficient content`);
+      }
+      
+      throw new Error(`Failed to crawl ${url}: ${error.message}`);
     }
   }
 

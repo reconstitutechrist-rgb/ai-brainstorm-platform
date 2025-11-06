@@ -161,20 +161,25 @@ export class FileUploadService {
 
   /**
    * Extract content from uploaded file
-   * Returns extracted text for documents, or file path for images/videos
+   * Returns extracted text for documents, base64 for images, or file path for videos
    */
   async extractContent(
     file: Express.Multer.File
-  ): Promise<{ content: string; contentType: 'text' | 'image' | 'video' }> {
+  ): Promise<{ content: string; contentType: 'text' | 'image' | 'video'; mediaType?: string }> {
     const category = this.getFileCategory(file.mimetype);
 
     try {
       switch (category) {
         case 'image':
-          // For images, we'll pass the buffer directly to Claude's vision API
+          // Convert image to base64 for Claude's vision API
+          console.log(`[FileUpload] Converting image to base64: ${file.originalname}`);
+          const imageBuffer = await fs.readFile(file.path);
+          const base64Image = imageBuffer.toString('base64');
+          console.log(`[FileUpload] Image converted to base64, size: ${base64Image.length} chars`);
           return {
-            content: file.path, // Return temp file path for images
+            content: base64Image,
             contentType: 'image',
+            mediaType: file.mimetype,
           };
 
         case 'video':

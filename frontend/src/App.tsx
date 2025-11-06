@@ -13,6 +13,7 @@ import { LoginPage } from './pages/LoginPage';
 import { CreateProjectModal } from './components/modals/CreateProjectModal';
 import { SessionSummary } from './components/SessionManager';
 import { UniversalSearch } from './components/UniversalSearch';
+import { ToastContainer } from './hooks/useToast';
 import { useThemeStore } from './store/themeStore';
 import { useUserStore } from './store/userStore';
 
@@ -154,6 +155,7 @@ function App() {
         <>
           <CreateProjectModal />
           <UniversalSearch />
+          <ToastContainer />
         </>
       )}
     </Router>

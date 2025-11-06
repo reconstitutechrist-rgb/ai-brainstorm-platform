@@ -47,7 +47,7 @@ export const AgentQuestionBubble: React.FC<AgentQuestionBubbleProps> = ({
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center gap-2"
+        className="fixed bottom-24 right-[40%] z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center gap-2"
         aria-label="Open agent questions"
       >
         <MessageCircle className="w-6 h-6" />
@@ -61,7 +61,7 @@ export const AgentQuestionBubble: React.FC<AgentQuestionBubbleProps> = ({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-md animate-slide-up">
+    <div className="fixed bottom-24 right-[40%] z-50 max-w-md animate-slide-up">
       {/* Bubble Header */}
       <div
         className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-2xl px-4 py-3 flex items-center justify-between cursor-pointer shadow-lg"

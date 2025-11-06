@@ -1,5 +1,5 @@
 ---
-description: Specification for multi-agent orchestration system including parallel execution, workflow patterns, and agent optimization
+description: Guidelines for implementing and documenting multi-agent orchestration systems with parallel execution and workflow optimization patterns
 ---
 
 # === USER INSTRUCTIONS ===
@@ -251,60 +251,59 @@ For comprehensive agent documentation, see: [AGENTS_DOCUMENTATION.md](AGENTS_DOC
 
 # agent-orchestration-system
 
-Core Agent Orchestration Components:
+9-Agent Orchestration Architecture:
 
-1. Agent Coordination Hub
+1. Core Orchestration Engine
 Path: backend/src/agents/orchestrator.ts
 Importance Score: 95
-- Orchestrates interactions between 9 specialized AI agents:
-  - Context Manager
-  - Session Reviewer
-  - Quality Auditor  
-  - Gap Detector
-  - Research Agent
-  - Idea Generator
-  - Verification Agent
-  - Clarification Agent
-  - Documenter
-- Workflow determination based on intent classification
-- Parallel execution with dependency resolution
-- Context pruning and response caching
+- Dynamic workflow mapping between 9 specialized agents
+- Parallel execution manager for compatible agent combinations
+- Context pruning system to optimize agent memory usage
+- Response caching with semantic deduplication
+- Agent consolidation tracking with version history
 
-2. State Management System
-Path: backend/src/services/sessionCompletionService.ts
-Importance Score: 90
-- Manages agent state transitions across workflow stages:
-  - Intent Classification
-  - Task Assignment
-  - Parallel Processing
-  - Result Aggregation
-  - State Synchronization
-- Implements context preservation between agent handoffs
-- Handles agent failure recovery and task reassignment
-
-3. Context Optimization Engine
+2. Agent Interaction Protocols
 Path: backend/src/agents/contextManager.ts 
+Importance Score: 90
+- Inter-agent messaging system with priority queues
+- Context boundary detection between agent workflows
+- Agent chain reorganization based on conversation intent
+- Selective history propagation between agents
+
+3. Workflow Patterns
+Path: backend/src/services/agentWorkflows.ts
 Importance Score: 85
-- Prunes conversation history based on agent type
-- Maintains agent-specific context windows
-- Implements smart context sharing between related agents
-- Response caching with context-aware invalidation
+- Sequential vs parallel agent execution rules
+- Agent dependency chain management
+- Automatic workflow adjustment based on:
+  - Conversation context
+  - Agent availability
+  - Resource utilization
+  - Response urgency
 
-4. Workflow Patterns
-Path: backend/src/services/orchestrationService.ts
-Importance Score: 88
-- Sequential agent chains for dependent tasks
-- Parallel processing for independent agents
-- Hybrid workflows combining sequential and parallel paths
-- Dynamic workflow adjustment based on agent feedback
+4. Agent Specializations:
+- ResearchAgent: Source analysis and synthesis
+- IdeaGenerationAgent: Creative ideation and refinement
+- ValidationAgent: Consistency and quality checks
+- SynthesisAgent: Cross-reference analysis
+- SessionAgent: Conversation state management
+- ReviewAgent: Decision extraction and validation
+- ContextAgent: Topic and intent classification
+- QualityAgent: Output verification
+- OrchestrationAgent: Workflow coordination
 
-5. Agent History Log
-Path: backend/src/services/agentTracking.ts
+5. Optimization Features
+Path: backend/src/services/contextPruner.ts
 Importance Score: 80
-- Tracks agent consolidation history
-- Records optimization decisions and results
-- Maintains metrics on agent performance patterns
-- Generates agent activity reports
+- Smart context pruning based on agent requirements
+- Response caching with TTL management
+- Agent consolidation tracking
+- Workflow optimization based on historical patterns
+
+Key Interactions:
+- Research -> Synthesis -> Validation chain
+- Ideation -> Review -> Quality chain
+- Context -> Session -> Orchestration chain
 
 $END$
 

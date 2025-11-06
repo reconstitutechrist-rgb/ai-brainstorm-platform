@@ -55,7 +55,7 @@ router.post('/:projectId/message-stream', async (req: Request, res: Response) =>
       sendSSE(res, 'user-message-saved', { message: userMessage });
 
       // Generate embedding for user message asynchronously (don't await)
-      embeddingService.generateAndStoreMessageEmbedding(userMessage.id, message).catch(err => {
+      embeddingService.generateAndStoreMessageEmbedding(userMessage.id, message).catch((err: any) => {
         console.error('Failed to generate embedding for user message:', err);
       });
 
@@ -95,7 +95,7 @@ router.post('/:projectId/message-stream', async (req: Request, res: Response) =>
           agentMessages.push(agentMsg);
 
           // Generate embedding for agent message asynchronously
-          embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, response.message).catch(err => {
+          embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, response.message).catch((err: any) => {
             console.error('Failed to generate embedding for agent message:', err);
           });
         }
@@ -279,7 +279,7 @@ router.post('/:projectId/message', async (req: Request, res: Response) => {
               console.log(`[Conversations] ✅ Saved message from ${agentMessage.agent_type}`);
 
               // Generate embedding for agent message asynchronously
-              embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, agentMessage.content).catch(err => {
+              embeddingService.generateAndStoreMessageEmbedding(agentMsg.id, agentMessage.content).catch((err: any) => {
                 console.error('Failed to generate embedding for agent message:', err);
               });
             }

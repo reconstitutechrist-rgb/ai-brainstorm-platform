@@ -31,7 +31,8 @@
       "Bash(python -m json.tool:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add document content extraction and conversational intelligence\n\n- Fix document upload to extract text content from Word files\n- Add backfill endpoints to extract content from existing documents\n- Implement conversational intelligence service with Q&A and custom document generation\n- Replace SearchTab with full conversational chat interface\n- Add Unicode sanitization for document content\n- Update to Claude Sonnet 4 model\n- Fix error handling with helpful messages for missing content\n\nThis enables users to have conversations with AI about their projects\nand request custom document generation using Intelligence Hub data.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(timeout 10 bash:*)"
+      "Bash(timeout 10 bash:*)",
+      "Bash(timeout 3 bash:*)"
     ],
     "deny": [],
     "ask": []

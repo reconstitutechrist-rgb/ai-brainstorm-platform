@@ -249,7 +249,7 @@ export class GeneratedDocumentsService {
         .then(() => {
           console.log(`[GeneratedDocs] ✅ Embedding generated for ${documentType}`);
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for ${documentType}:`, err);
           // Don't fail the whole document generation if embedding fails
         });
@@ -1053,7 +1053,7 @@ Format as JSON array:
         .then(() => {
           console.log(`[GeneratedDocs] ✅ Embedding generated for research-based ${documentType}`);
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for research-based ${documentType}:`, err);
           // Don't fail the whole document generation if embedding fails
         });

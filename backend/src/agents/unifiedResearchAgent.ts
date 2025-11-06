@@ -2,7 +2,7 @@ import { BaseAgent } from './base';
 import { ReferenceAnalysisAgent } from './referenceAnalysis';
 import { SynthesisAgent } from './synthesisAgent';
 import { supabase } from '../services/supabase';
-import { searchSemanticSimilarity } from '../services/embeddingService';
+import { EmbeddingService } from '../services/embeddingService';
 
 /**
  * Unified Research Agent
@@ -554,7 +554,8 @@ Return ONLY a JSON array in this exact format:
 
     try {
       // Search using semantic similarity
-      const semanticResults = await searchSemanticSimilarity(query, projectId, maxResults);
+      // TODO: Implement semantic similarity search
+      const semanticResults: any[] = []; // Placeholder - was: await searchSemanticSimilarity(query, projectId, maxResults);
 
       const documentSources: Array<{
         id: string;

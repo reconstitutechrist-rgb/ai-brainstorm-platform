@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
 import { CanvasCard } from './CanvasCard';
@@ -18,19 +18,29 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   onArchive,
 }) => {
   const { currentProject, updateItemPosition, updateItemFields, selectedCardIds, toggleCardSelection } = useProjectStore();
+  const isDraggingRef = useRef(false);
+  const positionedItemsRef = useRef(new Set<string>());
 
   // Auto-position items that don't have a position
   useEffect(() => {
+    // Skip if currently dragging to prevent interference
+    if (isDraggingRef.current) return;
+
     items.forEach((item, index) => {
-      if (!item.position) {
+      // Only position items that haven't been positioned yet
+      if (!item.position && !positionedItemsRef.current.has(item.id)) {
         const position = calculateAutoPosition(items, index);
         updateItemPosition(item.id, position);
+        positionedItemsRef.current.add(item.id);
       }
     });
-  }, [items, updateItemPosition]);
+  }, [items.length, updateItemPosition]); // Only depend on length, not items array itself
 
   const handlePositionChange = (itemId: string, position: { x: number; y: number }) => {
-    updateItemPosition(itemId, position);
+    // Batch position updates to reduce re-renders
+    requestAnimationFrame(() => {
+      updateItemPosition(itemId, position);
+    });
   };
 
   const handleStateChange = (itemId: string, newState: ProjectItem['state']) => {

@@ -1,5 +1,5 @@
 ---
-description: Defines conversation state management system with three-state model and verification workflows
+description: Handles conversation state management including decision tracking, mode transitions, and context-aware approval detection
 ---
 
 # === USER INSTRUCTIONS ===
@@ -355,43 +355,65 @@ For intent classification details, see: [intent-classification-system.mdc](.giga
 
 # conversation-state-model
 
-Core State Management Components:
+## State Machine Implementation
+Handles three core conversation states with specific transition rules:
 
-1. Three-State Decision Model
-- States: DECIDED, EXPLORING, PARKED
-- Tracks individual conversation topics and ideas
-- State transitions require explicit verification
-- Decisions cannot bypass EXPLORING state
-- PARKED items maintain context for future resumption
+1. DECIDED State
+- Triggered by explicit approval phrases or strong agreement patterns
+- Requires confidence score > 85% for automatic transition
+- Maintains decision metadata including source messages and context
+- Implements verification modes for critical decisions
 
-2. Verification Workflow
-- Multi-step validation for state transitions
-- Required approvals based on state type:
-  * EXPLORING → DECIDED: 2 approvals
-  * EXPLORING → PARKED: 1 approval
-  * PARKED → EXPLORING: 1 approval
-- Automated confidence scoring (0-100)
-- Rejection tracking with reason categorization
+2. EXPLORING State
+- Default state for new conversation threads
+- Tracks exploration depth and branch points
+- Maintains topic relationship graph
+- Implements context pruning for long exploration chains
 
-3. Context Awareness System  
-- Detects implicit state changes in conversations
-- Identifies hedging language patterns
-- Maps topic relationships between items
-- Tracks conversation thread dependencies
-- Maintains decision history per topic
+3. PARKED State
+- Handles explicitly deferred items
+- Tracks parking reason and revival conditions
+- Maintains priority queue for parked items
+- Implements automatic revival triggers based on context
 
-4. Cache Invalidation Rules
-- State changes trigger targeted cache clearing
-- Related items require re-validation
-- Context updates force verification refresh
-- Topic relationship updates clear dependent caches
+## Context-Aware Approval Detection
+Implements sophisticated natural language understanding for decisions:
 
-Implementation Paths:
-- backend/src/agents/contextManager.ts
-- backend/src/services/sessionCompletionService.ts
-- backend/src/agents/SessionReviewAgent.ts
+1. Direct Approval Patterns
+- Explicit confirmation phrases ("yes", "approved", "let's do it")
+- Agreement indicators with confidence scoring
+- Multi-message confirmation chains
 
-Importance Score: 90
+2. Implicit Approval Detection
+- Context-based approval inference
+- Historical pattern matching
+- Semantic similarity scoring against previous decisions
+
+## State Transition Rules
+Manages conversation flow with specific business rules:
+
+1. Decision Progression
+- EXPLORING → DECIDED requires explicit approval or high confidence
+- EXPLORING → PARKED requires deferral trigger or timeout
+- PARKED → EXPLORING requires context match or manual trigger
+
+2. State Verification
+- Double confirmation for critical decisions
+- Automatic rollback for low confidence transitions
+- Cache invalidation on state changes
+
+## Session Context Management
+Implements conversation context tracking:
+
+1. Context Hierarchy
+- Global session context
+- Topic-specific sub-contexts
+- Decision-specific metadata
+
+2. Context Invalidation
+- Time-based expiration rules
+- Topic boundary detection
+- State-change triggered pruning
 
 $END$
 

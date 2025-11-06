@@ -100,7 +100,9 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
     <motion.div
       drag={!isInCluster}
       dragMomentum={false}
-      dragElastic={0.1}
+      dragElastic={0}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+      dragConstraints={{ left: 0, top: 0, right: 1700, bottom: 1700 }}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={(_, info) => {
         setIsDragging(false);
@@ -117,6 +119,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
               position: 'absolute',
               left: item.position?.x || 0,
               top: item.position?.y || 0,
+              willChange: 'transform',
             }
       }
       className={`${
@@ -126,6 +129,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
       }`}
       whileHover={!isInCluster ? { scale: 1.03 } : undefined}
       whileTap={!isInCluster ? { scale: 0.98 } : undefined}
+      animate={!isInCluster && !isDragging ? { x: 0, y: 0 } : undefined}
     >
       {/* Selection Checkbox - Only show if not in cluster and has onToggleSelection */}
       {!isInCluster && onToggleSelection && (isHovered || isSelected) && (

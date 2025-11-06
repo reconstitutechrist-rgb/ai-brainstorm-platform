@@ -26,48 +26,52 @@ For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-Core System Architecture
+The system implements a sophisticated AI-powered brainstorming and research platform with several key business domains:
 
-1. Multi-Agent Orchestration Layer
-- Coordinates 9 specialized AI agents for project management
-- Workflow determination based on intent classification
-- Parallel execution system with dependency resolution
-- Context pruning and response caching optimizations
-- Located in: backend/src/agents/orchestrator.ts
+## Core Agent Infrastructure
+The Integration Orchestrator (backend/src/agents/orchestrator.ts) manages complex workflows between specialized AI agents:
+- Context-aware agent selection and sequencing
+- Dynamic workflow adjustment based on intent
+- Parallel execution patterns
+- Cross-agent context sharing
 
-2. Session Management Core
-- Natural language decision parsing workflow
-- End-of-session analysis and topic clustering
-- State transitions between decided/exploring/parked modes
-- Project snapshot generation with progress tracking
-- Located in: backend/src/services/sessionCompletionService.ts
+## Session Management Domain 
+The Session Management System coordinates multi-stage brainstorming workflows:
+- Natural language decision parsing
+- Topic-based idea grouping
+- Multi-document synchronization
+- State transitions with project context
 
-3. Research Intelligence Hub
-- Unified research orchestration combining multiple knowledge sources
-- Intelligent source selection based on query context
-- Cross-source synthesis with gap analysis
-- Document discovery intelligence system
-- Located in: backend/src/services/conversationalIntelligenceService.ts
+## Research Pipeline 
+The Research System combines multiple information sources:
+- Multi-perspective synthesis with confidence scoring
+- Contradiction detection between sources 
+- Temporal information extraction
+- Automated quality assessment
+- Gap analysis with domain topic detection
 
-4. Idea Management Pipeline
-- Conversation mode management (exploration, clarification, refinement)
-- Idea state lifecycle tracking with version control
-- Innovation level classification system
-- Source attribution tracking
-- Located in: frontend/src/components/sandbox/IdeaBoardPanel.tsx
+## Conversational Intelligence
+The Idea Generation System implements contextual conversation modes:
+- Dynamic mode switching (exploration/clarification/generation/refinement)
+- Idea extraction with confidence scoring
+- Cross-reference analysis
+- Innovation assessment
+- Version history tracking
 
-5. Canvas Organization System
-- Intelligent clustering with hierarchical organization
-- Auto-positioning algorithm for new items
-- Capacity management with tiered warning thresholds
-- Located in: frontend/src/components/canvas/VisualCanvas.tsx
+## Canvas Management
+The Canvas System handles specialized workspace organization:
+- Capacity thresholds with warning tiers
+- Cluster management for related items
+- Position memory for expanded/collapsed states
+- Visual categorization rules
 
-6. Context Analysis Engine
-- Intent detection across 8 workflow types
-- Conflict detection between references and decisions
-- Severity classification for inconsistencies
-- Cross-reference validation system
-- Located in: frontend/src/components/ContextAnalysisResults.tsx
+Key Integration Points:
+- Agent orchestration drives overall workflow
+- Session system maintains state and transitions
+- Research pipeline feeds into conversation system
+- Canvas provides visualization and organization
+
+This represents a unique implementation focused on AI-assisted brainstorming and research synthesis, with sophisticated coordination between specialized components.
 
 $END$
 

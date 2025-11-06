@@ -133,15 +133,43 @@ FORMATTING GUIDELINES:
 
     this.log(`Has extracted content: ${hasExtractedContent}, Content type: ${contentType}, Length: ${referenceData.extractedContent?.length || 0}`);
 
-    let analysisPrompt = '';
+    let response: string;
 
-    if (hasExtractedContent && contentType === 'text') {
+    if (hasExtractedContent && contentType === 'image') {
+      // Use Claude Vision API for image analysis
+      this.log('Using Claude Vision API for image analysis');
+      
+      const visionPrompt = `Analyze this ${referenceType} image in detail and extract relevant information for project planning.
+
+Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in your system prompt. Use tables for requirements with confidence scores, blockquotes for key insights, and checkboxes for actionable recommendations.
+
+Extract specific, actionable information including:
+- **Visual Elements**: Colors (provide exact hex codes), typography, layout style, composition
+- **Design Patterns**: UI components, navigation patterns, visual hierarchy
+- **Requirements**: Features or capabilities this design suggests (with confidence scores)
+- **Design Principles**: Aesthetic choices, target audience indicators
+- **Technical Considerations**: Responsive design hints, accessibility features
+- **Strategic Insights**: Design trends, competitive positioning, user experience goals
+
+Focus on making the analysis professional, scannable, and immediately useful for project planning. Be specific with colors (hex codes), dimensions, and design terminology.`;
+
+      // Get media type for vision API
+      const mediaType = (referenceData.mediaType || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+      
+      response = await this.callClaudeVision(
+        visionPrompt,
+        referenceData.extractedContent,
+        mediaType,
+        2500
+      );
+
+    } else if (hasExtractedContent && contentType === 'text') {
       // Use extracted text content for analysis
       const contentPreview = referenceData.extractedContent.length > 8000
         ? referenceData.extractedContent.substring(0, 8000) + '\n\n[Content truncated...]'
         : referenceData.extractedContent;
 
-      analysisPrompt = `Analyze this ${referenceType} document and extract relevant information.
+      const analysisPrompt = `Analyze this ${referenceType} document and extract relevant information.
 
 DOCUMENT CONTENT:
 ${contentPreview}
@@ -156,9 +184,19 @@ Extract specific, actionable information including:
 - Strategic insights and recommendations
 
 Focus on making the analysis professional, scannable, and immediately useful for project planning.`;
+
+      const messages = [
+        {
+          role: 'user',
+          content: analysisPrompt,
+        },
+      ];
+
+      response = await this.callClaude(messages, 2000);
+
     } else {
-      // Fallback for cases without extracted content (images, videos, or old uploads)
-      analysisPrompt = `Analyze this ${referenceType} reference.
+      // Fallback for cases without extracted content (videos, or old uploads)
+      const analysisPrompt = `Analyze this ${referenceType} reference.
 
 Reference type: ${referenceType}
 URL: ${referenceData.url}
@@ -166,16 +204,16 @@ URL: ${referenceData.url}
 Note: Content extraction was not available for this file. Please provide general guidance on what information should be extracted from a ${referenceType} file for project planning purposes.
 
 Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in your system prompt, but mark confidence scores as low (20-40) due to lack of actual content. Focus on providing actionable guidance for what to look for in this type of reference.`;
+
+      const messages = [
+        {
+          role: 'user',
+          content: analysisPrompt,
+        },
+      ];
+
+      response = await this.callClaude(messages, 2000);
     }
-
-    const messages = [
-      {
-        role: 'user',
-        content: analysisPrompt,
-      },
-    ];
-
-    const response = await this.callClaude(messages, 2000);
 
     return {
       agent: this.name,
@@ -186,6 +224,7 @@ Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in 
         referenceType,
         hadExtractedContent: hasExtractedContent,
         contentType,
+        usedVision: contentType === 'image' && hasExtractedContent,
       },
     };
   }
@@ -374,5 +413,93 @@ IMPORTANT:
    */
   getTemplate(templateId: string): AnalysisTemplate | null {
     return getTemplateById(templateId);
+  }
+
+  /**
+   * Analyze image and return structured JSON for selective recording
+   * Returns analysis broken down into selectable sections
+   */
+  async analyzeImageStructured(referenceData: any): Promise<AgentResponse> {
+    this.log('Analyzing image with structured output for selective recording');
+
+    if (referenceData.contentType !== 'image' || !referenceData.extractedContent) {
+      throw new Error('This method requires image content');
+    }
+
+    const visionPrompt = `Analyze this image in detail and return ONLY valid JSON with this EXACT structure:
+
+{
+  "colors": [
+    {"hex": "#3498db", "name": "Primary Blue", "confidence": 95},
+    {"hex": "#FFFFFF", "name": "White", "confidence": 100}
+  ],
+  "typography": [
+    {"font": "Inter", "usage": "Headings", "confidence": 85},
+    {"font": "Roboto", "usage": "Body text", "confidence": 80}
+  ],
+  "layout": {
+    "style": "Grid-based with sidebar navigation",
+    "description": "Three-column layout with prominent header",
+    "confidence": 90
+  },
+  "components": [
+    {"name": "Navigation bar", "description": "Fixed top nav with logo and menu", "confidence": 95},
+    {"name": "Card layout", "description": "Content cards with images and text", "confidence": 90}
+  ],
+  "insights": [
+    {"insight": "Modern, minimalist design approach", "category": "design", "confidence": 85},
+    {"insight": "Mobile-responsive layout patterns", "category": "technical", "confidence": 80}
+  ],
+  "summary": "Brief 2-3 sentence overview of the image"
+}
+
+CRITICAL RULES:
+- Return ONLY the JSON object, no markdown formatting, no code fences
+- Each section must have confidence scores (0-100)
+- Be specific with hex codes for colors (use actual detected colors)
+- Typography should list actual font families or styles seen
+- Layout should describe the overall structure
+- Components should list UI elements visible in the image
+- Insights should capture design principles and technical considerations
+- If a section has no data, use empty array [] or empty object {}`;
+
+    const mediaType = (referenceData.mediaType || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    
+    const response = await this.callClaudeVision(
+      visionPrompt,
+      referenceData.extractedContent,
+      mediaType,
+      2000
+    );
+
+    // Parse the JSON response
+    let structuredAnalysis: any;
+    try {
+      // Remove any markdown formatting if present
+      const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      structuredAnalysis = JSON.parse(cleanResponse);
+    } catch (error) {
+      this.log(`Failed to parse structured JSON: ${error}`);
+      // Return empty structure on parse failure
+      structuredAnalysis = {
+        colors: [],
+        typography: [],
+        layout: {},
+        components: [],
+        insights: [],
+        summary: 'Analysis failed to parse',
+      };
+    }
+
+    return {
+      agent: this.name,
+      message: '', // No message for structured output
+      showToUser: false,
+      metadata: {
+        structuredAnalysis,
+        analysisType: 'structured',
+        usedVision: true,
+      },
+    };
   }
 }

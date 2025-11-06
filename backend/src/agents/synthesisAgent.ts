@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { cacheService, CacheKeys } from '../services/cacheService';
 
 export class SynthesisAgent {
   private anthropic: Anthropic;
@@ -11,6 +12,7 @@ export class SynthesisAgent {
 
   /**
    * Synthesize multiple reference analyses into a single coherent document
+   * Results are cached for 24 hours
    */
   async synthesize(analyses: Array<{
     filename: string;
@@ -25,6 +27,25 @@ export class SynthesisAgent {
     keyThemes: string[];
   }> {
     console.log(`[SynthesisAgent] Synthesizing ${analyses.length} analyses`);
+
+    // Create cache key from analysis content hashes
+    const referenceIds = analyses.map(a => a.filename);
+    const cacheKey = CacheKeys.synthesis(referenceIds);
+    
+    // Check cache first
+    const cached = cacheService.get<{
+      synthesis: string;
+      conflicts: Array<{
+        topic: string;
+        references: Array<{ filename: string; content: string }>;
+      }>;
+      keyThemes: string[];
+    }>(cacheKey);
+    
+    if (cached) {
+      console.log('[SynthesisAgent] Using cached synthesis');
+      return cached;
+    }
 
     const prompt = `You are a synthesis agent tasked with combining multiple reference analyses into a single, coherent document.
 
@@ -102,11 +123,16 @@ Guidelines for the synthesis:
       console.log(`[SynthesisAgent] Found ${result.conflicts?.length || 0} conflicts`);
       console.log(`[SynthesisAgent] Identified ${result.keyThemes?.length || 0} key themes`);
 
-      return {
+      const synthesisResult = {
         synthesis: result.synthesis || content.text,
         conflicts: result.conflicts || [],
         keyThemes: result.keyThemes || [],
       };
+
+      // Cache the result for 24 hours
+      cacheService.set(cacheKey, synthesisResult, 86400);
+
+      return synthesisResult;
     } catch (error) {
       console.error('[SynthesisAgent] Error during synthesis:', error);
 

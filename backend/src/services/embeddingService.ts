@@ -1,480 +1,379 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-// Initialize OpenAI only if API key is provided
-const openai = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key-here'
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
-// Model configuration
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-const EMBEDDING_DIMENSIONS = 1536;
-
-// In-memory cache for embeddings (LRU cache with max 1000 entries)
-class EmbeddingCache {
-  private cache = new Map<string, number[]>();
-  private maxSize = 1000;
-
-  get(text: string): number[] | undefined {
-    return this.cache.get(text);
-  }
-
-  set(text: string, embedding: number[]): void {
-    // Simple LRU: if cache is full, delete oldest entry
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey !== undefined) {
-        this.cache.delete(firstKey);
-      }
-    }
-    this.cache.set(text, embedding);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const embeddingCache = new EmbeddingCache();
-
-export interface EmbeddingResult {
-  embedding: number[];
-  model: string;
-  dimensions: number;
-}
-
-export interface SimilarMessage {
-  id: string;
-  content: string;
-  role: string;
-  created_at: string;
-  similarity: number;
-}
-
-export interface RelevantMessage {
-  id: string;
-  content: string;
-  role: string;
-  created_at: string;
-  has_citation: boolean;
-  relevance_score: number;
-}
-
+/**
+ * Embedding service for semantic search
+ * Uses OpenAI's text-embedding-3-small model
+ */
 export class EmbeddingService {
-  constructor(private supabase: SupabaseClient) {}
+  private openai: OpenAI;
+  private model = 'text-embedding-3-small'; // Cost-effective, good performance
+  private supabase: SupabaseClient | null = null;
 
-  /**
-   * Generate embedding for a text string
-   * Uses caching to avoid redundant API calls
-   */
-  async generateEmbedding(text: string): Promise<EmbeddingResult> {
-    if (!openai) {
-      throw new Error('OpenAI API key not configured. Embeddings feature is disabled.');
+  constructor(supabase?: SupabaseClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('[EmbeddingService] OpenAI API key not configured');
     }
 
-    // Check cache first
-    const cached = embeddingCache.get(text);
-    if (cached) {
-      return {
-        embedding: cached,
-        model: EMBEDDING_MODEL,
-        dimensions: EMBEDDING_DIMENSIONS,
-      };
-    }
-
-    // Clean and truncate text if needed (OpenAI has 8191 token limit)
-    const cleanText = text.trim().substring(0, 8000); // Conservative limit
-
-    // Generate embedding using OpenAI
-    const response = await openai.embeddings.create({
-      model: EMBEDDING_MODEL,
-      input: cleanText,
-      encoding_format: 'float',
+    this.openai = new OpenAI({
+      apiKey: apiKey,
     });
 
-    const embedding = response.data[0].embedding;
+    this.supabase = supabase || null;
+  }
 
-    // Cache the result
-    embeddingCache.set(text, embedding);
+  /**
+   * Generate embedding for a single text
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+    }
 
+    try {
+      // Truncate text if too long (max 8191 tokens, ~32k characters)
+      const truncatedText = text.substring(0, 32000);
+
+      console.log(`[EmbeddingService] Generating embedding for text (${truncatedText.length} chars)`);
+
+      const response = await this.openai.embeddings.create({
+        model: this.model,
+        input: truncatedText,
+        encoding_format: 'float',
+      });
+
+      const embedding = response.data[0].embedding;
+      console.log(`[EmbeddingService] Generated embedding with ${embedding.length} dimensions`);
+
+      return embedding;
+    } catch (error: any) {
+      console.error('[EmbeddingService] Error generating embedding:', error.message);
+      
+      if (error.status === 401) {
+        throw new Error('Invalid OpenAI API key');
+      } else if (error.status === 429) {
+        throw new Error('OpenAI API rate limit exceeded');
+      } else if (error.status === 500) {
+        throw new Error('OpenAI API service error');
+      }
+      
+      throw new Error(`Failed to generate embedding: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate embeddings for multiple texts in batch
+   */
+  async generateEmbeddingsBatch(texts: string[]): Promise<number[][]> {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+    }
+
+    try {
+      // Truncate texts if too long
+      const truncatedTexts = texts.map(text => text.substring(0, 32000));
+
+      console.log(`[EmbeddingService] Generating embeddings for ${texts.length} texts`);
+
+      const response = await this.openai.embeddings.create({
+        model: this.model,
+        input: truncatedTexts,
+        encoding_format: 'float',
+      });
+
+      const embeddings = response.data.map(item => item.embedding);
+      console.log(`[EmbeddingService] Generated ${embeddings.length} embeddings`);
+
+      return embeddings;
+    } catch (error: any) {
+      console.error('[EmbeddingService] Error generating embeddings batch:', error.message);
+      
+      if (error.status === 401) {
+        throw new Error('Invalid OpenAI API key');
+      } else if (error.status === 429) {
+        throw new Error('OpenAI API rate limit exceeded');
+      } else if (error.status === 500) {
+        throw new Error('OpenAI API service error');
+      }
+      
+      throw new Error(`Failed to generate embeddings: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  cosineSimilarity(vecA: number[], vecB: number[]): number {
+    if (vecA.length !== vecB.length) {
+      throw new Error('Vectors must have the same length');
+    }
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+
+    normA = Math.sqrt(normA);
+    normB = Math.sqrt(normB);
+
+    if (normA === 0 || normB === 0) {
+      return 0;
+    }
+
+    return dotProduct / (normA * normB);
+  }
+
+  /**
+   * Find most similar vectors from a list
+   */
+  findMostSimilar(
+    queryEmbedding: number[],
+    embeddings: Array<{ id: string; embedding: number[]; metadata?: any }>,
+    topK: number = 5
+  ): Array<{ id: string; similarity: number; metadata?: any }> {
+    const similarities = embeddings.map(item => ({
+      id: item.id,
+      similarity: this.cosineSimilarity(queryEmbedding, item.embedding),
+      metadata: item.metadata,
+    }));
+
+    // Sort by similarity (descending)
+    similarities.sort((a, b) => b.similarity - a.similarity);
+
+    return similarities.slice(0, topK);
+  }
+
+  /**
+   * Check if the service is configured
+   */
+  isConfigured(): boolean {
+    return Boolean(process.env.OPENAI_API_KEY);
+  }
+
+  /**
+   * Get embedding model info
+   */
+  getModelInfo() {
     return {
-      embedding,
-      model: EMBEDDING_MODEL,
-      dimensions: EMBEDDING_DIMENSIONS,
+      model: this.model,
+      dimensions: 1536, // text-embedding-3-small dimensions
+      maxTokens: 8191,
+      costPer1MTokens: 0.02, // $0.02 per 1M tokens
     };
-  }
-
-  /**
-   * Generate and store embedding for a message
-   */
-  async generateAndStoreMessageEmbedding(messageId: string, content: string): Promise<void> {
-    const result = await this.generateEmbedding(content);
-
-    await this.supabase
-      .from('messages')
-      .update({
-        embedding: JSON.stringify(result.embedding),
-        embedding_model: result.model,
-        embedding_generated_at: new Date().toISOString(),
-      })
-      .eq('id', messageId);
-  }
-
-  /**
-   * Generate embeddings for all messages without embeddings in a project
-   */
-  async generateMissingEmbeddings(projectId: string): Promise<number> {
-    // Fetch messages without embeddings
-    const { data: messages, error } = await this.supabase
-      .from('messages')
-      .select('id, content')
-      .eq('project_id', projectId)
-      .is('embedding', null);
-
-    if (error || !messages) {
-      throw new Error(`Failed to fetch messages: ${error?.message}`);
-    }
-
-    // Generate embeddings in batches of 100 (OpenAI allows batch requests)
-    const batchSize = 100;
-    let processedCount = 0;
-
-    for (let i = 0; i < messages.length; i += batchSize) {
-      const batch = messages.slice(i, i + batchSize);
-
-      // Process batch in parallel
-      await Promise.all(
-        batch.map((message) =>
-          this.generateAndStoreMessageEmbedding(message.id, message.content).catch((err) => {
-            console.error(`Failed to generate embedding for message ${message.id}:`, err);
-          })
-        )
-      );
-
-      processedCount += batch.length;
-      console.log(`Processed ${processedCount}/${messages.length} embeddings`);
-    }
-
-    return processedCount;
-  }
-
-  /**
-   * Find semantically similar messages using vector search
-   */
-  async findSimilarMessages(
-    queryText: string,
-    projectId: string,
-    options: {
-      similarityThreshold?: number;
-      maxResults?: number;
-    } = {}
-  ): Promise<SimilarMessage[]> {
-    const { similarityThreshold = 0.7, maxResults = 20 } = options;
-
-    // Generate embedding for query
-    const queryEmbedding = await this.generateEmbedding(queryText);
-
-    // Call PostgreSQL function for similarity search
-    const { data, error } = await this.supabase.rpc('find_similar_messages', {
-      query_embedding: JSON.stringify(queryEmbedding.embedding),
-      project_id_filter: projectId,
-      similarity_threshold: similarityThreshold,
-      max_results: maxResults,
-    });
-
-    if (error) {
-      throw new Error(`Failed to find similar messages: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  /**
-   * Find relevant messages for document generation
-   * Prioritizes messages with citations and uses semantic similarity
-   */
-  async findRelevantMessagesForDocument(
-    documentType: string,
-    projectId: string,
-    maxResults: number = 50
-  ): Promise<RelevantMessage[]> {
-    // Create a query based on document type
-    const documentQueries: Record<string, string> = {
-      project_brief: 'project overview, goals, scope, objectives, requirements',
-      decision_log: 'decisions made, choices, selected options, commitments',
-      rejection_log: 'rejected ideas, dismissed options, what we decided not to do',
-      technical_specs: 'technical requirements, architecture, technology stack, implementation details',
-      project_establishment: 'project charter, governance, stakeholders, team structure',
-      rfp: 'vendor requirements, procurement, request for proposal',
-      implementation_plan: 'execution plan, timeline, milestones, tasks',
-      next_steps: 'action items, next steps, to-do, follow-up tasks',
-      open_questions: 'questions, uncertainties, unresolved issues',
-      risk_assessment: 'risks, challenges, concerns, potential problems',
-    };
-
-    const queryText = documentQueries[documentType] || documentType;
-
-    // Generate embedding for the query
-    const queryEmbedding = await this.generateEmbedding(queryText);
-
-    // Call PostgreSQL function for relevance search
-    const { data, error } = await this.supabase.rpc('find_relevant_messages_for_document', {
-      query_embedding: JSON.stringify(queryEmbedding.embedding),
-      project_id_filter: projectId,
-      max_results: maxResults,
-    });
-
-    if (error) {
-      throw new Error(`Failed to find relevant messages: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  /**
-   * Get contextual window of messages around a specific message
-   * Useful for getting conversation flow context
-   */
-  async getContextualWindow(
-    messageId: string,
-    windowSize: number = 5
-  ): Promise<any[]> {
-    // Get the target message first
-    const { data: targetMessage, error: targetError } = await this.supabase
-      .from('messages')
-      .select('created_at, project_id')
-      .eq('id', messageId)
-      .single();
-
-    if (targetError || !targetMessage) {
-      throw new Error(`Failed to fetch target message: ${targetError?.message}`);
-    }
-
-    // Get messages before and after
-    const { data: messages, error } = await this.supabase
-      .from('messages')
-      .select('*')
-      .eq('project_id', targetMessage.project_id)
-      .gte('created_at', new Date(new Date(targetMessage.created_at).getTime() - 1000 * 60 * 30).toISOString()) // 30 min before
-      .lte('created_at', new Date(new Date(targetMessage.created_at).getTime() + 1000 * 60 * 30).toISOString()) // 30 min after
-      .order('created_at', { ascending: true })
-      .limit(windowSize * 2 + 1);
-
-    if (error) {
-      throw new Error(`Failed to fetch contextual window: ${error.message}`);
-    }
-
-    return messages || [];
-  }
-
-  /**
-   * Clear the in-memory cache
-   */
-  clearCache(): void {
-    embeddingCache.clear();
   }
 
   /**
    * Generate and store embedding for a reference
+   * Used by references.ts for automatic embedding generation
    */
   async generateAndStoreReferenceEmbedding(referenceId: string, content: string): Promise<void> {
-    if (!content || content.trim().length === 0) {
-      console.log(`[Embedding] Skipping reference ${referenceId} - no content`);
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot store embedding');
       return;
     }
 
-    const result = await this.generateEmbedding(content);
+    try {
+      console.log(`[EmbeddingService] Generating embedding for reference ${referenceId}`);
 
-    await this.supabase
-      .from('references')
-      .update({
-        embedding: JSON.stringify(result.embedding),
-        embedding_model: result.model,
-        embedding_generated_at: new Date().toISOString(),
-      })
-      .eq('id', referenceId);
+      // Generate embedding
+      const embedding = await this.generateEmbedding(content);
 
-    console.log(`[Embedding] Generated embedding for reference ${referenceId}`);
+      // Store in database
+      const { error } = await this.supabase
+        .from('reference_embeddings')
+        .upsert({
+          reference_id: referenceId,
+          embedding: embedding,
+          content_preview: content.substring(0, 500), // Store preview for debugging
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`[EmbeddingService] Successfully stored embedding for reference ${referenceId}`);
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate/store embedding for ${referenceId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate and store embedding for a conversation message
+   * Used by conversations.ts for automatic embedding generation
+   */
+  async generateAndStoreMessageEmbedding(messageId: string, content: string): Promise<void> {
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot store embedding');
+      return;
+    }
+
+    try {
+      console.log(`[EmbeddingService] Generating embedding for message ${messageId}`);
+
+      // Generate embedding
+      const embedding = await this.generateEmbedding(content);
+
+      // Store in database
+      const { error } = await this.supabase
+        .from('message_embeddings')
+        .upsert({
+          message_id: messageId,
+          embedding: embedding,
+          content_preview: content.substring(0, 500), // Store preview for debugging
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`[EmbeddingService] Successfully stored embedding for message ${messageId}`);
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate/store embedding for ${messageId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate missing embeddings for all messages in a project
+   * Used by conversations.ts backfill endpoint
+   */
+  async generateMissingEmbeddings(projectId: string): Promise<number> {
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot generate embeddings');
+      return 0;
+    }
+
+    try {
+      console.log(`[EmbeddingService] Finding messages without embeddings for project ${projectId}`);
+
+      // Find all messages in this project without embeddings
+      const { data: messages, error: fetchError } = await this.supabase
+        .from('conversation_messages')
+        .select('id, content')
+        .eq('project_id', projectId)
+        .is('embedding', null);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!messages || messages.length === 0) {
+        console.log('[EmbeddingService] No messages found without embeddings');
+        return 0;
+      }
+
+      console.log(`[EmbeddingService] Generating embeddings for ${messages.length} messages`);
+
+      // Generate embeddings for each message
+      let processedCount = 0;
+      for (const message of messages) {
+        try {
+          await this.generateAndStoreMessageEmbedding(message.id, message.content);
+          processedCount++;
+        } catch (err: any) {
+          console.error(`[EmbeddingService] Failed to generate embedding for message ${message.id}:`, err.message);
+          // Continue with other messages
+        }
+      }
+
+      console.log(`[EmbeddingService] Successfully generated ${processedCount} embeddings`);
+      return processedCount;
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate missing embeddings:`, error.message);
+      throw error;
+    }
   }
 
   /**
    * Generate and store embedding for a generated document
+   * Used by generatedDocumentsService.ts for automatic embedding generation
    */
   async generateAndStoreDocumentEmbedding(documentId: string, content: string): Promise<void> {
-    if (!content || content.trim().length === 0) {
-      console.log(`[Embedding] Skipping document ${documentId} - no content`);
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot store embedding');
       return;
     }
 
-    const result = await this.generateEmbedding(content);
+    try {
+      console.log(`[EmbeddingService] Generating embedding for document ${documentId}`);
 
-    await this.supabase
-      .from('generated_documents')
-      .update({
-        embedding: JSON.stringify(result.embedding),
-        embedding_model: result.model,
-        embedding_generated_at: new Date().toISOString(),
-      })
-      .eq('id', documentId);
+      // Generate embedding
+      const embedding = await this.generateEmbedding(content);
 
-    console.log(`[Embedding] Generated embedding for document ${documentId}`);
+      // Store in database
+      const { error } = await this.supabase
+        .from('document_embeddings')
+        .upsert({
+          document_id: documentId,
+          embedding: embedding,
+          content_preview: content.substring(0, 500), // Store preview for debugging
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`[EmbeddingService] Successfully stored embedding for document ${documentId}`);
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate/store embedding for ${documentId}:`, error.message);
+      throw error;
+    }
   }
 
   /**
-   * Generate embeddings for all references without embeddings in a project
+   * Find relevant messages for document generation using semantic search
+   * Used by generatedDocumentsService.ts to find contextually relevant messages
    */
-  async generateMissingReferenceEmbeddings(projectId: string): Promise<number> {
-    console.log(`[Embedding] Generating missing reference embeddings for project ${projectId}...`);
-
-    // Fetch references without embeddings
-    const { data: references, error } = await this.supabase
-      .from('references')
-      .select('id, metadata')
-      .eq('project_id', projectId)
-      .is('embedding', null);
-
-    if (error || !references) {
-      throw new Error(`Failed to fetch references: ${error?.message}`);
+  async findRelevantMessagesForDocument(
+    documentType: string,
+    projectId: string,
+    limit: number = 50
+  ): Promise<any[]> {
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot search messages');
+      return [];
     }
 
-    console.log(`[Embedding] Found ${references.length} references without embeddings`);
+    try {
+      console.log(`[EmbeddingService] Finding relevant messages for ${documentType} in project ${projectId}`);
 
-    let processedCount = 0;
-    let skippedCount = 0;
+      // Generate query embedding from document type
+      const queryText = `Generate ${documentType} document for project`;
+      const queryEmbedding = await this.generateEmbedding(queryText);
 
-    // Process in batches of 50 to avoid rate limits
-    const batchSize = 50;
-    for (let i = 0; i < references.length; i += batchSize) {
-      const batch = references.slice(i, i + batchSize);
+      // Use Supabase's vector similarity search
+      const { data, error } = await this.supabase.rpc('match_messages', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.5,
+        match_count: limit,
+        filter_project_id: projectId,
+      });
 
-      await Promise.all(
-        batch.map(async (reference) => {
-          try {
-            // Extract content from metadata
-            const content =
-              reference.metadata?.extractedContent ||
-              reference.metadata?.analysis ||
-              '';
+      if (error) {
+        console.error('[EmbeddingService] Error searching messages:', error);
+        throw error;
+      }
 
-            if (content && content.trim().length > 0) {
-              await this.generateAndStoreReferenceEmbedding(reference.id, content);
-              processedCount++;
-            } else {
-              console.log(`[Embedding] Skipping reference ${reference.id} - no content`);
-              skippedCount++;
-            }
-          } catch (err) {
-            console.error(`[Embedding] Failed for reference ${reference.id}:`, err);
-          }
-        })
-      );
-
-      console.log(`[Embedding] Processed ${Math.min(i + batchSize, references.length)}/${references.length} references`);
+      console.log(`[EmbeddingService] Found ${data?.length || 0} relevant messages`);
+      return data || [];
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to find relevant messages:`, error.message);
+      // Return empty array on error to allow fallback to other methods
+      return [];
     }
-
-    console.log(`[Embedding] Completed: ${processedCount} processed, ${skippedCount} skipped`);
-    return processedCount;
-  }
-
-  /**
-   * Generate embeddings for all generated_documents without embeddings in a project
-   */
-  async generateMissingDocumentEmbeddings(projectId: string): Promise<number> {
-    console.log(`[Embedding] Generating missing document embeddings for project ${projectId}...`);
-
-    // Fetch documents without embeddings
-    const { data: documents, error } = await this.supabase
-      .from('generated_documents')
-      .select('id, content')
-      .eq('project_id', projectId)
-      .is('embedding', null);
-
-    if (error || !documents) {
-      throw new Error(`Failed to fetch documents: ${error?.message}`);
-    }
-
-    console.log(`[Embedding] Found ${documents.length} documents without embeddings`);
-
-    let processedCount = 0;
-    let skippedCount = 0;
-
-    // Process in batches of 50
-    const batchSize = 50;
-    for (let i = 0; i < documents.length; i += batchSize) {
-      const batch = documents.slice(i, i + batchSize);
-
-      await Promise.all(
-        batch.map(async (document) => {
-          try {
-            if (document.content && document.content.trim().length > 0) {
-              await this.generateAndStoreDocumentEmbedding(document.id, document.content);
-              processedCount++;
-            } else {
-              console.log(`[Embedding] Skipping document ${document.id} - no content`);
-              skippedCount++;
-            }
-          } catch (err) {
-            console.error(`[Embedding] Failed for document ${document.id}:`, err);
-          }
-        })
-      );
-
-      console.log(`[Embedding] Processed ${Math.min(i + batchSize, documents.length)}/${documents.length} documents`);
-    }
-
-    console.log(`[Embedding] Completed: ${processedCount} processed, ${skippedCount} skipped`);
-    return processedCount;
   }
 }
 
-/**
- * Standalone function for unified semantic search across references and generated_documents
- * Used by UnifiedResearchAgent
- */
-export async function searchSemanticSimilarity(
-  query: string,
-  projectId: string,
-  maxResults: number = 10,
-  supabaseClient?: SupabaseClient
-): Promise<Array<{
-  id: string;
-  type: 'reference' | 'generated_document';
-  filename: string;
-  content: string;
-  score: number;
-}>> {
-  // Use provided client or import from supabase service
-  const client = supabaseClient || (await import('./supabase')).supabase;
-
-  // Create temporary embedding service instance
-  const embeddingService = new EmbeddingService(client);
-
-  try {
-    // Generate embedding for query
-    const queryEmbedding = await embeddingService.generateEmbedding(query);
-
-    // Call PostgreSQL function for unified search
-    const { data, error } = await client.rpc('search_semantic_similarity', {
-      query_embedding: JSON.stringify(queryEmbedding.embedding),
-      project_id_filter: projectId,
-      similarity_threshold: 0.6, // Lower threshold for broader results
-      max_results: maxResults,
-    });
-
-    if (error) {
-      throw new Error(`Failed to search semantic similarity: ${error.message}`);
-    }
-
-    // Transform results to expected format
-    return (data || []).map((item: any) => ({
-      id: item.id,
-      type: item.type as 'reference' | 'generated_document',
-      filename: item.filename,
-      content: item.content,
-      score: item.similarity,
-    }));
-  } catch (error: any) {
-    console.error('[searchSemanticSimilarity] Error:', error);
-    throw error;
-  }
-}
+// Singleton instance (without supabase - will be created per-use in routes)
+export const embeddingService = new EmbeddingService();

@@ -1,5 +1,5 @@
 ---
-description: Implements conversational sandbox with background idea extraction, progressive refinement, topic grouping, and instant response architecture
+description: Rules for implementing conversational sandbox with state tracking and topic grouping
 ---
 
 # === USER INSTRUCTIONS ===
@@ -493,51 +493,53 @@ For agent orchestration details, see: [agent-orchestration-system.mdc](.giga/rul
 
 # sandbox-implementation
 
-Conversational Sandbox Core Components:
+The conversational sandbox implements an AI-powered brainstorming environment with progressive idea refinement states and real-time topic grouping.
 
-1. Progressive Idea Refinement System
-Path: backend/src/agents/ConversationalIdeaAgent.ts
-Importance Score: 95
-- Four-state idea progression tracking:
-  - mentioned: Initial capture from conversation
-  - exploring: Active discussion/development
-  - refined: Core concept established
-  - ready_to_extract: Validated for project integration
-- Automatic state transitions based on conversation analysis
-- Context grouping for related ideas
+## Core Components
 
-2. Background Idea Extraction 
-Path: backend/src/services/ContextGroupingService.ts 
-Importance Score: 90
-- Real-time idea capture during natural conversation
-- Topic clustering using semantic similarity
-- Source attribution tracking:
-  - user_mention: Directly stated ideas
-  - ai_suggestion: Agent-generated concepts
-  - collaborative: Evolved through discussion
+### State Management
+- Idea states: mentioned → exploring → refined → ready_to_extract 
+- Progressive confidence scoring at each state transition
+- State persistence with atomic transitions
+- Background state monitoring for inactive ideas
 
-3. Instant Response Architecture
-Path: backend/src/components/sandbox/ChatInterface.tsx
-Importance Score: 85
-- Parallel processing pipelines:
-  - Conversation continuation
-  - Idea extraction
-  - Topic organization
-  - State management
-- Context-aware response generation
-- Dynamic conversation mode switching
+### Topic Grouping Engine
+- Real-time semantic clustering of related ideas
+- Dynamic group formation and splitting
+- Contextual relationship mapping between topics
+- Background topic refinement during conversations
 
-4. Topic Organization System
-Path: backend/src/services/sessionCompletionService.ts
-Importance Score: 82
-- Hierarchical topic grouping
-- Innovation level classification:
-  - practical: Immediate implementation potential
-  - moderate: Medium-term possibilities
-  - experimental: Future-focused concepts
-- Relationship mapping between topics
+### Conversation Modes
+- Exploration: Open-ended ideation with light guidance
+- Clarification: Focused refinement of ambiguous ideas
+- Generation: Targeted ideation within constraints
+- Refinement: Polish and enhancement of existing ideas
 
-The sandbox implements an intelligent conversational environment optimized for natural ideation while maintaining structured organization through background processing and progressive refinement states.
+### Response Architecture
+- Instant acknowledgment with progressive enhancement
+- Background processing for deep analysis
+- Staged delivery of complex responses
+- Context preservation across mode switches
+
+## Implementation Files
+
+backend/src/agents/ConversationalIdeaAgent.ts:
+- Core idea extraction and progression logic
+- Mode switching and context management
+- Innovation level assessment (practical/moderate/experimental)
+Importance Score: 90/100
+
+backend/src/services/ContextGroupingService.ts:
+- Real-time topic clustering implementation
+- Semantic relationship tracking
+- Group boundary detection
+Importance Score: 85/100
+
+backend/src/services/sessionCompletionService.ts:
+- Session state transitions
+- Idea state management
+- Document generation pipeline
+Importance Score: 82/100
 
 $END$
 

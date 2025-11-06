@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
 import { useProjectStore } from '../store/projectStore';
 import { useUserStore } from '../store/userStore';
+import { useChatStore } from '../store/chatStore';
 import { projectsApi, conversationsApi, canvasApi } from '../services/api';
+import { showToast } from '../utils/toast';
 import {
   Sparkles,
   X,
@@ -43,20 +45,15 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
   const { user } = useUserStore();
+  const { messages } = useChatStore();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [lastMessageCount, setLastMessageCount] = useState(0);
 
-  // Load suggestions when project changes or panel opens
-  useEffect(() => {
-    if (isOpen && currentProject && user) {
-      loadSuggestions();
-    }
-  }, [isOpen, currentProject, user]);
-
-  const loadSuggestions = async () => {
+  const loadSuggestions = useCallback(async () => {
     if (!currentProject) return;
 
     setIsLoading(true);
@@ -70,15 +67,42 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
       }
     } catch (error) {
       console.error('Load suggestions error:', error);
+      showToast('Failed to load suggestions', 'error');
       setSuggestions([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentProject]);
 
-  const handleDismiss = (suggestionId: string) => {
+  // Load suggestions when project changes or panel opens
+  useEffect(() => {
+    if (isOpen && currentProject && user) {
+      loadSuggestions();
+    }
+  }, [isOpen, currentProject?.id, user?.id, loadSuggestions]);
+
+  // Auto-refresh when new messages arrive
+  useEffect(() => {
+    if (!isOpen || !currentProject) return;
+    
+    const currentMessageCount = messages.length;
+    
+    // If message count increased, refresh suggestions after a short delay
+    if (currentMessageCount > lastMessageCount && lastMessageCount > 0) {
+      const timer = setTimeout(() => {
+        loadSuggestions();
+      }, 2000); // Wait 2 seconds after new message before refreshing
+      
+      return () => clearTimeout(timer);
+    }
+    
+    setLastMessageCount(currentMessageCount);
+  }, [messages.length, lastMessageCount, isOpen, currentProject, loadSuggestions]);
+
+  const handleDismiss = useCallback((suggestionId: string) => {
     setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
-  };
+    showToast('Suggestion dismissed', 'info');
+  }, []);
 
   const handleCanvasAction = async (suggestion: Suggestion) => {
     if (!currentProject) return;
@@ -91,7 +115,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
 
       if (!actionData || !actionData.action) {
         console.error('[SuggestionsSidePanel] Invalid canvas action data:', actionData);
-        alert('Invalid canvas action data. Please try again.');
+        showToast('Invalid canvas action data', 'error');
         setIsLoading(false);
         return;
       }
@@ -104,7 +128,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         case 'cluster-cards':
           if (!actionData.clusters || !Array.isArray(actionData.clusters)) {
             console.error('[SuggestionsSidePanel] No clusters provided for clustering action');
-            alert('No clustering data available. Please try refreshing suggestions.');
+            showToast('No clustering data available', 'error');
             setIsLoading(false);
             return;
           }
@@ -115,7 +139,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         case 'archive-cards':
           if (!actionData.cardIdsToArchive || !Array.isArray(actionData.cardIdsToArchive)) {
             console.error('[SuggestionsSidePanel] No card IDs provided for archiving action');
-            alert('No cards selected for archiving.');
+            showToast('No cards selected for archiving', 'error');
             setIsLoading(false);
             return;
           }
@@ -123,15 +147,16 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
           result = await canvasApi.archiveCards(currentProject.id, actionData.cardIdsToArchive);
           break;
 
-        case 'optimize-layout':
+        case 'optimize-layout': {
           const layout = actionData.layout || 'grid';
           console.log(`[SuggestionsSidePanel] Optimizing layout: ${layout}`);
           result = await canvasApi.optimizeLayout(currentProject.id, layout);
           break;
+        }
 
         default:
           console.error('[SuggestionsSidePanel] Unknown canvas action:', actionData.action);
-          alert(`Unknown action type: ${actionData.action}`);
+          showToast(`Unknown action type: ${actionData.action}`, 'error');
           setIsLoading(false);
           return;
       }
@@ -146,7 +171,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         console.log('[SuggestionsSidePanel] Project updated successfully');
 
         // Show success message
-        alert(result.message || 'Canvas updated successfully!');
+        showToast(result.message || 'Canvas updated successfully!', 'success');
 
         // Remove suggestion after successful application
         handleDismiss(suggestion.id);
@@ -157,12 +182,12 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         }, 500);
       } else {
         console.error('[SuggestionsSidePanel] Canvas action failed:', result);
-        alert('Failed to apply canvas action. Please try again.');
+        showToast('Failed to apply canvas action', 'error');
       }
     } catch (error) {
       console.error('[SuggestionsSidePanel] Error applying canvas action:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error applying canvas action: ${errorMessage}`);
+      showToast(`Error: ${errorMessage}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +222,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     }
   };
 
-  const toggleExpanded = (suggestionId: string) => {
+  const toggleExpanded = useCallback((suggestionId: string) => {
     setExpandedSuggestions(prev => {
       const newSet = new Set(prev);
       if (newSet.has(suggestionId)) {
@@ -207,7 +232,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
       }
       return newSet;
     });
-  };
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -237,21 +262,31 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     }
   };
 
-  // Filter suggestions
-  const filteredSuggestions = suggestions.filter(s => {
-    if (filterType !== 'all' && s.type !== filterType) return false;
-    if (filterPriority !== 'all' && s.priority !== filterPriority) return false;
-    return true;
-  });
+  // Filter and sort suggestions with memoization
+  const filteredSuggestions = useMemo(() => {
+    const filtered = suggestions.filter(s => {
+      if (filterType !== 'all' && s.type !== filterType) return false;
+      if (filterPriority !== 'all' && s.priority !== filterPriority) return false;
+      return true;
+    });
 
-  // Group by type
-  const groupedSuggestions = filteredSuggestions.reduce((acc, suggestion) => {
-    if (!acc[suggestion.type]) {
-      acc[suggestion.type] = [];
-    }
-    acc[suggestion.type].push(suggestion);
-    return acc;
-  }, {} as Record<string, Suggestion[]>);
+    // Sort by priority: high > medium > low
+    return filtered.sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+  }, [suggestions, filterType, filterPriority]);
+
+  // Group by type with memoization
+  const groupedSuggestions = useMemo(() => {
+    return filteredSuggestions.reduce((acc, suggestion) => {
+      if (!acc[suggestion.type]) {
+        acc[suggestion.type] = [];
+      }
+      acc[suggestion.type].push(suggestion);
+      return acc;
+    }, {} as Record<string, Suggestion[]>);
+  }, [filteredSuggestions]);
 
   const suggestionTypes = [
     { id: 'action', label: 'Actions', icon: Target },
@@ -429,8 +464,33 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
             {/* Suggestions List */}
             <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-4">
               {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <RefreshCw size={32} className="text-cyan-primary animate-spin" />
+                <div className="space-y-3">
+                  {/* Skeleton Loaders */}
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={`${
+                        isDarkMode ? 'bg-white/5' : 'bg-white/50'
+                      } rounded-xl p-4 border ${
+                        isDarkMode ? 'border-white/10' : 'border-gray-200'
+                      } animate-pulse`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <div className={`w-20 h-6 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                          <div className={`w-16 h-4 rounded ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                        </div>
+                        <div className={`w-4 h-4 rounded ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                      </div>
+                      <div className={`w-3/4 h-5 rounded mb-2 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                      <div className={`w-full h-4 rounded mb-1 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                      <div className={`w-5/6 h-4 rounded mb-3 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                      <div className="flex items-center space-x-2">
+                        <div className={`flex-1 h-9 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                        <div className={`flex-1 h-9 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredSuggestions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">

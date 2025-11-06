@@ -18,12 +18,13 @@ export const AI_MODELS = {
   HAIKU: 'claude-haiku-4-5-20251001',
 
   /**
-   * Claude Sonnet 4 - Balanced performance and quality
-   * Best for: Complex reasoning, document generation, conversations
+   * Claude Sonnet 4.5 - Balanced performance and quality with vision support
+   * Best for: Complex reasoning, document generation, conversations, image analysis
    * Speed: Standard
    * Cost: $3.00 per 1M input tokens
+   * Vision: Supports image analysis (colors, design, layout, composition)
    */
-  SONNET: 'claude-sonnet-4-20250514',
+  SONNET: 'claude-sonnet-4-5-20250929',
 
   /**
    * Claude Opus 3 - Highest quality (currently not used)

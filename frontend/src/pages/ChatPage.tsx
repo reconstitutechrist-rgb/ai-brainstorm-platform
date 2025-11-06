@@ -64,7 +64,6 @@ export const ChatPage: React.FC = () => {
   // Local state
   const [inputMessage, setInputMessage] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [isSessionActive, setIsSessionActive] = useState(true);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -277,7 +276,7 @@ export const ChatPage: React.FC = () => {
   }, [currentProject?.id, user?.id]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentProject || isSending || !isSessionActive) {
+    if (!inputMessage.trim() || !currentProject || isSending) {
       return;
     }
 
@@ -419,8 +418,8 @@ export const ChatPage: React.FC = () => {
       {/* Header with session controls */}
       <ChatPageHeader
         onHistoryClick={() => setShowHistoryModal(true)}
-        onSessionStart={() => setIsSessionActive(true)}
-        onSessionEnd={() => setIsSessionActive(false)}
+        onSessionStart={() => {}} // Session management is now handled by SessionTrackingPanel
+        onSessionEnd={() => {}} // Session management is now handled by SessionTrackingPanel
         isDarkMode={isDarkMode}
       />
 
@@ -428,7 +427,7 @@ export const ChatPage: React.FC = () => {
       <SessionSummaryModal
         isOpen={showSummaryModal}
         onClose={() => setShowSummaryModal(false)}
-        onStartSession={() => setIsSessionActive(true)}
+        onStartSession={() => {}} // Session management is now handled by SessionTrackingPanel
       />
 
       {/* Session History Modal */}
@@ -464,7 +463,7 @@ export const ChatPage: React.FC = () => {
               onKeyDown={handleKeyDown}
               disabled={isSending}
               isSending={isSending}
-              isSessionActive={isSessionActive}
+              isSessionActive={true} // Sessions are now managed by SessionTrackingPanel
               isDarkMode={isDarkMode}
             />
           </ChatPanel>

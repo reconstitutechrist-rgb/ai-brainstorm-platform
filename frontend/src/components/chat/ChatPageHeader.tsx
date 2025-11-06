@@ -1,6 +1,5 @@
 import React from 'react';
 import { History } from 'lucide-react';
-import { SessionControls } from '../SessionControls';
 
 interface ChatPageHeaderProps {
   onHistoryClick: () => void;
@@ -11,12 +10,10 @@ interface ChatPageHeaderProps {
 
 export const ChatPageHeader: React.FC<ChatPageHeaderProps> = ({
   onHistoryClick,
-  onSessionStart,
-  onSessionEnd,
   isDarkMode,
 }) => {
   return (
-    <div className="mb-6 flex justify-between items-center">
+    <div className="mb-6 flex justify-start items-center">
       <button
         onClick={onHistoryClick}
         className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center space-x-2 ${
@@ -29,13 +26,6 @@ export const ChatPageHeader: React.FC<ChatPageHeaderProps> = ({
         <History size={18} />
         <span>Session History</span>
       </button>
-
-      <SessionControls
-        onSessionStart={onSessionStart}
-        onSessionEnd={onSessionEnd}
-      />
-
-      <div className="w-36" /> {/* Spacer for centering */}
     </div>
   );
 };

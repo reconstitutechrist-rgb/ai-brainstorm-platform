@@ -1,5 +1,5 @@
 ---
-description: Defines the core intent classification system for analyzing user messages, determining workflow paths, and routing conversations
+description: Specification for analyzing and documenting intent classification systems with context-aware multi-intent detection.
 ---
 
 # === USER INSTRUCTIONS ===
@@ -603,52 +603,55 @@ For state management, see: [conversation-state-model.mdc](.giga/rules/conversati
 
 # intent-classification-system
 
-1. Core Intent Types (Importance: 95)
-- BRAINSTORMING: Ideation and creative exploration 
-- DECIDING: Making concrete choices/decisions
-- EXPLORING: Investigation of topics/options
-- CLARIFYING: Seeking additional context
-- COMPARING: Evaluating multiple options
-- VALIDATING: Verifying assumptions/facts
-- IMPLEMENTING: Action/execution planning
-- QUESTIONING: Information gathering
-- PARKING: Deferring topics
-- META: System/process queries
+Core Classification Framework:
 
-2. Context Analysis Engine (Importance: 90)
-- Multi-level hedging detection (uncertain, tentative, firm, definitive)
-- Compound intent recognition for messages containing multiple intents
-- Historical context weighting for intent disambiguation
-- Signal pattern matching against 57+ domain phrases
-- Context pruning for optimal intent analysis
+1. Intent Types (10 categories):
+- Exploration - Open-ended ideation and discovery
+- Clarification - Request for additional details/context  
+- Generation - Creating new content/ideas
+- Refinement - Improving existing content
+- Decision - Making choices or commitments
+- Validation - Verifying assumptions/facts
+- Implementation - Execution details
+- Planning - Strategy and timelines
+- Analysis - Deep investigation
+- Review - Evaluation and feedback
 
-3. Workflow Routing System (Importance: 88)
-- Dynamic agent selection based on detected intents
-- Parallel processing for compound intents
-- Context sharing between relevant agents
-- State-based routing decisions (EXPLORING, DECIDED, PARKED)
-- Automatic mode switching based on intent patterns
+2. Multi-Intent Detection Pipeline:
+- Primary intent classification with confidence scoring
+- Secondary intent detection for compound statements
+- Intent relationship mapping between primary/secondary
+- Temporal sequence tracking for intent transitions
 
-4. Multi-Intent Processing (Importance: 85)
-- Primary/secondary intent classification
-- Intent confidence scoring (0-100)
-- Intent priority determination
-- Cross-intent dependency tracking
-- Conflict resolution for competing intents
+3. Context-Aware Analysis:
+- Session state integration for intent interpretation
+- Project phase consideration in classification
+- User role impact on intent weighting
+- Historical intent pattern recognition
 
-5. Hedging Language Analysis (Importance: 82)
-- Uncertainty level classification
-- Confidence modifier detection
-- Tentative vs definitive phrasing
-- Indirect signal recognition
-- Context-based certainty adjustment
+4. Hedging Language Analysis:
+- Confidence level detection in statements
+- Uncertainty marker identification
+- Commitment level assessment
+- Decision strength scoring
 
-6. Workflow Selection Algorithm (Importance: 80)
-- Intent-based agent orchestration
-- Dynamic workflow generation
-- Context-aware routing rules
-- State transition validation
-- Blocker detection integration
+5. Workflow Routing:
+- Intent-based agent selection
+- Dynamic workflow adjustment
+- Parallel processing determination
+- Cross-agent coordination based on intent
+
+Key Implementation Paths:
+/backend/src/agents/contextManager.ts
+/backend/src/services/intentClassification.ts
+/backend/src/agents/intentDetection.ts
+
+Importance Scores:
+- Intent Classification Framework: 95/100
+- Multi-Intent Detection: 90/100
+- Context Analysis: 85/100
+- Hedging Analysis: 80/100
+- Workflow Routing: 85/100
 
 $END$
 
