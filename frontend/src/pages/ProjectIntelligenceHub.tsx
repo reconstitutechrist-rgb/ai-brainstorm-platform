@@ -34,6 +34,37 @@ import KeySectionsPanel from '../components/KeySectionsPanel';
 import OverviewQuickInsights from '../components/OverviewQuickInsights';
 import { extractKeySections } from '../utils/markdownSectionExtractor';
 
+// ============================================
+// TYPESCRIPT INTERFACES
+// ============================================
+interface GeneratedDocument {
+  id: string;
+  title: string;
+  document_type: string;
+  content: string;
+  completion_percent?: number;
+  missing_fields?: string[];
+  folder_category?: string;
+  version?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserDocument extends Document {
+  filename: string;
+  file_url: string;
+  file_size?: number;
+  description?: string;
+}
+
+interface ActivityLog {
+  id: string;
+  agent_type: string;
+  action: string;
+  details: any;
+  created_at: string;
+}
+
 export const ProjectIntelligenceHub: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
@@ -60,7 +91,33 @@ export const ProjectIntelligenceHub: React.FC = () => {
     if (currentProject) {
       loadAllDocuments();
     }
-  }, [currentProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
+
+  // Load pinned documents from localStorage
+  useEffect(() => {
+    if (currentProject?.id) {
+      const saved = localStorage.getItem(`pinned-docs-${currentProject.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setPinnedDocIds(new Set(parsed));
+        } catch (error) {
+          console.error('Error loading pinned docs:', error);
+        }
+      }
+    }
+  }, [currentProject?.id]);
+
+  // Save pinned documents to localStorage
+  useEffect(() => {
+    if (currentProject?.id && pinnedDocIds.size > 0) {
+      localStorage.setItem(
+        `pinned-docs-${currentProject.id}`,
+        JSON.stringify(Array.from(pinnedDocIds))
+      );
+    }
+  }, [pinnedDocIds, currentProject?.id]);
 
   const loadAllDocuments = async () => {
     if (!currentProject) return;
@@ -211,6 +268,25 @@ export const ProjectIntelligenceHub: React.FC = () => {
           {activeTab === 'search' && <SearchTab />}
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      <AnimatePresence>
+        {selectedDocumentId && (() => {
+          const doc = [...allDocuments, ...userDocuments].find(d => d.id === selectedDocumentId);
+          if (!doc) return null;
+
+          return (
+            <DocumentViewerModal
+              key="document-viewer"
+              doc={doc}
+              onClose={() => setSelectedDocumentId(null)}
+              isDarkMode={isDarkMode}
+              isPinned={pinnedDocIds.has(selectedDocumentId)}
+              onTogglePin={togglePinDocument}
+            />
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 };
@@ -903,8 +979,11 @@ const ActivityTab: React.FC = () => {
   const { currentProject } = useProjectStore();
 
   useEffect(() => {
-    loadActivities();
-  }, [currentProject]);
+    if (currentProject) {
+      loadActivities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
 
   const loadActivities = async () => {
     if (!currentProject) return;
@@ -1093,7 +1172,7 @@ const GeneratedDocsTab: React.FC<GeneratedDocsTabProps> = ({ sharedDocuments, on
     if (sharedDocuments.length > 0 && !selectedDoc) {
       setSelectedDoc(sharedDocuments[0]);
     }
-  }, [sharedDocuments]);
+  }, [sharedDocuments, selectedDoc]);
 
   /**
    * Strip project name from document title for cleaner display
@@ -1111,19 +1190,29 @@ const GeneratedDocsTab: React.FC<GeneratedDocsTabProps> = ({ sharedDocuments, on
   useEffect(() => {
     if (currentProject) {
       loadRecommendations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    if (documents.length > 0) {
       loadQualityScores();
     }
-  }, [currentProject, documents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents]);
 
   const loadQualityScores = async () => {
-    documents.forEach(async (doc: any) => {
-      try {
-        const scoreResponse = await generatedDocumentsApi.getQualityScore(doc.id);
-        setQualityScores(prev => new Map(prev).set(doc.id, scoreResponse.qualityScore));
-      } catch (error) {
-        console.error(`Failed to load quality score for ${doc.id}:`, error);
-      }
-    });
+    // Fixed: Use Promise.all instead of forEach for async operations
+    await Promise.all(
+      documents.map(async (doc: any) => {
+        try {
+          const scoreResponse = await generatedDocumentsApi.getQualityScore(doc.id);
+          setQualityScores(prev => new Map(prev).set(doc.id, scoreResponse.qualityScore));
+        } catch (error) {
+          console.error(`Failed to load quality score for ${doc.id}:`, error);
+        }
+      })
+    );
   };
 
   const loadRecommendations = async () => {
@@ -2567,6 +2656,224 @@ const SearchTab: React.FC = () => {
             </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// ============================================
+// DOCUMENT VIEWER MODAL
+// ============================================
+interface DocumentViewerModalProps {
+  doc: any;
+  onClose: () => void;
+  isDarkMode: boolean;
+  isPinned: boolean;
+  onTogglePin: (id: string) => void;
+}
+
+const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({ doc, onClose, isDarkMode, isPinned, onTogglePin }) => {
+  const [copied, setCopied] = useState(false);
+
+  const stripProjectName = (title: string): string => {
+    const separatorIndex = title.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      return title.substring(separatorIndex + 3).trim();
+    }
+    return title;
+  };
+
+  const getDisplayTitle = () => {
+    if (doc.document_type) return stripProjectName(doc.title);
+    return doc.filename || doc.title;
+  };
+
+  const getDocIcon = () => {
+    if (doc.document_type) return '✨';
+    const filename = doc.filename?.toLowerCase() || '';
+    if (filename.endsWith('.pdf')) return '📄';
+    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return '📝';
+    return '📁';
+  };
+
+  const handleDownload = () => {
+    if (doc.content) {
+      const blob = new Blob([doc.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${getDisplayTitle().replace(/\s+/g, '_')}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (doc.file_url) {
+      window.open(doc.file_url, '_blank');
+    }
+  };
+
+  const handleCopy = () => {
+    if (doc.content) {
+      navigator.clipboard.writeText(doc.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        onClick={(e) => e.stopPropagation()}
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass max-w-4xl w-full max-h-[90vh] flex flex-col`}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <span className="text-3xl flex-shrink-0">{getDocIcon()}</span>
+              <div className="flex-1 min-w-0">
+                <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {getDisplayTitle()}
+                </h2>
+                {doc.completion_percent !== undefined && (
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`flex-1 max-w-xs h-2 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
+                      <div
+                        className={`h-full rounded-full ${
+                          doc.completion_percent === 100
+                            ? 'bg-cyan-500'
+                            : doc.completion_percent >= 75
+                            ? 'bg-yellow-500'
+                            : 'bg-orange-500'
+                        }`}
+                        style={{ width: `${doc.completion_percent}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {doc.completion_percent}% Complete
+                    </span>
+                  </div>
+                )}
+                <div className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                  Last updated: {format(new Date(doc.updated_at || doc.created_at), 'MMM d, yyyy h:mm a')}
+                  {doc.version && ` • Version ${doc.version}`}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <button
+                onClick={() => onTogglePin(doc.id)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title={isPinned ? 'Unpin document' : 'Pin document'}
+                aria-label={isPinned ? 'Unpin document' : 'Pin document'}
+              >
+                <span className="text-xl">{isPinned ? '📌' : '📍'}</span>
+              </button>
+              {doc.content && (
+                <button
+                  onClick={handleCopy}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                  }`}
+                  title="Copy to clipboard"
+                  aria-label="Copy to clipboard"
+                >
+                  {copied ? <Check size={20} className="text-cyan-500" /> : <Copy size={20} />}
+                </button>
+              )}
+              <button
+                onClick={handleDownload}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title="Download document"
+                aria-label="Download document"
+              >
+                <Download size={20} />
+              </button>
+              <button
+                onClick={onClose}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title="Close"
+                aria-label="Close document viewer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+          {doc.content ? (
+            <div className={`prose ${isDarkMode ? 'prose-invert' : ''} max-w-none`}>
+              <ReactMarkdown
+                components={{
+                  h2: ({ children, ...props }) => (
+                    <div className="mt-12 mb-6 first:mt-0">
+                      <div className={`border-t-2 ${isDarkMode ? 'border-cyan-500/30' : 'border-cyan-500/40'} mb-4`} />
+                      <h2
+                        className={`text-2xl font-bold ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'} pb-2 border-b-2 ${isDarkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}
+                        {...props}
+                      >
+                        {children}
+                      </h2>
+                    </div>
+                  ),
+                  h3: ({ children, ...props }) => (
+                    <h3
+                      className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mt-8 mb-4 pl-4 border-l-4 ${isDarkMode ? 'border-cyan-500/40' : 'border-cyan-500/50'}`}
+                      {...props}
+                    >
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children, ...props }) => (
+                    <p className="mb-4 leading-relaxed" {...props}>
+                      {children}
+                    </p>
+                  ),
+                  code: ({ inline, children, ...props }: any) => (
+                    inline ? (
+                      <code className={`px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-gray-800 text-cyan-400' : 'bg-gray-100 text-cyan-600'}`} {...props}>
+                        {children}
+                      </code>
+                    ) : (
+                      <code className={`block p-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} overflow-x-auto`} {...props}>
+                        {children}
+                      </code>
+                    )
+                  ),
+                }}
+              >
+                {doc.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FileText size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                No content available for this document
+              </p>
+              {doc.file_url && (
+                <button
+                  onClick={handleDownload}
+                  className="mt-4 btn-primary"
+                >
+                  Download File
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };
