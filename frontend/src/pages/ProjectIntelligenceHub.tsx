@@ -34,10 +34,49 @@ import KeySectionsPanel from '../components/KeySectionsPanel';
 import OverviewQuickInsights from '../components/OverviewQuickInsights';
 import { extractKeySections } from '../utils/markdownSectionExtractor';
 
+// ============================================
+// TYPESCRIPT INTERFACES
+// ============================================
+interface GeneratedDocument {
+  id: string;
+  title: string;
+  document_type: string;
+  content: string;
+  completion_percent?: number;
+  missing_fields?: string[];
+  folder_category?: string;
+  version?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserDocument extends Document {
+  filename: string;
+  file_url: string;
+  file_size?: number;
+  description?: string;
+}
+
+interface ActivityLog {
+  id: string;
+  agent_type: string;
+  action: string;
+  details: any;
+  created_at: string;
+}
+
 export const ProjectIntelligenceHub: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'decisions' | 'generated-docs' | 'user-docs' | 'search'>('overview');
+
+  // Shared state for documents across all tabs
+  const [allDocuments, setAllDocuments] = useState<any[]>([]);
+  const [userDocuments, setUserDocuments] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [pinnedDocIds, setPinnedDocIds] = useState<Set<string>>(new Set());
+  const [documentSearchQuery, setDocumentSearchQuery] = useState('');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
   // Apply homepage background
   useEffect(() => {
@@ -46,6 +85,70 @@ export const ProjectIntelligenceHub: React.FC = () => {
       document.body.classList.remove('homepage-background');
     };
   }, []);
+
+  // Load all documents on mount
+  useEffect(() => {
+    if (currentProject) {
+      loadAllDocuments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
+
+  // Load pinned documents from localStorage
+  useEffect(() => {
+    if (currentProject?.id) {
+      const saved = localStorage.getItem(`pinned-docs-${currentProject.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setPinnedDocIds(new Set(parsed));
+        } catch (error) {
+          console.error('Error loading pinned docs:', error);
+        }
+      }
+    }
+  }, [currentProject?.id]);
+
+  // Save pinned documents to localStorage
+  useEffect(() => {
+    if (currentProject?.id && pinnedDocIds.size > 0) {
+      localStorage.setItem(
+        `pinned-docs-${currentProject.id}`,
+        JSON.stringify(Array.from(pinnedDocIds))
+      );
+    }
+  }, [pinnedDocIds, currentProject?.id]);
+
+  const loadAllDocuments = async () => {
+    if (!currentProject) return;
+
+    setLoadingDocs(true);
+    try {
+      const [generatedRes, userRes] = await Promise.all([
+        generatedDocumentsApi.getByProject(currentProject.id),
+        documentsApi.getByProject(currentProject.id)
+      ]);
+
+      setAllDocuments(generatedRes.documents || []);
+      setUserDocuments(userRes.documents || []);
+    } catch (error) {
+      console.error('Load documents error:', error);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  const togglePinDocument = (docId: string) => {
+    setPinnedDocIds(prev => {
+      const next = new Set(prev);
+      if (next.has(docId)) {
+        next.delete(docId);
+      } else {
+        next.add(docId);
+      }
+      return next;
+    });
+  };
 
   if (!currentProject) {
     return (
@@ -67,13 +170,13 @@ export const ProjectIntelligenceHub: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Database, description: 'Project dashboard' },
     { id: 'activity', label: 'Activity Log', icon: Activity, description: 'All agent actions' },
     { id: 'decisions', label: 'Decision Trail', icon: TrendingUp, description: 'Version history' },
-    { id: 'generated-docs', label: 'Generated Docs', icon: Sparkles, description: 'Auto-generated' },
-    { id: 'user-docs', label: 'Your Documents', icon: FolderOpen, description: 'Uploaded files' },
-    { id: 'search', label: 'Search', icon: Search, description: 'Find anything' },
+    { id: 'generated-docs', label: `Generated Docs (${allDocuments.length})`, icon: Sparkles, description: 'Auto-generated' },
+    { id: 'user-docs', label: `Your Documents (${userDocuments.length})`, icon: FolderOpen, description: 'Uploaded files' },
+    { id: 'search', label: 'AI Assistant', icon: Search, description: 'Ask & generate' },
   ];
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto">
+    <div className="min-h-screen max-w-[1800px] mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -119,14 +222,421 @@ export const ProjectIntelligenceHub: React.FC = () => {
         })}
       </div>
 
-      {/* Tab Content */}
-      <div className="min-h-[600px]">
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'activity' && <ActivityTab />}
-        {activeTab === 'decisions' && <DecisionTrailTab />}
-        {activeTab === 'generated-docs' && <GeneratedDocsTab />}
-        {activeTab === 'user-docs' && <UserDocsTab />}
-        {activeTab === 'search' && <SearchTab />}
+      {/* Main Layout: Persistent Sidebar + Tab Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Persistent Document Sidebar */}
+        <div className="lg:col-span-3">
+          <PersistentDocumentSidebar
+            allDocuments={allDocuments}
+            userDocuments={userDocuments}
+            loadingDocs={loadingDocs}
+            pinnedDocIds={pinnedDocIds}
+            documentSearchQuery={documentSearchQuery}
+            setDocumentSearchQuery={setDocumentSearchQuery}
+            togglePinDocument={togglePinDocument}
+            selectedDocumentId={selectedDocumentId}
+            setSelectedDocumentId={setSelectedDocumentId}
+            isDarkMode={isDarkMode}
+            onRefresh={loadAllDocuments}
+          />
+        </div>
+
+        {/* Tab Content */}
+        <div className="lg:col-span-9 min-h-[600px]">
+          {activeTab === 'overview' && (
+            <OverviewTab
+              allDocuments={allDocuments}
+              userDocuments={userDocuments}
+              pinnedDocIds={pinnedDocIds}
+              setSelectedDocumentId={setSelectedDocumentId}
+            />
+          )}
+          {activeTab === 'activity' && <ActivityTab />}
+          {activeTab === 'decisions' && <DecisionTrailTab />}
+          {activeTab === 'generated-docs' && (
+            <GeneratedDocsTab
+              sharedDocuments={allDocuments}
+              onDocumentsUpdate={loadAllDocuments}
+            />
+          )}
+          {activeTab === 'user-docs' && (
+            <UserDocsTab
+              sharedDocuments={userDocuments}
+              onDocumentsUpdate={loadAllDocuments}
+            />
+          )}
+          {activeTab === 'search' && <SearchTab />}
+        </div>
+      </div>
+
+      {/* Document Viewer Modal */}
+      <AnimatePresence>
+        {selectedDocumentId && (() => {
+          const doc = [...allDocuments, ...userDocuments].find(d => d.id === selectedDocumentId);
+          if (!doc) return null;
+
+          return (
+            <DocumentViewerModal
+              key="document-viewer"
+              doc={doc}
+              onClose={() => setSelectedDocumentId(null)}
+              isDarkMode={isDarkMode}
+              isPinned={pinnedDocIds.has(selectedDocumentId)}
+              onTogglePin={togglePinDocument}
+            />
+          );
+        })()}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ============================================
+// PERSISTENT DOCUMENT SIDEBAR
+// ============================================
+interface PersistentDocumentSidebarProps {
+  allDocuments: any[];
+  userDocuments: any[];
+  loadingDocs: boolean;
+  pinnedDocIds: Set<string>;
+  documentSearchQuery: string;
+  setDocumentSearchQuery: (query: string) => void;
+  togglePinDocument: (docId: string) => void;
+  selectedDocumentId: string | null;
+  setSelectedDocumentId: (id: string | null) => void;
+  isDarkMode: boolean;
+  onRefresh: () => void;
+}
+
+const PersistentDocumentSidebar: React.FC<PersistentDocumentSidebarProps> = ({
+  allDocuments,
+  userDocuments,
+  loadingDocs,
+  pinnedDocIds,
+  documentSearchQuery,
+  setDocumentSearchQuery,
+  togglePinDocument,
+  selectedDocumentId,
+  setSelectedDocumentId,
+  isDarkMode,
+  onRefresh
+}) => {
+  const [viewMode, setViewMode] = useState<'pinned' | 'recent' | 'all'>('all');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['generated', 'uploaded']));
+
+  const stripProjectName = (title: string): string => {
+    const separatorIndex = title.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      return title.substring(separatorIndex + 3).trim();
+    }
+    return title;
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
+
+  // Filter documents based on search and view mode
+  const filteredGeneratedDocs = allDocuments.filter(doc =>
+    stripProjectName(doc.title).toLowerCase().includes(documentSearchQuery.toLowerCase())
+  );
+
+  const filteredUserDocs = userDocuments.filter(doc =>
+    doc.filename.toLowerCase().includes(documentSearchQuery.toLowerCase())
+  );
+
+  const pinnedDocs = [...allDocuments, ...userDocuments].filter(doc =>
+    pinnedDocIds.has(doc.id)
+  );
+
+  const recentDocs = [...allDocuments, ...userDocuments]
+    .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+    .slice(0, 5);
+
+  const getDocIcon = (doc: any) => {
+    if (doc.document_type) return '✨'; // Generated doc
+    const filename = doc.filename?.toLowerCase() || '';
+    if (filename.endsWith('.pdf')) return '📄';
+    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return '📝';
+    return '📁';
+  };
+
+  return (
+    <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass sticky top-6 max-h-[calc(100vh-200px)] flex flex-col`}>
+      {/* Header */}
+      <div className="p-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={`font-bold text-base ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            📚 Documents
+          </h3>
+          <button
+            onClick={onRefresh}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-200'
+            }`}
+            title="Refresh documents"
+          >
+            <RefreshCw size={16} className={loadingDocs ? 'animate-spin text-cyan-primary' : ''} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search size={16} className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+          <input
+            type="text"
+            value={documentSearchQuery}
+            onChange={(e) => setDocumentSearchQuery(e.target.value)}
+            placeholder="Search documents..."
+            className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm ${
+              isDarkMode
+                ? 'bg-white/5 text-white placeholder-gray-500 border border-white/10'
+                : 'bg-white text-gray-900 placeholder-gray-500 border border-gray-300'
+            } focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
+          />
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex gap-1 mt-3">
+          {[
+            { id: 'all', label: 'All', count: allDocuments.length + userDocuments.length },
+            { id: 'pinned', label: 'Pinned', count: pinnedDocs.length },
+            { id: 'recent', label: 'Recent', count: recentDocs.length },
+          ].map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => setViewMode(mode.id as any)}
+              className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                viewMode === mode.id
+                  ? 'bg-cyan-primary text-white'
+                  : isDarkMode
+                  ? 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {mode.label} ({mode.count})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Document List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+        {loadingDocs ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-cyan-primary" />
+          </div>
+        ) : (
+          <>
+            {/* Pinned View */}
+            {viewMode === 'pinned' && (
+              <>
+                {pinnedDocs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      No pinned documents
+                    </p>
+                    <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-600' : 'text-gray-500'}`}>
+                      Click the pin icon to pin documents
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {pinnedDocs.map(doc => (
+                      <DocumentSidebarItem
+                        key={doc.id}
+                        doc={doc}
+                        isPinned={pinnedDocIds.has(doc.id)}
+                        onTogglePin={togglePinDocument}
+                        isSelected={selectedDocumentId === doc.id}
+                        onClick={() => setSelectedDocumentId(doc.id)}
+                        isDarkMode={isDarkMode}
+                        icon={getDocIcon(doc)}
+                        title={doc.document_type ? stripProjectName(doc.title) : doc.filename}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Recent View */}
+            {viewMode === 'recent' && (
+              <div className="space-y-2">
+                {recentDocs.map(doc => (
+                  <DocumentSidebarItem
+                    key={doc.id}
+                    doc={doc}
+                    isPinned={pinnedDocIds.has(doc.id)}
+                    onTogglePin={togglePinDocument}
+                    isSelected={selectedDocumentId === doc.id}
+                    onClick={() => setSelectedDocumentId(doc.id)}
+                    isDarkMode={isDarkMode}
+                    icon={getDocIcon(doc)}
+                    title={doc.document_type ? stripProjectName(doc.title) : doc.filename}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* All View */}
+            {viewMode === 'all' && (
+              <>
+                {/* Generated Documents Section */}
+                {filteredGeneratedDocs.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => toggleSection('generated')}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg mb-2 ${
+                        isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={14} className="text-cyan-primary" />
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Generated ({filteredGeneratedDocs.length})
+                        </span>
+                      </div>
+                      {expandedSections.has('generated') ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                    </button>
+                    {expandedSections.has('generated') && (
+                      <div className="space-y-1 ml-2">
+                        {filteredGeneratedDocs.map(doc => (
+                          <DocumentSidebarItem
+                            key={doc.id}
+                            doc={doc}
+                            isPinned={pinnedDocIds.has(doc.id)}
+                            onTogglePin={togglePinDocument}
+                            isSelected={selectedDocumentId === doc.id}
+                            onClick={() => setSelectedDocumentId(doc.id)}
+                            isDarkMode={isDarkMode}
+                            icon="✨"
+                            title={stripProjectName(doc.title)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* User Documents Section */}
+                {filteredUserDocs.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => toggleSection('uploaded')}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg mb-2 ${
+                        isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Upload size={14} className="text-blue-400" />
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Uploaded ({filteredUserDocs.length})
+                        </span>
+                      </div>
+                      {expandedSections.has('uploaded') ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                    </button>
+                    {expandedSections.has('uploaded') && (
+                      <div className="space-y-1 ml-2">
+                        {filteredUserDocs.map(doc => (
+                          <DocumentSidebarItem
+                            key={doc.id}
+                            doc={doc}
+                            isPinned={pinnedDocIds.has(doc.id)}
+                            onTogglePin={togglePinDocument}
+                            isSelected={selectedDocumentId === doc.id}
+                            onClick={() => setSelectedDocumentId(doc.id)}
+                            isDarkMode={isDarkMode}
+                            icon={getDocIcon(doc)}
+                            title={doc.filename}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {filteredGeneratedDocs.length === 0 && filteredUserDocs.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText size={32} className={`mx-auto mb-2 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {documentSearchQuery ? 'No documents found' : 'No documents yet'}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Document Sidebar Item Component
+interface DocumentSidebarItemProps {
+  doc: any;
+  isPinned: boolean;
+  onTogglePin: (id: string) => void;
+  isSelected: boolean;
+  onClick: () => void;
+  isDarkMode: boolean;
+  icon: string;
+  title: string;
+}
+
+const DocumentSidebarItem: React.FC<DocumentSidebarItemProps> = ({
+  doc,
+  isPinned,
+  onTogglePin,
+  isSelected,
+  onClick,
+  isDarkMode,
+  icon,
+  title
+}) => {
+  return (
+    <div
+      className={`group relative p-2 rounded-lg cursor-pointer transition-all text-sm ${
+        isSelected
+          ? 'bg-cyan-primary text-white shadow-md'
+          : isDarkMode
+          ? 'hover:bg-white/10 text-gray-300'
+          : 'hover:bg-gray-100 text-gray-700'
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-start gap-2">
+        <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium truncate" title={title}>
+            {title}
+          </div>
+          {doc.completion_percent !== undefined && (
+            <div className={`text-xs mt-0.5 ${isSelected ? 'text-white/80' : 'opacity-60'}`}>
+              {doc.completion_percent}% complete
+            </div>
+          )}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin(doc.id);
+          }}
+          className={`flex-shrink-0 p-1 rounded transition-opacity ${
+            isPinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          {isPinned ? '📌' : '📍'}
+        </button>
       </div>
     </div>
   );
@@ -135,137 +645,326 @@ export const ProjectIntelligenceHub: React.FC = () => {
 // ============================================
 // OVERVIEW TAB
 // ============================================
-const OverviewTab: React.FC = () => {
+interface OverviewTabProps {
+  allDocuments: any[];
+  userDocuments: any[];
+  pinnedDocIds: Set<string>;
+  setSelectedDocumentId: (id: string | null) => void;
+}
+
+const OverviewTab: React.FC<OverviewTabProps> = ({
+  allDocuments,
+  userDocuments,
+  pinnedDocIds,
+  setSelectedDocumentId
+}) => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(false);
 
-  useEffect(() => {
-    if (currentProject) {
-      loadDocuments();
+  const stripProjectName = (title: string): string => {
+    const separatorIndex = title.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      return title.substring(separatorIndex + 3).trim();
     }
-  }, [currentProject]);
-
-  const loadDocuments = async () => {
-    if (!currentProject) return;
-
-    setLoadingDocs(true);
-    try {
-      const response = await generatedDocumentsApi.getByProject(currentProject.id);
-      setDocuments(response.documents || []);
-    } catch (error) {
-      console.error('Load documents error:', error);
-    } finally {
-      setLoadingDocs(false);
-    }
+    return title;
   };
 
   const decidedCount = currentProject?.items?.filter((i: any) => i.state === 'decided').length || 0;
   const exploringCount = currentProject?.items?.filter((i: any) => i.state === 'exploring').length || 0;
   const parkedCount = currentProject?.items?.filter((i: any) => i.state === 'parked').length || 0;
 
-  const stats = [
-    { label: 'Decided', value: decidedCount, icon: TrendingUp, color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
-    { label: 'Exploring', value: exploringCount, icon: Eye, color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-    { label: 'Parked', value: parkedCount, icon: FolderOpen, color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
-  ];
+  const completedDocs = allDocuments.filter(doc => doc.completion_percent === 100);
+  const inProgressDocs = allDocuments.filter(doc => doc.completion_percent > 0 && doc.completion_percent < 100);
+
+  const pinnedDocs = [...allDocuments, ...userDocuments].filter(doc => pinnedDocIds.has(doc.id));
+
+  const recentDocs = [...allDocuments, ...userDocuments]
+    .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+    .slice(0, 6);
+
+  const featuredDocs = [
+    allDocuments.find(doc => doc.document_type === 'project_brief'),
+    allDocuments.find(doc => doc.document_type === 'next_steps'),
+    allDocuments.find(doc => doc.document_type === 'technical_specs'),
+  ].filter(Boolean);
 
   return (
     <div className="space-y-6">
-      {/* Project Info Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-8 shadow-glass`}
-      >
-        <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          {currentProject?.title}
-        </h2>
-        {currentProject?.description && (
-          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-4`}>
-            {currentProject.description}
-          </p>
-        )}
-        <div className="flex items-center space-x-4 text-sm">
-          <span className={`flex items-center space-x-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-            <Clock size={14} />
-            <span>Created {format(new Date(currentProject?.created_at || new Date()), 'MMM d, yyyy')}</span>
-          </span>
-          <span className={`flex items-center space-x-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-            <Activity size={14} />
-            <span>Updated {format(new Date(currentProject?.updated_at || new Date()), 'MMM d, yyyy')}</span>
-          </span>
-        </div>
-      </motion.div>
-
-      {/* Statistics Grid */}
-      <div className="grid grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass text-center`}
-            >
-              <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center mx-auto mb-3`}>
-                <Icon size={24} className={stat.color} />
-              </div>
-              <div className={`text-4xl font-bold mb-1 ${stat.color}`}>
-                {stat.value}
-              </div>
-              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {stat.label}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Quick Insights from Generated Documents */}
-      {!loadingDocs && documents.length > 0 && (
-        <OverviewQuickInsights
-          documents={documents}
+      {/* Project Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={Sparkles}
+          label="Generated Docs"
+          value={allDocuments.length}
+          color="cyan"
           isDarkMode={isDarkMode}
         />
+        <StatCard
+          icon={FolderOpen}
+          label="Uploaded Docs"
+          value={userDocuments.length}
+          color="blue"
+          isDarkMode={isDarkMode}
+        />
+        <StatCard
+          icon={Check}
+          label="Complete"
+          value={completedDocs.length}
+          color="green"
+          isDarkMode={isDarkMode}
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="Decisions Made"
+          value={decidedCount}
+          color="purple"
+          isDarkMode={isDarkMode}
+        />
+      </div>
+
+      {/* Featured Documents */}
+      {featuredDocs.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
+        >
+          <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            📌 Key Documents
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {featuredDocs.map((doc: any) => (
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                title={stripProjectName(doc.title)}
+                onClick={() => setSelectedDocumentId(doc.id)}
+                isDarkMode={isDarkMode}
+                isPinned={pinnedDocIds.has(doc.id)}
+              />
+            ))}
+          </div>
+        </motion.div>
       )}
 
-      {/* Quick Access */}
+      {/* Pinned Documents */}
+      {pinnedDocs.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
+        >
+          <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            📍 Pinned Documents
+            <span className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              ({pinnedDocs.length})
+            </span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pinnedDocs.map((doc: any) => (
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                title={doc.document_type ? stripProjectName(doc.title) : doc.filename}
+                onClick={() => setSelectedDocumentId(doc.id)}
+                isDarkMode={isDarkMode}
+                isPinned={true}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Recent Documents */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.1 }}
         className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
       >
         <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Quick Access
+          🕒 Recent Activity
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <QuickAccessButton icon={Sparkles} label="View Generated Docs" />
-          <QuickAccessButton icon={Activity} label="Activity Log" />
-          <QuickAccessButton icon={TrendingUp} label="Decision Trail" />
-          <QuickAccessButton icon={Download} label="Export All" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {recentDocs.map((doc: any) => (
+            <DocumentCard
+              key={doc.id}
+              doc={doc}
+              title={doc.document_type ? stripProjectName(doc.title) : doc.filename}
+              onClick={() => setSelectedDocumentId(doc.id)}
+              isDarkMode={isDarkMode}
+              isPinned={pinnedDocIds.has(doc.id)}
+              showTimestamp
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Document Browser */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass`}
+      >
+        <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          📚 All Documents ({allDocuments.length + userDocuments.length})
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <QuickAccessCard
+            icon={Sparkles}
+            label="View All Generated"
+            count={allDocuments.length}
+            isDarkMode={isDarkMode}
+          />
+          <QuickAccessCard
+            icon={Upload}
+            label="View Uploaded"
+            count={userDocuments.length}
+            isDarkMode={isDarkMode}
+          />
+          <QuickAccessCard
+            icon={Check}
+            label="Completed Docs"
+            count={completedDocs.length}
+            isDarkMode={isDarkMode}
+          />
+          <QuickAccessCard
+            icon={Clock}
+            label="In Progress"
+            count={inProgressDocs.length}
+            isDarkMode={isDarkMode}
+          />
         </div>
       </motion.div>
     </div>
   );
 };
 
-const QuickAccessButton: React.FC<{ icon: any; label: string }> = ({ icon: Icon, label }) => {
-  const { isDarkMode } = useThemeStore();
+// Stat Card Component
+interface StatCardProps {
+  icon: any;
+  label: string;
+  value: number;
+  color: 'cyan' | 'blue' | 'green' | 'purple';
+  isDarkMode: boolean;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, color, isDarkMode }) => {
+  const colorMap = {
+    cyan: { text: 'text-cyan-400', bg: 'bg-cyan-500/20' },
+    blue: { text: 'text-blue-400', bg: 'bg-blue-500/20' },
+    green: { text: 'text-green-400', bg: 'bg-green-500/20' },
+    purple: { text: 'text-purple-400', bg: 'bg-purple-500/20' },
+  };
 
   return (
-    <button className={`p-4 rounded-xl text-center transition-all ${
-      isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white/50 hover:bg-white/70'
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-5 shadow-glass`}
+    >
+      <div className={`w-12 h-12 rounded-xl ${colorMap[color].bg} flex items-center justify-center mb-3`}>
+        <Icon size={24} className={colorMap[color].text} />
+      </div>
+      <div className={`text-3xl font-bold mb-1 ${colorMap[color].text}`}>
+        {value}
+      </div>
+      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        {label}
+      </div>
+    </motion.div>
+  );
+};
+
+// Document Card Component
+interface DocumentCardProps {
+  doc: any;
+  title: string;
+  onClick: () => void;
+  isDarkMode: boolean;
+  isPinned: boolean;
+  showTimestamp?: boolean;
+}
+
+const DocumentCard: React.FC<DocumentCardProps> = ({ doc, title, onClick, isDarkMode, isPinned, showTimestamp }) => {
+  const getDocIcon = () => {
+    if (doc.document_type) return '✨';
+    const filename = doc.filename?.toLowerCase() || '';
+    if (filename.endsWith('.pdf')) return '📄';
+    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return '📝';
+    return '📁';
+  };
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`p-4 rounded-xl cursor-pointer transition-all border ${
+        isDarkMode
+          ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-cyan-primary/50'
+          : 'bg-white/50 border-gray-200 hover:bg-white hover:border-cyan-primary/50'
+      }`}
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <span className="text-2xl">{getDocIcon()}</span>
+        <div className="flex-1 min-w-0">
+          <h4 className={`font-semibold text-base truncate ${isDarkMode ? 'text-white' : 'text-gray-800'}`} title={title}>
+            {title}
+          </h4>
+          {doc.completion_percent !== undefined && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className={`flex-1 h-1.5 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
+                <div
+                  className={`h-full rounded-full ${
+                    doc.completion_percent === 100
+                      ? 'bg-cyan-500'
+                      : doc.completion_percent >= 75
+                      ? 'bg-yellow-500'
+                      : 'bg-orange-500'
+                  }`}
+                  style={{ width: `${doc.completion_percent}%` }}
+                />
+              </div>
+              <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {doc.completion_percent}%
+              </span>
+            </div>
+          )}
+          {showTimestamp && (
+            <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+              {format(new Date(doc.updated_at || doc.created_at), 'MMM d, h:mm a')}
+            </div>
+          )}
+        </div>
+        {isPinned && <span className="text-lg">📌</span>}
+      </div>
+    </motion.div>
+  );
+};
+
+// Quick Access Card Component
+interface QuickAccessCardProps {
+  icon: any;
+  label: string;
+  count: number;
+  isDarkMode: boolean;
+}
+
+const QuickAccessCard: React.FC<QuickAccessCardProps> = ({ icon: Icon, label, count, isDarkMode }) => {
+  return (
+    <div className={`p-4 rounded-xl text-center transition-all ${
+      isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white/50 hover:bg-white'
     }`}>
-      <Icon size={24} className="mx-auto mb-2 text-cyan-primary" />
-      <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+      <Icon size={28} className="mx-auto mb-2 text-cyan-primary" />
+      <div className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        {count}
+      </div>
+      <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
         {label}
       </span>
-    </button>
+    </div>
   );
 };
 
@@ -280,8 +979,11 @@ const ActivityTab: React.FC = () => {
   const { currentProject } = useProjectStore();
 
   useEffect(() => {
-    loadActivities();
-  }, [currentProject]);
+    if (currentProject) {
+      loadActivities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
 
   const loadActivities = async () => {
     if (!currentProject) return;
@@ -439,10 +1141,15 @@ const DecisionTrailItem: React.FC<{ item: any; index: number; isDarkMode: boolea
 // ============================================
 // GENERATED DOCS TAB (NEW) - Smart File System
 // ============================================
-const GeneratedDocsTab: React.FC = () => {
+interface GeneratedDocsTabProps {
+  sharedDocuments: any[];
+  onDocumentsUpdate: () => void;
+}
+
+const GeneratedDocsTab: React.FC<GeneratedDocsTabProps> = ({ sharedDocuments, onDocumentsUpdate }) => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>(sharedDocuments);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -452,9 +1159,20 @@ const GeneratedDocsTab: React.FC = () => {
   const [qualityScores, setQualityScores] = useState<Map<string, any>>(new Map());
   const [isQualityScoreExpanded, setIsQualityScoreExpanded] = useState(false);
 
-  // Smart folder system state
+  // Smart folder system state - EXPANDED BY DEFAULT for better visibility
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['complete', 'incomplete']));
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(['complete-software_technical', 'complete-business', 'complete-development',
+             'incomplete-software_technical', 'incomplete-business', 'incomplete-development'])
+  );
+
+  // Sync with shared documents
+  useEffect(() => {
+    setDocuments(sharedDocuments);
+    if (sharedDocuments.length > 0 && !selectedDoc) {
+      setSelectedDoc(sharedDocuments[0]);
+    }
+  }, [sharedDocuments, selectedDoc]);
 
   /**
    * Strip project name from document title for cleaner display
@@ -471,42 +1189,30 @@ const GeneratedDocsTab: React.FC = () => {
 
   useEffect(() => {
     if (currentProject) {
-      loadDocuments();
       loadRecommendations();
     }
-  }, [currentProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id]);
 
-  const loadDocuments = async () => {
-    if (!currentProject) return;
+  useEffect(() => {
+    if (documents.length > 0) {
+      loadQualityScores();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents]);
 
-    setLoading(true);
-    try {
-      const response = await generatedDocumentsApi.getByProject(currentProject.id);
-
-      // Filter out deprecated document types (vendor_comparison) as a safety net
-      const validDocuments = (response.documents || []).filter(
-        (doc: any) => doc.document_type !== 'vendor_comparison'
-      );
-
-      setDocuments(validDocuments);
-      if (validDocuments.length > 0 && !selectedDoc) {
-        setSelectedDoc(validDocuments[0]);
-      }
-
-      // Load quality scores for all documents
-      validDocuments.forEach(async (doc: any) => {
+  const loadQualityScores = async () => {
+    // Fixed: Use Promise.all instead of forEach for async operations
+    await Promise.all(
+      documents.map(async (doc: any) => {
         try {
           const scoreResponse = await generatedDocumentsApi.getQualityScore(doc.id);
           setQualityScores(prev => new Map(prev).set(doc.id, scoreResponse.qualityScore));
         } catch (error) {
           console.error(`Failed to load quality score for ${doc.id}:`, error);
         }
-      });
-    } catch (error) {
-      console.error('Load documents error:', error);
-    } finally {
-      setLoading(false);
-    }
+      })
+    );
   };
 
   const loadRecommendations = async () => {
@@ -597,7 +1303,7 @@ const GeneratedDocsTab: React.FC = () => {
       const response = await generatedDocumentsApi.generate(currentProject.id);
 
       setGeneratingProgress('Loading updated documents...');
-      await loadDocuments();
+      await onDocumentsUpdate(); // Refresh shared documents
 
       setGeneratingProgress(`Successfully generated ${response.documents?.length || 11} documents!`);
       setTimeout(() => setGeneratingProgress(''), 3000);
@@ -757,17 +1463,17 @@ const GeneratedDocsTab: React.FC = () => {
                               <button
                                 key={doc.id}
                                 onClick={() => setSelectedDoc(doc)}
-                                className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
+                                className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
                                   selectedDoc?.id === doc.id
                                     ? 'bg-cyan-primary text-white'
                                     : isDarkMode
-                                    ? 'hover:bg-white/10 text-gray-400'
-                                    : 'hover:bg-gray-100 text-gray-600'
+                                    ? 'hover:bg-white/10 text-gray-300'
+                                    : 'hover:bg-gray-100 text-gray-700'
                                 }`}
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="truncate min-w-0 flex-1" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
-                                  <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${
+                                  <span className="truncate min-w-0 flex-1 font-medium" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
+                                  <span className={`flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
                                     selectedDoc?.id === doc.id
                                       ? 'bg-white/20 text-white'
                                       : 'bg-cyan-500/20 text-cyan-400'
@@ -846,17 +1552,17 @@ const GeneratedDocsTab: React.FC = () => {
                                 <button
                                   key={doc.id}
                                   onClick={() => setSelectedDoc(doc)}
-                                  className={`w-full text-left p-2 rounded-lg transition-all text-xs ${
+                                  className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
                                     selectedDoc?.id === doc.id
                                       ? 'bg-cyan-primary text-white'
                                       : isDarkMode
-                                      ? 'hover:bg-white/10 text-gray-400'
-                                      : 'hover:bg-gray-100 text-gray-600'
+                                      ? 'hover:bg-white/10 text-gray-300'
+                                      : 'hover:bg-gray-100 text-gray-700'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="truncate min-w-0 flex-1" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
-                                    <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${
+                                    <span className="truncate min-w-0 flex-1 font-medium" title={stripProjectName(doc.title)}>{stripProjectName(doc.title)}</span>
+                                    <span className={`flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
                                       selectedDoc?.id === doc.id
                                         ? 'bg-white/20 text-white'
                                         : completionColor
@@ -1182,14 +1888,19 @@ const GeneratedDocsTab: React.FC = () => {
 // ============================================
 // USER DOCS TAB (Renamed from DocumentsTab)
 // ============================================
-const UserDocsTab: React.FC = () => {
+interface UserDocsTabProps {
+  sharedDocuments: any[];
+  onDocumentsUpdate: () => void;
+}
+
+const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsUpdate }) => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
   const { user } = useUserStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [folders, setFolders] = useState<DocumentFolder[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<Document[]>(sharedDocuments);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -1197,35 +1908,33 @@ const UserDocsTab: React.FC = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Sync with shared documents
+  useEffect(() => {
+    setDocuments(sharedDocuments);
+  }, [sharedDocuments]);
+
   // Fetch folders and documents
   useEffect(() => {
     if (currentProject?.id) {
-      loadData();
+      loadFolders();
     }
   }, [currentProject?.id]);
 
-  const loadData = async () => {
+  const loadFolders = async () => {
     if (!currentProject?.id) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const [foldersRes, docsRes] = await Promise.all([
-        documentsApi.getFolders(currentProject.id),
-        documentsApi.getByProject(currentProject.id)
-      ]);
+      const foldersRes = await documentsApi.getFolders(currentProject.id);
 
       if (foldersRes.success) {
         setFolders(foldersRes.folders || []);
       }
-
-      if (docsRes.success) {
-        setDocuments(docsRes.documents || []);
-      }
     } catch (err) {
-      console.error('Failed to load documents:', err);
-      setError('Failed to load documents');
+      console.error('Failed to load folders:', err);
+      setError('Failed to load folders');
     } finally {
       setLoading(false);
     }
@@ -1271,7 +1980,7 @@ const UserDocsTab: React.FC = () => {
       );
 
       if (result.success && result.document) {
-        setDocuments([result.document, ...documents]);
+        await onDocumentsUpdate(); // Refresh shared documents
       }
 
       // Clear file input
@@ -1293,7 +2002,7 @@ const UserDocsTab: React.FC = () => {
     try {
       const result = await documentsApi.delete(documentId);
       if (result.success) {
-        setDocuments(documents.filter(d => d.id !== documentId));
+        await onDocumentsUpdate(); // Refresh shared documents
       }
     } catch (err) {
       console.error('Failed to delete document:', err);
@@ -1947,6 +2656,224 @@ const SearchTab: React.FC = () => {
             </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// ============================================
+// DOCUMENT VIEWER MODAL
+// ============================================
+interface DocumentViewerModalProps {
+  doc: any;
+  onClose: () => void;
+  isDarkMode: boolean;
+  isPinned: boolean;
+  onTogglePin: (id: string) => void;
+}
+
+const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({ doc, onClose, isDarkMode, isPinned, onTogglePin }) => {
+  const [copied, setCopied] = useState(false);
+
+  const stripProjectName = (title: string): string => {
+    const separatorIndex = title.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      return title.substring(separatorIndex + 3).trim();
+    }
+    return title;
+  };
+
+  const getDisplayTitle = () => {
+    if (doc.document_type) return stripProjectName(doc.title);
+    return doc.filename || doc.title;
+  };
+
+  const getDocIcon = () => {
+    if (doc.document_type) return '✨';
+    const filename = doc.filename?.toLowerCase() || '';
+    if (filename.endsWith('.pdf')) return '📄';
+    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return '📝';
+    return '📁';
+  };
+
+  const handleDownload = () => {
+    if (doc.content) {
+      const blob = new Blob([doc.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${getDisplayTitle().replace(/\s+/g, '_')}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (doc.file_url) {
+      window.open(doc.file_url, '_blank');
+    }
+  };
+
+  const handleCopy = () => {
+    if (doc.content) {
+      navigator.clipboard.writeText(doc.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        onClick={(e) => e.stopPropagation()}
+        className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl shadow-glass max-w-4xl w-full max-h-[90vh] flex flex-col`}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <span className="text-3xl flex-shrink-0">{getDocIcon()}</span>
+              <div className="flex-1 min-w-0">
+                <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {getDisplayTitle()}
+                </h2>
+                {doc.completion_percent !== undefined && (
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`flex-1 max-w-xs h-2 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
+                      <div
+                        className={`h-full rounded-full ${
+                          doc.completion_percent === 100
+                            ? 'bg-cyan-500'
+                            : doc.completion_percent >= 75
+                            ? 'bg-yellow-500'
+                            : 'bg-orange-500'
+                        }`}
+                        style={{ width: `${doc.completion_percent}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {doc.completion_percent}% Complete
+                    </span>
+                  </div>
+                )}
+                <div className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                  Last updated: {format(new Date(doc.updated_at || doc.created_at), 'MMM d, yyyy h:mm a')}
+                  {doc.version && ` • Version ${doc.version}`}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <button
+                onClick={() => onTogglePin(doc.id)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title={isPinned ? 'Unpin document' : 'Pin document'}
+                aria-label={isPinned ? 'Unpin document' : 'Pin document'}
+              >
+                <span className="text-xl">{isPinned ? '📌' : '📍'}</span>
+              </button>
+              {doc.content && (
+                <button
+                  onClick={handleCopy}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                  }`}
+                  title="Copy to clipboard"
+                  aria-label="Copy to clipboard"
+                >
+                  {copied ? <Check size={20} className="text-cyan-500" /> : <Copy size={20} />}
+                </button>
+              )}
+              <button
+                onClick={handleDownload}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title="Download document"
+                aria-label="Download document"
+              >
+                <Download size={20} />
+              </button>
+              <button
+                onClick={onClose}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                title="Close"
+                aria-label="Close document viewer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+          {doc.content ? (
+            <div className={`prose ${isDarkMode ? 'prose-invert' : ''} max-w-none`}>
+              <ReactMarkdown
+                components={{
+                  h2: ({ children, ...props }) => (
+                    <div className="mt-12 mb-6 first:mt-0">
+                      <div className={`border-t-2 ${isDarkMode ? 'border-cyan-500/30' : 'border-cyan-500/40'} mb-4`} />
+                      <h2
+                        className={`text-2xl font-bold ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'} pb-2 border-b-2 ${isDarkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}
+                        {...props}
+                      >
+                        {children}
+                      </h2>
+                    </div>
+                  ),
+                  h3: ({ children, ...props }) => (
+                    <h3
+                      className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mt-8 mb-4 pl-4 border-l-4 ${isDarkMode ? 'border-cyan-500/40' : 'border-cyan-500/50'}`}
+                      {...props}
+                    >
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children, ...props }) => (
+                    <p className="mb-4 leading-relaxed" {...props}>
+                      {children}
+                    </p>
+                  ),
+                  code: ({ inline, children, ...props }: any) => (
+                    inline ? (
+                      <code className={`px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-gray-800 text-cyan-400' : 'bg-gray-100 text-cyan-600'}`} {...props}>
+                        {children}
+                      </code>
+                    ) : (
+                      <code className={`block p-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} overflow-x-auto`} {...props}>
+                        {children}
+                      </code>
+                    )
+                  ),
+                }}
+              >
+                {doc.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FileText size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                No content available for this document
+              </p>
+              {doc.file_url && (
+                <button
+                  onClick={handleDownload}
+                  className="mt-4 btn-primary"
+                >
+                  Download File
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };
