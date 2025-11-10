@@ -26,13 +26,13 @@ export const SessionTrackingPanel: React.FC = () => {
     loadAllSessionData,
     startSession,
     endSession,
+    currentSession,
+    isSessionActive,
   } = useSessionStore();
 
-  const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionDuration, setSessionDuration] = useState('');
   const [activeTab, setActiveTab] = useState<'decided' | 'exploring' | 'parked'>('decided');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   // Load session data when component mounts or project changes
   useEffect(() => {
@@ -41,29 +41,36 @@ export const SessionTrackingPanel: React.FC = () => {
     }
   }, [currentProject?.id, user?.id]);
 
+  // Reload session data when project items change (to show newly recorded items)
+  // This happens automatically when useChat refreshes the project after messages
+  useEffect(() => {
+    if (currentProject && user && isSessionActive) {
+      // Only reload session data, don't trigger full project refresh
+      // This prevents infinite loops and glitching
+      loadAllSessionData(user.id, currentProject.id);
+    }
+  }, [currentProject?.items?.length, isSessionActive]);
+
   // Update session duration every second
   useEffect(() => {
-    if (!isSessionActive || !sessionStartTime) return;
+    if (!isSessionActive || !currentSession?.session_start) return;
 
+    const sessionStart = new Date(currentSession.session_start);
     const interval = setInterval(() => {
-      setSessionDuration(formatDistanceToNow(sessionStartTime, { includeSeconds: true }));
+      setSessionDuration(formatDistanceToNow(sessionStart, { includeSeconds: true }));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isSessionActive, sessionStartTime]);
+  }, [isSessionActive, currentSession?.session_start]);
 
   if (!currentProject || !user) return null;
 
   const handleStartSession = async () => {
     await startSession(user.id, currentProject.id);
-    setIsSessionActive(true);
-    setSessionStartTime(new Date());
   };
 
   const handleEndSession = async () => {
     await endSession(user.id, currentProject.id);
-    setIsSessionActive(false);
-    setSessionStartTime(null);
   };
 
   const toggleItemExpansion = (itemId: string) => {
@@ -78,12 +85,34 @@ export const SessionTrackingPanel: React.FC = () => {
 
   // Filter items created during current session
   const getSessionItems = (state: 'decided' | 'exploring' | 'parked'): ProjectItem[] => {
-    if (!currentProject.items || !sessionStartTime) return [];
-    
-    return currentProject.items.filter(item => {
+    if (!currentProject.items || !currentSession?.session_start) {
+      console.log('[SessionTracker] Cannot filter items:', {
+        hasItems: !!currentProject.items,
+        hasSession: !!currentSession,
+        hasSessionStart: !!currentSession?.session_start
+      });
+      return [];
+    }
+
+    const sessionStart = new Date(currentSession.session_start);
+    console.log('[SessionTracker] Filtering items for state:', state);
+    console.log('[SessionTracker] Session started at:', currentSession.session_start, '→', sessionStart);
+    console.log('[SessionTracker] Total items:', currentProject.items.length);
+
+    const filtered = currentProject.items.filter(item => {
       const itemCreated = new Date(item.created_at);
-      return item.state === state && itemCreated >= sessionStartTime;
+      const matchesState = item.state === state;
+      const matchesTime = itemCreated >= sessionStart;
+
+      if (matchesState) {
+        console.log(`[SessionTracker] Item "${item.text.substring(0, 50)}..." state=${item.state} created=${item.created_at} (${itemCreated.getTime()}) matches time: ${matchesTime}`);
+      }
+
+      return matchesState && matchesTime;
     });
+
+    console.log(`[SessionTracker] Found ${filtered.length} items for state ${state}`);
+    return filtered;
   };
 
   const decidedItems = getSessionItems('decided');
@@ -242,7 +271,7 @@ export const SessionTrackingPanel: React.FC = () => {
       </div>
 
       {/* Items List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin transition-all duration-300">
         <AnimatePresence mode="wait">
           {!isSessionActive ? (
             <motion.div

@@ -1,4 +1,15 @@
-import { IntentClassification, Workflow, WorkflowStep, AgentResponse } from '../types';
+import {
+  IntentClassification,
+  Workflow,
+  WorkflowStep,
+  AgentResponse,
+  isConversationAgentResponse,
+  isReferenceAnalysisResponse,
+  isQualityAuditorResponse,
+  isReviewerResponse,
+  isPersistenceManagerResponse,
+  isUnifiedResearchResponse,
+} from '../types';
 import { ConversationAgent } from './conversation'; // CONSOLIDATED: Brainstorming + ClarificationEngine (GapDetection + Clarification + Questioner)
 import { PersistenceManagerAgent } from './persistenceManager'; // CONSOLIDATED: Recorder + VersionControl + Verification
 import { QualityAuditorAgent } from './qualityAuditor'; // CONSOLIDATED: Verification + AssumptionBlocker + AccuracyAuditor + ConsistencyGuardian
@@ -202,10 +213,10 @@ export class IntegrationOrchestrator {
 
         if (result) {
           results.push(result);
-          // Store reviewer findings for use by recorder
-          if (step.agentName === 'reviewer' && result.metadata && result.metadata.findings) {
+          // Store reviewer findings for use by recorder (with type guard)
+          if (step.agentName === 'reviewer' && isReviewerResponse(result) && result.metadata.findings) {
             reviewData = result.metadata;
-            console.log(`[Orchestrator] Stored reviewData from reviewer: ${reviewData.findings.length} findings, status=${reviewData.status}`);
+            console.log(`[Orchestrator] Stored reviewData from reviewer: ${reviewData.findings.length} findings`);
           }
         }
       } else {
@@ -372,21 +383,29 @@ export class IntegrationOrchestrator {
         const consistencyResult = this.getLastResult(previousResults, 'consistencyGuardian');
 
         // Check if there are gaps or conflicts that need clarification
-        const hasGaps = gaps?.metadata?.hasGaps || gaps?.metadata?.hasCriticalGaps || false;
-        const hasConflicts = consistencyResult?.metadata?.conflictDetected || false;
+        // Use type guard to safely access ConversationAgent metadata
+        let hasGaps = false;
+        if (gaps && isConversationAgentResponse(gaps)) {
+          hasGaps = gaps.metadata.hasGaps || gaps.metadata.hasCriticalGaps || false;
+        }
+
+        let hasConflicts = false;
+        if (consistencyResult && isQualityAuditorResponse(consistencyResult)) {
+          hasConflicts = consistencyResult.metadata.conflictDetected || false;
+        }
 
         if (hasGaps || hasConflicts) {
           // Gap/conflict mode - targeted clarification
           console.log(`[Orchestrator] Triggering ClarificationEngine (gap mode) - hasGaps: ${hasGaps}, hasConflicts: ${hasConflicts}`);
 
-          if (gaps?.metadata) {
+          if (gaps && isConversationAgentResponse(gaps)) {
             console.log(`[Orchestrator] Gap data: ${gaps.metadata.criticalCount} critical, ${gaps.metadata.gaps?.length || 0} total gaps`);
           }
 
           return await agent.generateQuestion(
-            gaps?.metadata || {},
+            (gaps && isConversationAgentResponse(gaps)) ? gaps.metadata : {},
             conversationHistory,
-            consistencyResult?.metadata || null
+            (consistencyResult && isQualityAuditorResponse(consistencyResult)) ? consistencyResult.metadata : null
           );
         }
 
@@ -460,8 +479,8 @@ export class IntegrationOrchestrator {
 
       case 'analyzeWithContext':
         // For reference integration workflow
-        const referenceData = previousResults.find(r => r.metadata?.referenceData);
-        if (referenceData) {
+        const referenceData = previousResults.find(r => isReferenceAnalysisResponse(r) && r.metadata.referenceData);
+        if (referenceData && isReferenceAnalysisResponse(referenceData)) {
           return await agent.analyzeWithContext(
             referenceData.metadata.referenceType || 'document',
             referenceData.metadata.referenceData,
@@ -475,9 +494,9 @@ export class IntegrationOrchestrator {
         return null;
 
       case 'checkReferenceAgainstDecisions':
-        // Get reference analysis from previous step
+        // Get reference analysis from previous step (with type guard)
         const analysisResult = this.getLastResult(previousResults, 'referenceAnalysis');
-        if (analysisResult && analysisResult.metadata?.contextualAnalysis) {
+        if (analysisResult && isReferenceAnalysisResponse(analysisResult) && analysisResult.metadata.contextualAnalysis) {
           return await agent.checkReferenceAgainstDecisions(
             analysisResult.metadata.contextualAnalysis,
             analysisResult.metadata.referenceName || 'Uploaded Reference',
@@ -491,17 +510,15 @@ export class IntegrationOrchestrator {
         return null;
 
       case 'updateConfidenceScores':
-        // Update confidence scores for confirmed items
+        // Update confidence scores for confirmed items (with type guard)
         const confirmationResult = this.getLastResult(previousResults, 'consistencyGuardian');
-        if (confirmationResult && confirmationResult.metadata?.referenceIntegration?.confirmations) {
+        if (confirmationResult && isQualityAuditorResponse(confirmationResult) && confirmationResult.metadata.referenceIntegration?.confirmations) {
           // This would update item confidence scores in the database
           return {
-            agent: 'RecorderAgent',
+            agent: 'PersistenceManager',
             message: 'Updated confidence scores based on reference confirmations',
             showToUser: true,
-            metadata: {
-              confirmations: confirmationResult.metadata.referenceIntegration.confirmations,
-            },
+            metadata: {},
           };
         }
         return null;
@@ -518,9 +535,9 @@ export class IntegrationOrchestrator {
         });
 
       case 'validateSuggestions':
-        // Validate document suggestions against project state
+        // Validate document suggestions against project state (with type guard)
         const researchResult = this.getLastResult(previousResults, 'documentResearch');
-        if (researchResult && researchResult.metadata?.suggestedDocuments) {
+        if (researchResult && isUnifiedResearchResponse(researchResult) && researchResult.metadata.suggestedDocuments) {
           return await agent.validateDocumentSuggestions(
             researchResult.metadata.suggestedDocuments,
             projectState
@@ -547,24 +564,36 @@ export class IntegrationOrchestrator {
     switch (condition) {
       case 'if_gaps_found':
         const gapResult = this.getLastResult(results, 'gapDetection');
-        // Check both old and new metadata structure for compatibility
-        const hasGaps = gapResult?.metadata?.hasGaps ||
-                        gapResult?.metadata?.hasCriticalGaps ||
-                        (gapResult?.metadata?.criticalCount > 0);
-        console.log(`[Orchestrator] Condition 'if_gaps_found': ${hasGaps}`);
-        return hasGaps;
+        // Use type guard to safely access ConversationAgent metadata
+        if (gapResult && isConversationAgentResponse(gapResult)) {
+          const hasGaps = gapResult.metadata.hasGaps ||
+                          gapResult.metadata.hasCriticalGaps ||
+                          (gapResult.metadata.criticalCount || 0) > 0;
+          console.log(`[Orchestrator] Condition 'if_gaps_found': ${hasGaps}`);
+          return hasGaps;
+        }
+        return false;
 
       case 'if_verified':
         const verifyResult = this.getLastResult(results, 'verification');
-        return verifyResult?.metadata?.approved === true;
+        if (verifyResult && isPersistenceManagerResponse(verifyResult)) {
+          return verifyResult.metadata.approved === true;
+        }
+        return false;
 
       case 'if_conflicts_found':
         const conflictResult = this.getLastResult(results, 'consistencyGuardian');
-        return conflictResult?.metadata?.hasConflicts === true;
+        if (conflictResult && isQualityAuditorResponse(conflictResult)) {
+          return conflictResult.metadata.hasConflicts === true;
+        }
+        return false;
 
       case 'if_confirmations_found':
         const confirmationResult = this.getLastResult(results, 'consistencyGuardian');
-        return confirmationResult?.metadata?.hasConfirmations === true;
+        if (confirmationResult && isQualityAuditorResponse(confirmationResult)) {
+          return confirmationResult.metadata.hasConfirmations === true;
+        }
+        return false;
 
       default:
         return true;

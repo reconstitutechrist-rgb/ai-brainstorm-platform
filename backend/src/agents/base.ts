@@ -33,6 +33,34 @@ export class BaseAgent {
     this.log(`Initialized with model: ${this.defaultModel}`);
   }
 
+  /**
+   * Sanitize text content to remove invalid Unicode characters that break JSON encoding
+   */
+  protected sanitizeText(text: string): string {
+    if (!text) return '';
+
+    try {
+      // Step 1: Remove all surrogate code units to prevent JSON encoding issues
+      let sanitized = text.replace(/[\uD800-\uDFFF]/g, '');
+
+      // Step 2: Remove control characters except newlines, tabs, and carriage returns
+      sanitized = sanitized.replace(/[\u0000-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+
+      // Step 3: Replace replacement characters with question marks
+      sanitized = sanitized.replace(/\uFFFD/g, '?');
+
+      // Step 4: Ensure it's valid UTF-8 by converting through Buffer
+      const buffer = Buffer.from(sanitized, 'utf8');
+      sanitized = buffer.toString('utf8');
+
+      return sanitized;
+    } catch (error) {
+      console.error(`[${this.name}] Text sanitization error:`, error);
+      // Fallback: keep only printable ASCII characters
+      return text.replace(/[^\x20-\x7E\n\r\t]/g, '');
+    }
+  }
+
   protected async callClaude(
     messages: Array<{ role: string; content: string | any[] }>,
     maxTokens: number = 1000,
@@ -49,7 +77,7 @@ export class BaseAgent {
         system: this.systemPrompt,
         messages: messages.map(msg => ({
           role: msg.role as 'user' | 'assistant',
-          content: msg.content,
+          content: typeof msg.content === 'string' ? this.sanitizeText(msg.content) : msg.content,
         })),
       });
 

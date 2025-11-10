@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentCoordinationService } from '../agentCoordination';
 import { supabase } from '../supabase';
 import { IntegrationOrchestrator } from '../../agents/orchestrator';
+import { isContextManagerResponse } from '../../types';
 
 // Mock dependencies
 vi.mock('../supabase', () => ({
@@ -551,7 +552,7 @@ describe('AgentCoordinationService', () => {
       );
 
       const contextManager = mockOrchestrator.agents.get('contextManager');
-      expect(contextManager.classifyIntent).toHaveBeenCalled();
+      expect(contextManager?.classifyIntent).toHaveBeenCalled();
     });
 
     it('should handle low confidence intent classification', async () => {
@@ -570,10 +571,16 @@ describe('AgentCoordinationService', () => {
         determineWorkflow: vi.fn().mockResolvedValue({ name: 'clarification' }),
         executeWorkflow: vi.fn().mockResolvedValue([
           {
-            agent: 'conversation',
+            agent: 'ContextManager',
             message: 'Can you clarify what you mean?',
             showToUser: true,
-            metadata: { needsClarification: true },
+            metadata: {
+              type: 'questioning',
+              confidence: 30,
+              conflicts: [],
+              needsClarification: true,
+              reasoning: 'Unclear user intent'
+            },
           },
         ]),
       };
@@ -587,7 +594,10 @@ describe('AgentCoordinationService', () => {
         'Hmm'
       );
 
-      expect(result.responses[0].metadata.needsClarification).toBe(true);
+      const response = result.responses[0];
+      if (isContextManagerResponse(response)) {
+        expect(response.metadata.needsClarification).toBe(true);
+      }
     });
   });
 

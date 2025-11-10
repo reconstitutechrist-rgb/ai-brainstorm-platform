@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { IntentClassification } from '../types';
+import { IntentClassification, ContextManagerResponse } from '../types';
 import { AI_MODELS } from '../config/aiModels';
 
 export class ContextManagerAgent extends BaseAgent {
@@ -75,7 +75,7 @@ Always return valid JSON:
     super('ContextManagerAgent', systemPrompt, AI_MODELS.HAIKU);
   }
 
-  async classifyIntent(userMessage: string, conversationHistory: any[]): Promise<IntentClassification> {
+  async classifyIntent(userMessage: string, conversationHistory: any[]): Promise<ContextManagerResponse> {
     this.log('Classifying user intent');
 
     // Check for special command phrases
@@ -83,11 +83,16 @@ Always return valid JSON:
     if (normalizedMessage === 'review conversation' || normalizedMessage === '?review conversation') {
       this.log('Special command detected: Review Conversation');
       return {
-        type: 'reviewing',
-        confidence: 100,
-        conflicts: [],
-        needsClarification: false,
-        reasoning: 'User explicitly requested a conversation review to ensure everything is recorded properly',
+        agent: 'ContextManager',
+        message: '',
+        showToUser: false,
+        metadata: {
+          type: 'reviewing',
+          confidence: 100,
+          conflicts: [],
+          needsClarification: false,
+          reasoning: 'User explicitly requested a conversation review to ensure everything is recorded properly',
+        },
       };
     }
 
@@ -138,6 +143,12 @@ Return ONLY valid JSON with the response format specified in your system prompt.
 
     this.log(`Intent classified as: ${classification.type} (${classification.confidence}% confidence)`);
 
-    return classification;
+    // Return as ContextManagerResponse with classification in metadata
+    return {
+      agent: 'ContextManager',
+      message: '',
+      showToUser: false,
+      metadata: classification,
+    };
   }
 }

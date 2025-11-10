@@ -36,7 +36,7 @@ import { AgentQuestionBubble } from '../components/AgentQuestionBubble';
 import { useCardCapacity } from '../hooks/useCardCapacity';
 import { useArchive } from '../hooks/useArchive';
 import { useMemo } from 'react';
-import { projectsApi, sessionsApi, canvasApi } from '../services/api';
+import { projectsApi, canvasApi } from '../services/api';
 
 export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -51,7 +51,10 @@ export const ChatPage: React.FC = () => {
     archiveMultipleItems
   } = useProjectStore();
   const { messages, isTyping } = useChatStore();
-  const { sessionSummary } = useSessionStore();
+  // Use selectors to avoid re-rendering when unrelated session state changes
+  const sessionSummary = useSessionStore(state => state.sessionSummary);
+  const startSession = useSessionStore(state => state.startSession);
+  const resetInactivityTimer = useSessionStore(state => state.resetInactivityTimer);
   const {
     agentWindows,
     openAgentWindow,
@@ -235,44 +238,14 @@ export const ChatPage: React.FC = () => {
     }
   }, [messages, answeredQuestionIds]);
 
-  // Auto-start and auto-end sessions
+  // Auto-start session (reuses existing active session if one exists)
+  // Sessions persist across page navigations - backend handles session reuse
   useEffect(() => {
-    let sessionStarted = false;
-
-    const startSession = async () => {
-      if (currentProject && user) {
-        try {
-          console.log('[ChatPage] Starting session for project:', currentProject.id);
-          const response = await sessionsApi.startSession(user.id, currentProject.id);
-          if (response.success) {
-            sessionStarted = true;
-            console.log('[ChatPage] Session started successfully:', response.data);
-          }
-        } catch (error) {
-          console.error('[ChatPage] Failed to start session:', error);
-        }
-      }
-    };
-
-    const endSession = async () => {
-      if (sessionStarted && currentProject && user) {
-        try {
-          console.log('[ChatPage] Ending session for project:', currentProject.id);
-          await sessionsApi.endSession(user.id, currentProject.id);
-          console.log('[ChatPage] Session ended successfully');
-        } catch (error) {
-          console.error('[ChatPage] Failed to end session:', error);
-        }
-      }
-    };
-
-    // Start session when component mounts or project changes
-    startSession();
-
-    // End session on unmount or when project changes
-    return () => {
-      endSession();
-    };
+    if (currentProject && user) {
+      console.log('[ChatPage] Auto-starting session for project:', currentProject.id);
+      startSession(user.id, currentProject.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject?.id, user?.id]);
 
   const handleSendMessage = async () => {
@@ -283,11 +256,25 @@ export const ChatPage: React.FC = () => {
     const messageText = inputMessage.trim();
     setInputMessage('');
 
+    // Reset inactivity timer on message send
+    if (user && currentProject) {
+      resetInactivityTimer(user.id, currentProject.id);
+    }
+
     const result = await sendMessage(messageText);
 
     if (!result.success && result.error) {
       alert(result.error);
       setInputMessage(messageText); // Re-add message on error
+    }
+  };
+
+  const handleInputChange = (value: string) => {
+    setInputMessage(value);
+
+    // Reset inactivity timer on typing
+    if (user && currentProject) {
+      resetInactivityTimer(user.id, currentProject.id);
     }
   };
 
@@ -457,7 +444,7 @@ export const ChatPage: React.FC = () => {
 
             <ChatInput
               value={inputMessage}
-              onChange={setInputMessage}
+              onChange={handleInputChange}
               onSend={handleSendMessage}
               onUpload={() => setShowUploadModal(true)}
               onKeyDown={handleKeyDown}

@@ -1,5 +1,5 @@
 ---
-description: Handles conversation state management including decision tracking, mode transitions, and context-aware approval detection
+description: Rules for handling conversation states (decided/exploring/parked), state transitions, verification, and cache invalidation in AI-assisted brainstorming
 ---
 
 # === USER INSTRUCTIONS ===
@@ -351,7 +351,12 @@ Each state change recorded:
 **Database Models:**
 - [types/index.ts](backend/src/types/index.ts) - State type definitions
 For intent classification details, see: [intent-classification-system.mdc](.giga/rules/intent-classification-system.mdc)
-# === END USER INSTRUCTIONS ===
+
+---
+description: Handles conversation state management including decision tracking, mode transitions, and context-aware approval detection
+---
+
+
 
 # conversation-state-model
 
@@ -414,6 +419,54 @@ Implements conversation context tracking:
 - Time-based expiration rules
 - Topic boundary detection
 - State-change triggered pruning
+
+$END$
+
+ If you're using this file in context, clearly say in italics in one small line that "Context added by Giga conversation-state-model" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.
+# === END USER INSTRUCTIONS ===
+
+# conversation-state-model
+
+Three-State Decision Model:
+- DECIDED: Final approved decisions with confidence scores
+- EXPLORING: Active items under discussion/consideration 
+- PARKED: Temporarily suspended or deprioritized items
+
+State Transition Rules:
+1. Natural Language Classification (85/100)
+- Pattern matching for 30+ variations of parking intent
+- Recognition of 15+ commitment/approval patterns
+- Analysis of 12+ exploration signals
+- Contextual confidence scoring 50-100%
+- Hedging language detection with score adjustment
+
+2. Multi-Intent Processing (90/100)
+- Detection of multiple intents within single messages
+- Weighted scoring for mixed state signals
+- Resolution of conflicting intentions based on:
+  - Previous message context
+  - Recent state changes
+  - Explicit vs implicit signals
+
+3. Verification System (85/100)
+- Two-stage verification for state changes
+- Confirmation requirement for DECIDED transitions
+- Grace period for PARKED state changes
+- Automatic reversion on timeout
+- Project impact assessment before changes
+
+4. Cache Management (80/100)
+- State-aware cache invalidation
+- Dependency tracking between related items
+- Partial cache updates for minor changes
+- Background cache rebuilding
+- Change propagation through item relationships
+
+Key Implementation Paths:
+- backend/src/agents/persistenceManager.ts
+- backend/src/services/sessionCompletionService.ts
+- backend/src/agents/contextManager.ts
+- frontend/src/hooks/useCardCapacity.ts
 
 $END$
 

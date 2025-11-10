@@ -49,7 +49,19 @@ export const useChat = (projectId?: string) => {
     setIsTyping(true);
 
     try {
-      const userId = user?.id || 'demo-user-123';
+      // Debug logging to identify user ID issue
+      console.log('=== USER AUTHENTICATION DEBUG ===');
+      console.log('📌 Full user object:', user);
+      console.log('📌 user?.id:', user?.id);
+      console.log('📌 typeof user?.id:', typeof user?.id);
+      console.log('📌 user exists:', !!user);
+
+      // Use a valid UUID for demo user (matches the demo user UUID in database)
+      const userId = user?.id || '00000000-0000-0000-0000-000000000001';
+
+      console.log('📌 Final userId being sent to backend:', userId);
+      console.log('📌 Is using demo user fallback:', !user?.id);
+      console.log('=================================');
       console.log('🚀 Sending message to project:', projectId);
 
       const response = await conversationsApi.sendMessage(

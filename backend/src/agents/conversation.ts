@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { AgentResponse } from '../types';
+import { ConversationAgentResponse, ConversationMetadata } from '../types';
 import { AI_MODELS } from '../config/aiModels';
 
 /**
@@ -100,7 +100,7 @@ Be generative, reduce cognitive load, and help users discover possibilities they
   /**
    * Main conversation method - reflects understanding and asks clarifying questions
    */
-  async respond(userMessage: string, conversationHistory: any[], projectState: any, projectReferences: any[] = []): Promise<AgentResponse> {
+  async respond(userMessage: string, conversationHistory: any[], projectState: any, projectReferences: any[] = []): Promise<ConversationAgentResponse> {
     this.log('Processing conversation');
 
     // NEW: Detect simple approvals early and return brief acknowledgment
@@ -114,7 +114,7 @@ Be generative, reduce cognitive load, and help users discover possibilities they
       this.log('Detected simple approval - returning brief acknowledgment');
 
       return {
-        agent: this.name,
+        agent: 'ConversationAgent',
         message: randomAck,
         showToUser: true,
         metadata: {
@@ -226,7 +226,7 @@ DO NOT ASK ANY QUESTIONS during corrections. Just acknowledge and restate correc
       const retryResponse = await this.callClaude(retryMessages, 400);
 
       return {
-        agent: this.name,
+        agent: 'ConversationAgent',
         message: retryResponse.trim(),
         showToUser: true,
         metadata: {
@@ -237,7 +237,7 @@ DO NOT ASK ANY QUESTIONS during corrections. Just acknowledge and restate correc
     }
 
     return {
-      agent: this.name,
+      agent: 'ConversationAgent',
       message: response.trim(),
       showToUser: true,
       metadata: {
@@ -252,7 +252,7 @@ DO NOT ASK ANY QUESTIONS during corrections. Just acknowledge and restate correc
    * Analyze for gaps (silent) - used by orchestrator for workflow decisions
    * Returns structured data without showing anything to user
    */
-  async analyze(userMessage: string, projectState: any): Promise<AgentResponse> {
+  async analyze(userMessage: string, projectState: any): Promise<ConversationAgentResponse> {
     this.log('Analyzing for information gaps (silent)');
 
     const messages = [
@@ -305,7 +305,7 @@ Return ONLY valid JSON:
 
     // Analysis is SILENT - only returns structured data for orchestrator
     return {
-      agent: this.name,
+      agent: 'ConversationAgent',
       message: '', // Never create user messages during analysis
       showToUser: false,
       metadata: {
@@ -322,14 +322,14 @@ Return ONLY valid JSON:
   /**
    * Legacy compatibility - maps old "reflect" method to new "respond"
    */
-  async reflect(userMessage: string, conversationHistory: any[], projectReferences: any[] = []): Promise<AgentResponse> {
+  async reflect(userMessage: string, conversationHistory: any[], projectReferences: any[] = []): Promise<ConversationAgentResponse> {
     return this.respond(userMessage, conversationHistory, {}, projectReferences);
   }
 
   /**
    * Legacy compatibility - maps old "generateQuestion" to respond with question focus
    */
-  async generateQuestion(gaps: any, conversationHistory: any[], consistencyConflicts: any = null): Promise<AgentResponse> {
+  async generateQuestion(gaps: any, conversationHistory: any[], consistencyConflicts: any = null): Promise<ConversationAgentResponse> {
     // For backwards compatibility with workflows that call generateQuestion directly
     // We'll generate a question based on the gaps provided
 
@@ -360,7 +360,7 @@ Return ONLY the question text (no JSON, no formatting).`,
     const response = await this.callClaude(messages, 400);
 
     return {
-      agent: this.name,
+      agent: 'ConversationAgent',
       message: response.trim(),
       showToUser: false, // Shows in agent bubble
       metadata: {
@@ -374,7 +374,7 @@ Return ONLY the question text (no JSON, no formatting).`,
   /**
    * Legacy compatibility - exploration questions
    */
-  async generateExplorationQuestion(context: any, conversationHistory: any[]): Promise<AgentResponse> {
+  async generateExplorationQuestion(context: any, conversationHistory: any[]): Promise<ConversationAgentResponse> {
     const messages = [
       {
         role: 'user',
@@ -391,7 +391,7 @@ Return only the question.`,
     const response = await this.callClaude(messages, 400);
 
     return {
-      agent: this.name,
+      agent: 'ConversationAgent',
       message: response.trim(),
       showToUser: true,
       metadata: {

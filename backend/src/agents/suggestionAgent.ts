@@ -110,8 +110,15 @@ QUALITY CRITERIA:
       }
     }
 
+    // CRITICAL FIX: Sanitize conversation history to remove invalid Unicode before processing
+    // This prevents JSON encoding errors when sending to Claude API
+    const sanitizedHistory = conversationHistory.map(msg => ({
+      ...msg,
+      content: msg.content ? this.sanitizeText(msg.content) : msg.content
+    }));
+
     // Get recent conversation context (last 10 messages)
-    const recentConversation = conversationHistory.slice(-10);
+    const recentConversation = sanitizedHistory.slice(-10);
     const lastUserMessage = recentConversation.reverse().find(m => m.role === 'user');
 
     const messages = [

@@ -34,10 +34,17 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
     process.env.FRONTEND_URL || 'http://localhost:5173'
   ],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600 // Cache preflight requests for 10 minutes
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -97,6 +104,34 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Start server
 async function startServer() {
   try {
+    // Validate required environment variables
+    const requiredEnvVars = [
+      'ANTHROPIC_API_KEY',
+      'SUPABASE_URL',
+      'SUPABASE_SERVICE_KEY'
+    ];
+
+    const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+    if (missingEnvVars.length > 0) {
+      console.error('❌ Missing required environment variables:');
+      missingEnvVars.forEach(varName => {
+        console.error(`   - ${varName}`);
+      });
+      console.error('\n⚠️  Please check your .env file and ensure all required variables are set.');
+      console.error('⚠️  Server will start but AI features may not work properly.\n');
+    }
+
+    // Validate ANTHROPIC_API_KEY format
+    if (process.env.ANTHROPIC_API_KEY) {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey.startsWith('sk-')) {
+        console.error('⚠️  Warning: ANTHROPIC_API_KEY does not start with "sk-" - it may be invalid');
+      } else {
+        console.log('✓ ANTHROPIC_API_KEY is present and appears valid');
+      }
+    }
+
     // Test database connection
     const dbConnected = await testConnection();
     if (!dbConnected) {

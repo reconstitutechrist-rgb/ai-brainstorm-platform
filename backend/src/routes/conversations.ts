@@ -136,8 +136,10 @@ router.post('/:projectId/message-stream', async (req: Request, res: Response) =>
 router.post('/:projectId/message', async (req: Request, res: Response) => {
   console.log('🟢 ===== BACKEND ROUTE HIT: POST /:projectId/message =====');
   console.log('  - projectId:', req.params.projectId);
-  console.log('  - body:', req.body);
-  console.log('  - headers:', req.headers);
+  console.log('  - userId from body:', req.body.userId);
+  console.log('  - userId type:', typeof req.body.userId);
+  console.log('  - message:', req.body.message?.substring(0, 50) + '...');
+  console.log('  - full body:', req.body);
 
   try {
     const { projectId } = req.params;
@@ -298,12 +300,38 @@ router.post('/:projectId/message', async (req: Request, res: Response) => {
       console.error('[Conversations] Background save error (non-fatal):', err);
     });
   } catch (error: any) {
-    console.error('Send message error:', error);
-    const errorMessage = error.message || error.toString();
-    console.error('Error details:', errorMessage);
+    console.error('❌ [Conversations] Send message error:', error);
+    console.error('❌ [Conversations] Error name:', error.name);
+    console.error('❌ [Conversations] Error message:', error.message);
+    console.error('❌ [Conversations] Error stack:', error.stack);
+
+    // Extract more specific error information
+    let errorMessage = error.message || error.toString();
+    let errorType = 'Unknown Error';
+
+    // Categorize errors for better debugging
+    if (error.message?.includes('uuid')) {
+      errorType = 'Database UUID Error';
+      errorMessage = `Invalid UUID format. Please ensure you are logged in with a valid account. Details: ${error.message}`;
+    } else if (error.message?.includes('API') || error.message?.includes('Anthropic')) {
+      errorType = 'AI Service Error';
+      errorMessage = `AI service error. Please try again or contact support. Details: ${error.message}`;
+    } else if (error.code === 'ECONNREFUSED') {
+      errorType = 'Database Connection Error';
+      errorMessage = 'Unable to connect to database. Please contact support.';
+    } else if (error.message?.includes('timeout')) {
+      errorType = 'Timeout Error';
+      errorMessage = 'Request timed out. Please try again with a shorter message.';
+    }
+
+    console.error(`❌ [Conversations] Error Type: ${errorType}`);
+    console.error(`❌ [Conversations] User-facing message: ${errorMessage}`);
+
     res.status(500).json({
       success: false,
-      error: `Failed to process message: ${errorMessage}`
+      error: `Failed to process message: ${errorMessage}`,
+      errorType,
+      timestamp: new Date().toISOString()
     });
   }
 });

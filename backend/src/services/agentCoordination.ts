@@ -1,6 +1,10 @@
 import { IntegrationOrchestrator } from '../agents/orchestrator';
 import { supabase } from './supabase';
-import { AgentResponse } from '../types';
+import {
+  AgentResponse,
+  isConversationAgentResponse,
+  isPersistenceManagerResponse,
+} from '../types';
 
 export interface ConversationContext {
   projectId: string;
@@ -98,8 +102,23 @@ export class AgentCoordinationService {
         updates: { itemsAdded: [], itemsModified: [], itemsMoved: [] }, // Empty for now - recording is async
         workflow,
       };
-    } catch (error) {
-      console.error('[Coordination] Error processing message:', error);
+    } catch (error: any) {
+      console.error('❌ [Coordination] Error processing message:', error);
+      console.error('❌ [Coordination] Error name:', error.name);
+      console.error('❌ [Coordination] Error message:', error.message);
+      console.error('❌ [Coordination] Error stack:', error.stack);
+
+      // Categorize the error for better debugging
+      if (error.message?.includes('not found') || error.message?.includes('undefined')) {
+        console.error('❌ [Coordination] Agent initialization error - check if all agents are properly initialized');
+      } else if (error.message?.includes('API') || error.message?.includes('Anthropic')) {
+        console.error('❌ [Coordination] AI service error - check ANTHROPIC_API_KEY and API status');
+      } else if (error.code === 'ECONNREFUSED' || error.message?.includes('connection')) {
+        console.error('❌ [Coordination] Database connection error - check Supabase configuration');
+      } else if (error.message?.includes('timeout')) {
+        console.error('❌ [Coordination] Timeout error - agent processing took too long');
+      }
+
       throw error;
     }
   }
@@ -117,10 +136,13 @@ export class AgentCoordinationService {
     conversationResponses: AgentResponse[],
     projectId: string
   ): Promise<void> {
-    try {
-      console.log('[Coordination] 🔄 Starting background workflow execution...');
+    const startTime = Date.now();
+    console.log('[Coordination] 🔄 Starting background workflow execution...');
+    console.log(`[Coordination] Workflow intent: ${workflow.intent}, confidence: ${workflow.confidence}`);
 
+    try {
       // Execute the full workflow (gap detection, clarification, etc.)
+      console.log('[Coordination] Executing orchestrator workflow...');
       const backgroundResponses = await this.orchestrator.executeWorkflow(
         workflow,
         userMessage,
@@ -129,7 +151,13 @@ export class AgentCoordinationService {
         allProjectContext
       );
 
-      console.log(`[Coordination] Background workflow completed: ${backgroundResponses.length} responses`);
+      const workflowTime = Date.now() - startTime;
+      console.log(`[Coordination] ✅ Background workflow completed in ${workflowTime}ms: ${backgroundResponses.length} responses`);
+      
+      // Log each response for debugging
+      backgroundResponses.forEach((resp, idx) => {
+        console.log(`[Coordination] Response ${idx + 1}: ${resp.agent} (showToUser: ${resp.showToUser})`);
+      });
 
       // Save background agent responses that contain questions to the database
       // This allows the frontend AgentQuestionBubble to display them
@@ -139,12 +167,35 @@ export class AgentCoordinationService {
       const allResponses = [...conversationResponses, ...backgroundResponses];
 
       // Now fire recording with all responses
+      console.log('[Coordination] 🎯 Starting recording process...');
       await this.processStateUpdatesAsync(projectId, allResponses, userMessage, workflow);
 
-      console.log('[Coordination] ✅ Background workflow complete');
+      const totalTime = Date.now() - startTime;
+      console.log(`[Coordination] ✅ Background workflow complete in ${totalTime}ms`);
     } catch (error: any) {
-      console.error('[Coordination] ❌ Background workflow failed:', error);
-      // Don't throw - background failure shouldn't break the main flow
+      const failTime = Date.now() - startTime;
+      console.error(`[Coordination] ❌ Background workflow failed after ${failTime}ms:`, error);
+      console.error('[Coordination] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n')
+      });
+      
+      // Log to database for monitoring
+      try {
+        await supabase.from('agent_activity').insert({
+          project_id: projectId,
+          agent_type: 'system',
+          action: 'background_workflow_error',
+          details: {
+            error: error.message,
+            workflow: workflow.intent,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (logError) {
+        console.error('[Coordination] Failed to log error to database:', logError);
+      }
     }
   }
 
@@ -157,9 +208,9 @@ export class AgentCoordinationService {
     backgroundResponses: AgentResponse[]
   ): Promise<void> {
     try {
-      // Find responses with agentQuestions metadata
+      // Find responses with agentQuestions metadata (use type guard for ConversationAgent)
       const responsesWithQuestions = backgroundResponses.filter(
-        r => r.metadata?.agentQuestions && r.metadata.agentQuestions.length > 0
+        r => isConversationAgentResponse(r) && r.metadata.agentQuestions && r.metadata.agentQuestions.length > 0
       );
 
       if (responsesWithQuestions.length === 0) {
@@ -216,21 +267,33 @@ export class AgentCoordinationService {
     userMessage: string,
     workflow: any
   ): Promise<void> {
+    const recordingStartTime = Date.now();
+    
     try {
       console.log('[Coordination] 🚀 Starting background recording...');
+      console.log(`[Coordination] User message: "${userMessage.substring(0, 100)}${userMessage.length > 100 ? '...' : ''}"`);
+      console.log(`[Coordination] Workflow intent: ${workflow.intent}`);
+      console.log(`[Coordination] Responses to process: ${responses.length}`);
 
       // Invoke PersistenceManager agent directly to analyze and record items
       const persistenceManager = this.orchestrator['agents'].get('persistenceManager');
       if (!persistenceManager) {
-        console.error('[Coordination] ❌ PersistenceManager agent not found');
+        console.error('[Coordination] ❌ CRITICAL: PersistenceManager agent not found in orchestrator');
+        console.error('[Coordination] Available agents:', Array.from(this.orchestrator['agents'].keys()));
         return;
       }
 
+      console.log('[Coordination] ✅ PersistenceManager agent found');
+
       // Get fresh project state and conversation history for recording
+      console.log('[Coordination] Fetching fresh project state and conversation history...');
       const [projectState, conversationHistory] = await Promise.all([
         this.getProjectState(projectId),
         this.getConversationHistory(projectId)
       ]);
+
+      console.log(`[Coordination] Project state: ${projectState.decided.length} decided, ${projectState.exploring.length} exploring, ${projectState.parked.length} parked`);
+      console.log(`[Coordination] Conversation history: ${conversationHistory.length} messages`);
 
       // Find the conversation response (the message to analyze for recording)
       const conversationResponse = responses.find(r =>
@@ -238,29 +301,125 @@ export class AgentCoordinationService {
       );
 
       if (!conversationResponse) {
-        console.log('[Coordination] No conversation response to record from');
+        console.log('[Coordination] ⚠️  No conversation response found to record from');
+        console.log('[Coordination] Response agents:', responses.map(r => r.agent).join(', '));
         return;
       }
 
-      console.log('[Coordination] Invoking PersistenceManager to analyze conversation response');
+      console.log(`[Coordination] ✅ Found conversation response from ${conversationResponse.agent}`);
+      console.log(`[Coordination] Message length: ${conversationResponse.message?.length || 0} chars`);
 
-      // Invoke recorder agent with conversation response
-      const recorderResponse = await persistenceManager.record(
-        { conversationResponse: conversationResponse.message },
-        projectState,
-        userMessage,
-        workflow.intent,
-        conversationHistory
-      );
+      // Prepare data for recording
+      const recordingData = {
+        conversationResponse: conversationResponse.message,
+        userMessage: userMessage,
+        metadata: conversationResponse.metadata
+      };
 
-      // Process recorder response to update project state
-      const updates = await this.processStateUpdates(projectId, [recorderResponse], userMessage);
+      console.log('[Coordination] 📝 Invoking PersistenceManager.record()...');
+      const recordStartTime = Date.now();
 
-      await this.logAgentActivity(projectId, workflow, [...responses, recorderResponse]);
-      console.log('[Coordination] ✅ Background recording complete:', updates);
-    } catch (error) {
-      console.error('[Coordination] ❌ Background recording failed:', error);
+      try {
+        // Invoke recorder agent with conversation response
+        const recorderResponse = await persistenceManager.record(
+          recordingData,
+          projectState,
+          userMessage,
+          workflow.intent,
+          conversationHistory
+        );
+
+        const recordTime = Date.now() - recordStartTime;
+        console.log(`[Coordination] ✅ PersistenceManager.record() completed in ${recordTime}ms`);
+        console.log(`[Coordination] Recorder response agent: ${recorderResponse.agent}`);
+        console.log(`[Coordination] Recorder response showToUser: ${recorderResponse.showToUser}`);
+        console.log(`[Coordination] Recorder response metadata:`, JSON.stringify(recorderResponse.metadata, null, 2));
+
+        // Check if recording was approved
+        if (recorderResponse.metadata) {
+          if (recorderResponse.metadata.shouldRecord) {
+            console.log(`[Coordination] ✅ Recording APPROVED - Item: "${recorderResponse.metadata.item}"`);
+            console.log(`[Coordination] State: ${recorderResponse.metadata.state}, Confidence: ${recorderResponse.metadata.confidence}`);
+          } else if (recorderResponse.metadata.itemsToRecord) {
+            console.log(`[Coordination] ✅ Multi-item recording APPROVED - ${recorderResponse.metadata.itemsToRecord.length} items`);
+          } else {
+            console.log(`[Coordination] ⚠️  Recording NOT approved - Reason: ${recorderResponse.metadata.reasoning || 'Unknown'}`);
+          }
+        } else {
+          console.log(`[Coordination] ⚠️  Recorder response has NO metadata`);
+        }
+
+        // Process recorder response to update project state
+        console.log('[Coordination] 💾 Processing state updates...');
+        const updates = await this.processStateUpdates(projectId, [recorderResponse], userMessage);
+
+        console.log(`[Coordination] State updates processed: ${updates.itemsAdded.length} added, ${updates.itemsModified.length} modified, ${updates.itemsMoved.length} moved`);
+
+        // Log agent activity
+        await this.logAgentActivity(projectId, workflow, [...responses, recorderResponse]);
+        
+        const totalTime = Date.now() - recordingStartTime;
+        console.log(`[Coordination] ✅ Background recording complete in ${totalTime}ms:`, {
+          itemsAdded: updates.itemsAdded.length,
+          itemsModified: updates.itemsModified.length,
+          itemsMoved: updates.itemsMoved.length
+        });
+      } catch (recordError: any) {
+        const recordTime = Date.now() - recordStartTime;
+        console.error(`[Coordination] ❌ PersistenceManager.record() failed after ${recordTime}ms:`, recordError);
+        console.error('[Coordination] Record error details:', {
+          name: recordError.name,
+          message: recordError.message,
+          stack: recordError.stack?.split('\n').slice(0, 5).join('\n')
+        });
+        
+        // Log error to database
+        try {
+          await supabase.from('agent_activity').insert({
+            project_id: projectId,
+            agent_type: 'persistenceManager',
+            action: 'recording_error',
+            details: {
+              error: recordError.message,
+              userMessage: userMessage.substring(0, 200),
+              workflow: workflow.intent,
+              timestamp: new Date().toISOString()
+            }
+          });
+        } catch (logError) {
+          console.error('[Coordination] Failed to log recording error:', logError);
+        }
+        
+        throw recordError; // Re-throw to be caught by outer try-catch
+      }
+    } catch (error: any) {
+      const totalTime = Date.now() - recordingStartTime;
+      console.error(`[Coordination] ❌ Background recording failed after ${totalTime}ms:`, error);
+      console.error('[Coordination] Recording error details:', {
+        name: error.name,
+        message: error.message,
+        projectId,
+        workflow: workflow.intent,
+        userMessage: userMessage.substring(0, 100)
+      });
+      
       // Don't throw - recording failure shouldn't break conversation
+      // But log to database for monitoring
+      try {
+        await supabase.from('agent_activity').insert({
+          project_id: projectId,
+          agent_type: 'system',
+          action: 'recording_failure',
+          details: {
+            error: error.message,
+            stage: 'background_recording',
+            workflow: workflow.intent,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (logError) {
+        console.error('[Coordination] Failed to log recording failure:', logError);
+      }
     }
   }
 
@@ -392,14 +551,11 @@ export class AgentCoordinationService {
 
     // Check for recorder agent responses with metadata
     for (const response of responses) {
-      if (response && response.agent && (response.agent.includes('RecorderAgent') || response.agent.includes('PersistenceManagerAgent'))) {
+      // Use type guard to safely access PersistenceManager metadata
+      if (response && isPersistenceManagerResponse(response)) {
         console.log(`[Coordination] Found ${response.agent} response, checking metadata...`);
         console.log(`[Coordination] Metadata:`, JSON.stringify(response.metadata, null, 2));
 
-        if (!response.metadata) {
-          console.log(`[Coordination] ⚠️  ${response.agent} has NO metadata - skipping`);
-          continue;
-        }
         // Check for batch recording from review (new format)
         if (response.metadata.itemsToRecord && Array.isArray(response.metadata.itemsToRecord)) {
           console.log(`[Coordination] Processing ${response.metadata.itemsToRecord.length} items from review`);

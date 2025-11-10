@@ -216,7 +216,7 @@ Return a professional markdown analysis following the ANALYSIS OUTPUT FORMAT in 
     }
 
     return {
-      agent: this.name,
+      agent: 'ReferenceAnalysis',
       message: response,
       showToUser: true,
       metadata: {
@@ -280,7 +280,7 @@ Return JSON:
     const response = await this.callClaude(messages, 2500);
 
     return {
-      agent: this.name,
+      agent: 'ReferenceAnalysis',
       message: '',
       showToUser: false,
       metadata: {
@@ -383,7 +383,7 @@ IMPORTANT:
     }
 
     return {
-      agent: this.name,
+      agent: 'ReferenceAnalysis',
       message: response,
       showToUser: true,
       metadata: {
@@ -492,7 +492,7 @@ CRITICAL RULES:
     }
 
     return {
-      agent: this.name,
+      agent: 'ReferenceAnalysis',
       message: '', // No message for structured output
       showToUser: false,
       metadata: {

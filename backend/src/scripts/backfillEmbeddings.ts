@@ -62,15 +62,11 @@ async function backfillProject(projectId: string) {
 
     // Backfill references
     console.log(`📁 Processing References...`);
-    const referencesProcessed = await embeddingService.generateMissingReferenceEmbeddings(
-      projectId
-    );
+    const referencesProcessed = await embeddingService.generateMissingReferenceEmbeddings(projectId);
 
     // Backfill documents
     console.log(`\n📄 Processing Generated Documents...`);
-    const documentsProcessed = await embeddingService.generateMissingDocumentEmbeddings(
-      projectId
-    );
+    const documentsProcessed = await embeddingService.generateMissingDocumentEmbeddings(projectId);
 
     const totalProcessed = referencesProcessed + documentsProcessed;
 

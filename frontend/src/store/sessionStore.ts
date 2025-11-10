@@ -10,6 +10,8 @@ interface SessionState {
   isLoading: boolean;
   error: string | null;
   inactivityTimer: NodeJS.Timeout | null;
+  currentSession: { id: string; session_start: string } | null; // Track current active session
+  isSessionActive: boolean;
 
   // Actions
   loadSessionSummary: (userId: string, projectId: string) => Promise<void>;
@@ -33,6 +35,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   isLoading: false,
   error: null,
   inactivityTimer: null,
+  currentSession: null,
+  isSessionActive: false,
 
   // Load session summary
   loadSessionSummary: async (userId: string, projectId: string) => {
@@ -139,7 +143,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         return;
       }
 
-      console.log('[SessionStore] ✅ Session started successfully');
+      console.log('[SessionStore] ✅ Session started successfully', response.data);
+
+      // Set current session data
+      set({
+        currentSession: {
+          id: response.data.id,
+          session_start: response.data.session_start
+        },
+        isSessionActive: true
+      });
 
       // Load fresh session data
       const { loadAllSessionData, startInactivityTimer } = useSessionStore.getState();
@@ -170,6 +183,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     try {
       await sessionsApi.endSession(userId, projectId);
 
+      // Clear session state
+      set({
+        currentSession: null,
+        isSessionActive: false
+      });
+
       // Clear inactivity timer
       const { clearInactivityTimer } = get();
       clearInactivityTimer();
@@ -191,7 +210,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       suggestedSteps: [],
       blockers: [],
       isLoading: false,
-      error: null
+      error: null,
+      currentSession: null,
+      isSessionActive: false
     });
   },
 

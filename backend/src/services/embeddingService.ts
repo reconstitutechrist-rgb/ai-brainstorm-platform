@@ -12,14 +12,16 @@ export class EmbeddingService {
 
   constructor(supabase?: SupabaseClient) {
     const apiKey = process.env.OPENAI_API_KEY;
-    
+
     if (!apiKey) {
       console.warn('[EmbeddingService] OpenAI API key not configured');
+      // Create a dummy client to prevent initialization errors
+      this.openai = null as any;
+    } else {
+      this.openai = new OpenAI({
+        apiKey: apiKey,
+      });
     }
-
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-    });
 
     this.supabase = supabase || null;
   }
@@ -295,6 +297,128 @@ export class EmbeddingService {
   }
 
   /**
+   * Generate missing embeddings for all references in a project
+   * Used by backfillEmbeddings.ts script
+   */
+  async generateMissingReferenceEmbeddings(projectId: string): Promise<number> {
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot generate embeddings');
+      return 0;
+    }
+
+    try {
+      console.log(`[EmbeddingService] Finding references without embeddings for project ${projectId}`);
+
+      // Find all references in this project without embeddings
+      const { data: references, error: fetchError } = await this.supabase
+        .from('references')
+        .select('id, extracted_content')
+        .eq('project_id', projectId)
+        .not('extracted_content', 'is', null)
+        .is('embedding', null);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!references || references.length === 0) {
+        console.log('[EmbeddingService] No references found without embeddings');
+        return 0;
+      }
+
+      console.log(`[EmbeddingService] Generating embeddings for ${references.length} references`);
+
+      // Generate embeddings for each reference
+      let processedCount = 0;
+      for (const reference of references) {
+        try {
+          await this.generateAndStoreReferenceEmbedding(reference.id, reference.extracted_content);
+          processedCount++;
+        } catch (err: any) {
+          console.error(`[EmbeddingService] Failed to generate embedding for reference ${reference.id}:`, err.message);
+          // Continue with other references
+        }
+      }
+
+      console.log(`[EmbeddingService] Successfully generated ${processedCount} reference embeddings`);
+      return processedCount;
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate missing reference embeddings:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate missing embeddings for all documents in a project
+   * Used by backfillEmbeddings.ts script
+   */
+  async generateMissingDocumentEmbeddings(projectId: string): Promise<number> {
+    if (!this.supabase) {
+      console.warn('[EmbeddingService] Supabase client not provided, cannot generate embeddings');
+      return 0;
+    }
+
+    try {
+      console.log(`[EmbeddingService] Finding documents without embeddings for project ${projectId}`);
+
+      // Find all documents in this project without embeddings by checking the embeddings table
+      const { data: documents, error: fetchError } = await this.supabase
+        .from('generated_documents')
+        .select('id, content')
+        .eq('project_id', projectId)
+        .not('content', 'is', null);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!documents || documents.length === 0) {
+        console.log('[EmbeddingService] No documents found');
+        return 0;
+      }
+
+      // Filter out documents that already have embeddings
+      const documentsWithoutEmbeddings = [];
+      for (const doc of documents) {
+        const { data: existing } = await this.supabase
+          .from('document_embeddings')
+          .select('document_id')
+          .eq('document_id', doc.id)
+          .single();
+
+        if (!existing) {
+          documentsWithoutEmbeddings.push(doc);
+        }
+      }
+
+      if (documentsWithoutEmbeddings.length === 0) {
+        console.log('[EmbeddingService] No documents found without embeddings');
+        return 0;
+      }
+
+      console.log(`[EmbeddingService] Generating embeddings for ${documentsWithoutEmbeddings.length} documents`);
+
+      // Generate embeddings for each document
+      let processedCount = 0;
+      for (const document of documentsWithoutEmbeddings) {
+        try {
+          await this.generateAndStoreDocumentEmbedding(document.id, document.content);
+          processedCount++;
+        } catch (err: any) {
+          console.error(`[EmbeddingService] Failed to generate embedding for document ${document.id}:`, err.message);
+          // Continue with other documents
+        }
+      }
+
+      console.log(`[EmbeddingService] Successfully generated ${processedCount} document embeddings`);
+      return processedCount;
+    } catch (error: any) {
+      console.error(`[EmbeddingService] Failed to generate missing document embeddings:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Generate and store embedding for a generated document
    * Used by generatedDocumentsService.ts for automatic embedding generation
    */
@@ -376,4 +500,7 @@ export class EmbeddingService {
 }
 
 // Singleton instance (without supabase - will be created per-use in routes)
-export const embeddingService = new EmbeddingService();
+// Only create if OpenAI API key is configured
+export const embeddingService = process.env.OPENAI_API_KEY
+  ? new EmbeddingService()
+  : null;

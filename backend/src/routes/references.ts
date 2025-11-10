@@ -4,6 +4,7 @@ import { FileUploadService, upload } from '../services/fileUpload';
 import { ReferenceAnalysisAgent } from '../agents/referenceAnalysis';
 import { SynthesisAgent } from '../agents/synthesisAgent';
 import { EmbeddingService } from '../services/embeddingService';
+import { isReferenceAnalysisResponse } from '../types';
 
 const router = Router();
 const fileUploadService = new FileUploadService();
@@ -272,7 +273,9 @@ async function analyzeFileInBackground(
           contentType,
           mediaType,
         });
-        structuredAnalysis = structuredResult.metadata?.structuredAnalysis;
+        if (isReferenceAnalysisResponse(structuredResult)) {
+          structuredAnalysis = structuredResult.metadata.structuredAnalysis;
+        }
         console.log(`[ReferenceAnalysis] Structured analysis generated`);
       } catch (error) {
         console.error(`[ReferenceAnalysis] Failed to generate structured analysis:`, error);

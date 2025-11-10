@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SessionCompletionService } from '../../services/sessionCompletionService';
-import { ContextGroupingService } from '../../services/contextGroupingService';
+import { ContextGroupingService } from '../../services/ContextGroupingService';
 import { SessionReviewAgent } from '../../agents/SessionReviewAgent';
 
 /**
@@ -274,10 +274,11 @@ describe.skipIf(!process.env.TEST_SUPABASE_URL)('Session Review E2E Integration 
       .select('*')
       .in('id', session.generated_document_ids);
 
-    expect(generatedDocs.length).toBe(2);
+    expect(generatedDocs).not.toBeNull();
+    expect(generatedDocs!.length).toBe(2);
 
-    const acceptedDoc = generatedDocs.find((d) => d.document_type === 'accepted_ideas');
-    const rejectedDoc = generatedDocs.find((d) => d.document_type === 'rejected_ideas');
+    const acceptedDoc = generatedDocs!.find((d) => d.document_type === 'accepted_ideas');
+    const rejectedDoc = generatedDocs!.find((d) => d.document_type === 'rejected_ideas');
 
     expect(acceptedDoc).toBeDefined();
     expect(acceptedDoc!.content).toContain('OAuth');

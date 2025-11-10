@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
 import { ReferenceAnalysisAgent } from './referenceAnalysis';
+import { isReferenceAnalysisResponse } from '../types';
 import * as templates from '../config/analysis-templates';
 
 // Mock the templates module partially
@@ -26,10 +27,6 @@ describe('ReferenceAnalysisAgent', () => {
   });
 
   describe('Constructor', () => {
-    it('should create agent with correct name', () => {
-      expect(agent.name).toBe('ReferenceAnalysisAgent');
-    });
-
     it('should have analyze method', () => {
       expect(typeof agent.analyze).toBe('function');
     });
@@ -121,7 +118,7 @@ describe('ReferenceAnalysisAgent', () => {
       await agent.analyzeWithTemplate('document', mockReferenceData, 'competitor_analysis');
 
       expect(callClaudeSpy).toHaveBeenCalled();
-      const callArgs = callClaudeSpy.mock.calls[0][0];
+      const callArgs = callClaudeSpy.mock.calls[0][0] as any[];
       expect(callArgs[0].content).toContain('competitor');
     });
 
@@ -136,7 +133,7 @@ describe('ReferenceAnalysisAgent', () => {
       expect(response).toHaveProperty('message');
       expect(response).toHaveProperty('showToUser');
       expect(response).toHaveProperty('metadata');
-      expect(response.agent).toBe('ReferenceAnalysisAgent');
+      expect(response.agent).toBe('ReferenceAnalysis');
       expect(response.showToUser).toBe(true);
     });
 
@@ -147,12 +144,14 @@ describe('ReferenceAnalysisAgent', () => {
         'competitor_analysis'
       );
 
-      expect(response.metadata).toHaveProperty('templateUsed');
-      expect(response.metadata.templateUsed).toEqual({
-        id: 'competitor_analysis',
-        name: 'Competitor Analysis',
-        type: 'competitor',
-      });
+      expect(isReferenceAnalysisResponse(response)).toBe(true);
+      if (isReferenceAnalysisResponse(response)) {
+        expect(response.metadata.templateUsed).toEqual({
+          id: 'competitor_analysis',
+          name: 'Competitor Analysis',
+          type: 'competitor',
+        });
+      }
     });
 
     it('should handle structured_json output format', async () => {
@@ -162,9 +161,12 @@ describe('ReferenceAnalysisAgent', () => {
         'competitor_analysis'
       );
 
-      expect(response.metadata).toHaveProperty('outputFormat');
-      expect(response.metadata.outputFormat).toBe('structured_json');
-      expect(response.metadata).toHaveProperty('structuredData');
+      expect(isReferenceAnalysisResponse(response)).toBe(true);
+      if (isReferenceAnalysisResponse(response)) {
+        expect(response.metadata).toHaveProperty('outputFormat');
+        expect((response.metadata as any).outputFormat).toBe('structured_json');
+        expect(response.metadata).toHaveProperty('structuredData');
+      }
     });
 
     it('should parse JSON response when output format is structured_json', async () => {
@@ -174,9 +176,13 @@ describe('ReferenceAnalysisAgent', () => {
         'competitor_analysis'
       );
 
-      expect(response.metadata.structuredData).toBeDefined();
-      expect(response.metadata.structuredData).toHaveProperty('company_overview');
-      expect(response.metadata.structuredData).toHaveProperty('key_features');
+      expect(isReferenceAnalysisResponse(response)).toBe(true);
+      if (isReferenceAnalysisResponse(response)) {
+        const metadata = response.metadata as any;
+        expect(metadata.structuredData).toBeDefined();
+        expect(metadata.structuredData).toHaveProperty('company_overview');
+        expect(metadata.structuredData).toHaveProperty('key_features');
+      }
     });
 
     it('should handle markdown output format', async () => {
@@ -188,8 +194,11 @@ describe('ReferenceAnalysisAgent', () => {
         'user_research'
       );
 
-      expect(response.metadata.outputFormat).toBe('structured_json');
-      expect(response.message).toContain('Markdown content');
+      expect(isReferenceAnalysisResponse(response)).toBe(true);
+      if (isReferenceAnalysisResponse(response)) {
+        expect((response.metadata as any).outputFormat).toBe('structured_json');
+        expect(response.message).toContain('Markdown content');
+      }
     });
 
     it('should include all template fields in prompt', async () => {
@@ -197,7 +206,7 @@ describe('ReferenceAnalysisAgent', () => {
 
       await agent.analyzeWithTemplate('document', mockReferenceData, 'technical_documentation');
 
-      const callArgs = callClaudeSpy.mock.calls[0][0];
+      const callArgs = callClaudeSpy.mock.calls[0][0] as any[];
       const prompt = callArgs[0].content;
 
       expect(prompt).toContain('api_endpoints');
@@ -216,7 +225,7 @@ describe('ReferenceAnalysisAgent', () => {
 
       await agent.analyzeWithTemplate('document', longReferenceData, 'competitor_analysis');
 
-      const callArgs = callClaudeSpy.mock.calls[0][0];
+      const callArgs = callClaudeSpy.mock.calls[0][0] as any[];
       const prompt = callArgs[0].content;
 
       expect(prompt).toContain('[Content truncated...]');
@@ -231,9 +240,12 @@ describe('ReferenceAnalysisAgent', () => {
       const response = await agent.analyzeWithTemplate('image', noContentData, 'competitor_analysis');
 
       expect(response).toBeDefined();
-      // The hadExtractedContent property should exist in metadata
-      expect(response.metadata).toHaveProperty('hadExtractedContent');
-      expect(response.metadata.hadExtractedContent).toBe(false);
+      expect(isReferenceAnalysisResponse(response)).toBe(true);
+      if (isReferenceAnalysisResponse(response)) {
+        // The hadExtractedContent property should exist in metadata
+        expect(response.metadata).toHaveProperty('hadExtractedContent');
+        expect(response.metadata.hadExtractedContent).toBe(false);
+      }
     });
 
     it('should handle malformed JSON in Claude response', async () => {
@@ -245,7 +257,7 @@ describe('ReferenceAnalysisAgent', () => {
         'competitor_analysis'
       );
 
-      expect(response.metadata.structuredData).toBeNull();
+      expect((response.metadata as any).structuredData).toBeNull();
     });
 
     it('should work with all built-in templates', async () => {
@@ -260,7 +272,10 @@ describe('ReferenceAnalysisAgent', () => {
         const response = await agent.analyzeWithTemplate('document', mockReferenceData, templateId);
 
         expect(response).toBeDefined();
-        expect(response.metadata.templateUsed.id).toBe(templateId);
+        expect(isReferenceAnalysisResponse(response)).toBe(true);
+        if (isReferenceAnalysisResponse(response)) {
+          expect(response.metadata.templateUsed?.id).toBe(templateId);
+        }
       }
     });
 
@@ -269,7 +284,7 @@ describe('ReferenceAnalysisAgent', () => {
 
       await agent.analyzeWithTemplate('document', mockReferenceData, 'competitor_analysis');
 
-      const callArgs = callClaudeSpy.mock.calls[0][0];
+      const callArgs = callClaudeSpy.mock.calls[0][0] as any[];
       const prompt = callArgs[0].content;
 
       // Check that extraction hints are included

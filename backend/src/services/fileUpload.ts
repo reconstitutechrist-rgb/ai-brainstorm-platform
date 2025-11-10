@@ -64,7 +64,7 @@ export class FileUploadService {
       const filePath = `${userId}/${projectId}/${fileName}`;
 
       // Read file buffer
-      let fileBuffer = await fs.readFile(file.path);
+      let fileBuffer: any = await fs.readFile(file.path);
 
       // Compress images if needed
       if (this.getFileCategory(file.mimetype) === 'image') {
@@ -106,13 +106,14 @@ export class FileUploadService {
    */
   private async compressImage(buffer: Buffer): Promise<Buffer> {
     try {
-      return await sharp(buffer)
+      const compressed = await sharp(buffer)
         .resize(2000, 2000, {
           fit: 'inside',
           withoutEnlargement: true
         })
         .jpeg({ quality: 85 })
         .toBuffer();
+      return compressed as Buffer;
     } catch (error) {
       console.error('Image compression error:', error);
       return buffer; // Return original if compression fails

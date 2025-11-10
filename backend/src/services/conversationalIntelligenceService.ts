@@ -207,11 +207,11 @@ Please answer the question based on the project data above. Be specific and cite
         messages: [
           ...conversationHistory.map(msg => ({
             role: msg.role,
-            content: msg.content
+            content: this.sanitizeText(msg.content)
           })),
           {
             role: 'user',
-            content: userPrompt
+            content: this.sanitizeText(userPrompt)
           }
         ]
       });
@@ -298,11 +298,11 @@ Generate the complete document in markdown format.`;
         messages: [
           ...conversationHistory.map(msg => ({
             role: msg.role,
-            content: msg.content
+            content: this.sanitizeText(msg.content)
           })),
           {
             role: 'user',
-            content: userPrompt
+            content: this.sanitizeText(userPrompt)
           }
         ]
       });

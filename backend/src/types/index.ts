@@ -68,8 +68,15 @@ export interface Reference {
   updated_at: string;
 }
 
-// Agent types
-export interface AgentResponse {
+// Agent types - New discriminated union types (recommended)
+export * from './agents';
+
+/**
+ * @deprecated Use the discriminated union AgentResponse from './agents' instead.
+ * This interface is kept for backward compatibility but will be removed in future versions.
+ * The new AgentResponse type provides type-safe access to agent-specific metadata.
+ */
+export interface LegacyAgentResponse {
   agent: string;
   message: string;
   showToUser: boolean;

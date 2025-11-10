@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../store/themeStore';
+import { useProjectStore } from '../store/projectStore';
 import { sessionsApi } from '../services/api';
 import { X, Calendar, Clock, TrendingUp, ChevronDown, ChevronRight, CheckCircle2, Brain, Archive } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import type { UserSession } from '../types';
+import type { UserSession, ProjectItem } from '../types';
 
 interface SessionHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
+}
+
+interface SessionWithItems extends UserSession {
+  sessionItems?: {
+    decided: Array<{ id: string; text: string; created_at: string; metadata?: Record<string, any> }>;
+    exploring: Array<{ id: string; text: string; created_at: string; metadata?: Record<string, any> }>;
+    parked: Array<{ id: string; text: string; created_at: string; metadata?: Record<string, any> }>;
+  };
 }
 
 export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
@@ -18,7 +27,8 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
   projectId
 }) => {
   const { isDarkMode } = useThemeStore();
-  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const { currentProject } = useProjectStore();
+  const [sessions, setSessions] = useState<SessionWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
@@ -32,8 +42,47 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
     setLoading(true);
     try {
       const response = await sessionsApi.getHistory(projectId);
-      if (response.success) {
-        setSessions(response.sessions);
+      if (response.success && currentProject?.items) {
+        // For each session, filter items created during that session
+        const sessionsWithItems: SessionWithItems[] = response.sessions.map((session: UserSession) => {
+          const sessionStart = new Date(session.session_start);
+          const sessionEnd = session.session_end ? new Date(session.session_end) : new Date();
+
+          // Filter items created during this session timeframe
+          const sessionItems = currentProject.items.filter((item: ProjectItem) => {
+            const itemCreated = new Date(item.created_at);
+            return itemCreated >= sessionStart && itemCreated <= sessionEnd;
+          });
+
+          // Separate by state
+          const decided = sessionItems.filter((item: ProjectItem) => item.state === 'decided').map((item: ProjectItem) => ({
+            id: item.id,
+            text: item.text,
+            created_at: item.created_at,
+            metadata: {}
+          }));
+
+          const exploring = sessionItems.filter((item: ProjectItem) => item.state === 'exploring').map((item: ProjectItem) => ({
+            id: item.id,
+            text: item.text,
+            created_at: item.created_at,
+            metadata: {}
+          }));
+
+          const parked = sessionItems.filter((item: ProjectItem) => item.state === 'parked').map((item: ProjectItem) => ({
+            id: item.id,
+            text: item.text,
+            created_at: item.created_at,
+            metadata: {}
+          }));
+
+          return {
+            ...session,
+            sessionItems: { decided, exploring, parked }
+          };
+        });
+
+        setSessions(sessionsWithItems);
       }
     } catch (error) {
       console.error('Failed to load session history:', error);
@@ -47,13 +96,16 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
     setExpandedSession(expandedSession === sessionId ? null : sessionId);
   };
 
-  const calculateSessionStats = (session: UserSession) => {
-    const snapshot = session.snapshot_at_start;
+  const calculateSessionStats = (session: SessionWithItems) => {
+    const items = session.sessionItems;
+    if (!items) {
+      return { decided: 0, exploring: 0, parked: 0, total: 0 };
+    }
     return {
-      decided: snapshot.decided.length,
-      exploring: snapshot.exploring.length,
-      parked: snapshot.parked.length,
-      total: snapshot.decided.length + snapshot.exploring.length + snapshot.parked.length
+      decided: items.decided.length,
+      exploring: items.exploring.length,
+      parked: items.parked.length,
+      total: items.decided.length + items.exploring.length + items.parked.length
     };
   };
 
@@ -237,37 +289,58 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                             className={`border-t ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}
                           >
                             <div className="p-4 space-y-4">
-                              {/* Decisions */}
-                              {session.snapshot_at_start.decided.length > 0 && (
-                                <SessionStateSection
-                                  title="Decisions Made"
-                                  icon={CheckCircle2}
-                                  iconColor="text-cyan-500"
-                                  items={session.snapshot_at_start.decided}
-                                  isDarkMode={isDarkMode}
-                                />
-                              )}
+                              {session.sessionItems ? (
+                                <>
+                                  {/* Decisions */}
+                                  {session.sessionItems.decided.length > 0 && (
+                                    <SessionStateSection
+                                      title="Decisions Made During Session"
+                                      icon={CheckCircle2}
+                                      iconColor="text-cyan-500"
+                                      items={session.sessionItems.decided}
+                                      isDarkMode={isDarkMode}
+                                    />
+                                  )}
 
-                              {/* Exploring */}
-                              {session.snapshot_at_start.exploring.length > 0 && (
-                                <SessionStateSection
-                                  title="Ideas Explored"
-                                  icon={Brain}
-                                  iconColor="text-blue-500"
-                                  items={session.snapshot_at_start.exploring}
-                                  isDarkMode={isDarkMode}
-                                />
-                              )}
+                                  {/* Exploring */}
+                                  {session.sessionItems.exploring.length > 0 && (
+                                    <SessionStateSection
+                                      title="Ideas Explored During Session"
+                                      icon={Brain}
+                                      iconColor="text-blue-500"
+                                      items={session.sessionItems.exploring}
+                                      isDarkMode={isDarkMode}
+                                    />
+                                  )}
 
-                              {/* Parked */}
-                              {session.snapshot_at_start.parked.length > 0 && (
-                                <SessionStateSection
-                                  title="Ideas Parked"
-                                  icon={Archive}
-                                  iconColor="text-yellow-500"
-                                  items={session.snapshot_at_start.parked}
-                                  isDarkMode={isDarkMode}
-                                />
+                                  {/* Parked */}
+                                  {session.sessionItems.parked.length > 0 && (
+                                    <SessionStateSection
+                                      title="Ideas Parked During Session"
+                                      icon={Archive}
+                                      iconColor="text-yellow-500"
+                                      items={session.sessionItems.parked}
+                                      isDarkMode={isDarkMode}
+                                    />
+                                  )}
+
+                                  {/* No items during session */}
+                                  {session.sessionItems.decided.length === 0 &&
+                                    session.sessionItems.exploring.length === 0 &&
+                                    session.sessionItems.parked.length === 0 && (
+                                      <div className="text-center py-8">
+                                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                          No items were created during this session
+                                        </p>
+                                      </div>
+                                    )}
+                                </>
+                              ) : (
+                                <div className="text-center py-8">
+                                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Session data not available
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </motion.div>

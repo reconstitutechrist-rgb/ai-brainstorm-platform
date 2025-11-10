@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { AgentResponse } from '../types';
+import { AgentResponse, isQualityAuditorResponse } from '../types';
 import { AI_MODELS } from '../config/aiModels';
 
 /**
@@ -154,7 +154,7 @@ Return ONLY valid JSON matching verify() format in system prompt.`,
     this.log(`Verification: ${verification.approved ? 'APPROVED' : 'REJECTED'}`);
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Verification results are metadata, not shown to user
       showToUser: false,
       metadata: verification,
@@ -200,7 +200,7 @@ Return ONLY valid JSON matching scanAssumptions() format in system prompt.`,
     this.log(`Assumptions detected: ${scan.assumptionsDetected ? 'YES' : 'NO'}`);
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Scan results are metadata, not shown to user
       showToUser: false,
       metadata: scan,
@@ -241,7 +241,7 @@ Perform thorough audit and return ONLY valid JSON matching audit() format in sys
     this.log(`Audit status: ${audit.overallStatus}`);
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Internal audit - no user-facing message
       showToUser: false,
       metadata: audit,
@@ -306,7 +306,7 @@ Return ONLY valid JSON matching checkConsistency() format in system prompt.`,
     }
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Consistency check results are metadata, not shown to user
       showToUser: false,
       metadata: check,
@@ -398,7 +398,7 @@ Return JSON:
     }
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Will be formatted by caller
       showToUser: false,
       metadata: {
@@ -430,35 +430,49 @@ Return JSON:
     const consistencyResult = await this.checkConsistency(data, projectState, projectReferences);
     const auditResult = await this.audit(projectState, conversationHistory);
 
-    // Aggregate results
+    // Aggregate results with type guards
     const allPassed =
-      verificationResult.metadata?.approved &&
-      !assumptionResult.metadata?.assumptionsDetected &&
-      !consistencyResult.metadata?.conflictDetected &&
-      auditResult.metadata?.overallStatus === 'accurate';
+      (isQualityAuditorResponse(verificationResult) && verificationResult.metadata.approved) &&
+      (isQualityAuditorResponse(assumptionResult) && !(assumptionResult.metadata as any).assumptionsDetected) &&
+      (isQualityAuditorResponse(consistencyResult) && !consistencyResult.metadata.conflictDetected) &&
+      (isQualityAuditorResponse(auditResult) && (auditResult.metadata as any).overallStatus === 'accurate');
 
-    const allIssues = [
-      ...(verificationResult.metadata?.issues || []),
-      ...(assumptionResult.metadata?.assumptions?.map((a: any) => a.detail) || []),
-      ...(consistencyResult.metadata?.conflicts?.map((c: any) => c.explanation) || []),
-      ...(auditResult.metadata?.issues?.map((i: any) => i.description) || []),
-    ];
+    const allIssues: string[] = [];
+
+    if (isQualityAuditorResponse(verificationResult) && verificationResult.metadata.issues) {
+      allIssues.push(...verificationResult.metadata.issues.map((i: any) => i.description || i));
+    }
+
+    if (isQualityAuditorResponse(assumptionResult)) {
+      const assumptions = (assumptionResult.metadata as any).assumptions;
+      if (assumptions) {
+        allIssues.push(...assumptions.map((a: any) => a.detail || a));
+      }
+    }
+
+    if (isQualityAuditorResponse(consistencyResult) && consistencyResult.metadata.conflicts) {
+      allIssues.push(...consistencyResult.metadata.conflicts.map((c: any) => c.description || c.explanation || c));
+    }
+
+    if (isQualityAuditorResponse(auditResult) && auditResult.metadata.issues) {
+      allIssues.push(...auditResult.metadata.issues.map((i: any) => i.description || i));
+    }
 
     this.log(`Comprehensive check: ${allPassed ? 'PASSED' : 'FAILED'} (${allIssues.length} issues)`);
 
     return {
-      agent: this.name,
+      agent: 'QualityAuditor',
       message: '', // Comprehensive results are metadata
       showToUser: false,
       metadata: {
-        comprehensiveCheck: true,
-        allPassed,
-        verification: verificationResult.metadata,
-        assumptions: assumptionResult.metadata,
-        consistency: consistencyResult.metadata,
-        audit: auditResult.metadata,
-        totalIssues: allIssues.length,
-        issues: allIssues,
+        qualityScore: allPassed ? 100 : Math.max(0, 100 - (allIssues.length * 10)),
+        issues: allIssues.map(desc => ({
+          type: 'comprehensive_check',
+          severity: 'warning' as const,
+          description: desc
+        })),
+        recommendations: allPassed ? [] : ['Review flagged issues and address before proceeding'],
+        auditComplete: true,
       },
     };
   }

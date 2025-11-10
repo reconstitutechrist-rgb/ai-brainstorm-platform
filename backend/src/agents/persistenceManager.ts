@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { AgentResponse, ProjectState } from '../types';
+import { ProjectState, PersistenceManagerResponse, PersistenceMetadata } from '../types';
 
 /**
  * PersistenceManager Agent
@@ -144,9 +144,46 @@ JSON OUTPUT (MULTIPLE ITEMS - use when user responds to multiple suggestions): {
 }
 
 WHEN TO USE MULTI-ITEM FORMAT:
-- User says "all of them", "love all of these", "I want all 3", etc.
-- User's response addresses multiple suggestions from the previous AI message
-- Return itemsToRecord array with one object per suggestion
+CRITICAL - Use itemsToRecord[] array format when ANY of these conditions are met:
+
+1. BULK APPROVAL PHRASES (user approves ALL suggestions):
+   - "I love all the suggestions" / "I love all of them" / "Love them all"
+   - "All of those sound great" / "All sound good" / "All of these work"
+   - "I want all of them" / "I want all 3" / "I want all 5"
+   - "Let's do all of them" / "Let's use all of those"
+   - "Perfect, all of them" / "Great, all of those"
+   - "I'll take all of them" / "Give me all of those"
+   
+2. MULTI-ITEM RESPONSE (user addresses multiple suggestions separately):
+   - "Love A, park B, don't want C"
+   - Different states for different items
+
+HOW TO EXTRACT MULTIPLE SUGGESTIONS FROM PREVIOUS AI MESSAGE:
+1. Look at the IMMEDIATELY PRECEDING assistant message in conversation history
+2. Identify suggestion patterns:
+   - Bullet points: "• Suggestion" or "- Suggestion"
+   - Numbered lists: "1. Suggestion" or "2. Suggestion"
+   - Line breaks with options: "Option A\nOption B\nOption C"
+3. Extract the text of EACH suggestion (preserve original wording)
+4. Create one item per suggestion in itemsToRecord array
+5. ALL items get state "decided" (since user approved all)
+6. Use user's approval phrase as userQuote for all items
+
+EXAMPLE SCENARIO:
+[assistant]: "Here are 5 ideas:\n• Voice interaction mode\n• DM keeps secrets\n• Real-time multiplayer\n• Save campaign progress\n• Custom dice mechanics"
+[user]: "I love all the suggestions"
+
+CORRECT OUTPUT:
+{
+  "itemsToRecord": [
+    {"item": "Voice interaction mode", "state": "decided", "userQuote": "I love all the suggestions", "confidence": 95, ...},
+    {"item": "DM keeps secrets", "state": "decided", "userQuote": "I love all the suggestions", "confidence": 95, ...},
+    {"item": "Real-time multiplayer", "state": "decided", "userQuote": "I love all the suggestions", "confidence": 95, ...},
+    {"item": "Save campaign progress", "state": "decided", "userQuote": "I love all the suggestions", "confidence": 95, ...},
+    {"item": "Custom dice mechanics", "state": "decided", "userQuote": "I love all the suggestions", "confidence": 95, ...}
+  ],
+  "summary": "Recorded 5 suggestions as decided"
+}
 
 CRITICAL: Set needsConfirmation to false and confirmationMessage to empty string.
 Recording happens silently - the UI displays visual feedback (checkmarks) automatically.`;
@@ -155,10 +192,124 @@ Recording happens silently - the UI displays visual feedback (checkmarks) automa
   }
 
   /**
+   * Detect bulk approval phrases in user message
+   */
+  private detectBulkApproval(userMessage: string): boolean {
+    const bulkApprovalPatterns = [
+      /i love all (the |of )?suggestions?/i,
+      /love (them |all of them|all|those) all/i,
+      /all (of those|sound|of these|these|those sound) (great|good|work|perfect)/i,
+      /i want all (of them|3|5|\d+)/i,
+      /(let's|lets) (do|use) all (of them|of those|those)/i,
+      /(perfect|great), all (of them|of those)/i,
+      /i'?ll take all (of them|of those)/i,
+      /give me all (of those|of them)/i,
+    ];
+    
+    return bulkApprovalPatterns.some(pattern => pattern.test(userMessage));
+  }
+
+  /**
+   * Extract suggestions from previous AI message
+   */
+  private extractSuggestionsFromPreviousMessage(conversationHistory: any[]): string[] {
+    if (!conversationHistory || conversationHistory.length === 0) {
+      return [];
+    }
+
+    // Get the last assistant message
+    const lastAssistantMessage = [...conversationHistory]
+      .reverse()
+      .find((msg: any) => msg.role === 'assistant');
+
+    if (!lastAssistantMessage) {
+      return [];
+    }
+
+    const content = lastAssistantMessage.content;
+    const suggestions: string[] = [];
+
+    // Try to extract bullet points (• or -)
+    const bulletMatches = content.match(/^[•\-]\s*(.+)$/gm);
+    if (bulletMatches && bulletMatches.length > 0) {
+      bulletMatches.forEach((match: string) => {
+        const cleaned = match.replace(/^[•\-]\s*/, '').trim();
+        if (cleaned.length > 5) {
+          suggestions.push(cleaned);
+        }
+      });
+      return suggestions;
+    }
+
+    // Try to extract numbered lists (1. 2. 3. etc.)
+    const numberedMatches = content.match(/^\d+\.\s*(.+)$/gm);
+    if (numberedMatches && numberedMatches.length > 0) {
+      numberedMatches.forEach((match: string) => {
+        const cleaned = match.replace(/^\d+\.\s*/, '').trim();
+        if (cleaned.length > 5) {
+          suggestions.push(cleaned);
+        }
+      });
+      return suggestions;
+    }
+
+    return suggestions;
+  }
+
+  /**
    * Main recording method - combines verification, recording, and versioning
    */
-  async record(data: any, projectState: ProjectState, userMessage?: string, workflowIntent?: string, conversationHistory?: any[]): Promise<AgentResponse> {
+  async record(data: any, projectState: ProjectState, userMessage?: string, workflowIntent?: string, conversationHistory?: any[]): Promise<PersistenceManagerResponse> {
     this.log(`Processing record request with built-in verification (intent: ${workflowIntent || 'unknown'})`);
+
+    // PRE-PROCESSING: Detect bulk approval and force multi-item format
+    if (userMessage && this.detectBulkApproval(userMessage)) {
+      this.log('🎯 BULK APPROVAL DETECTED - forcing multi-item extraction');
+      
+      const suggestions = this.extractSuggestionsFromPreviousMessage(conversationHistory || []);
+      
+      if (suggestions.length > 0) {
+        this.log(`✅ Extracted ${suggestions.length} suggestions from previous AI message`);
+        
+        // Build multi-item response directly without calling Claude
+        const itemsToRecord = suggestions.map((suggestion) => ({
+          item: suggestion,
+          state: 'decided' as const,
+          userQuote: userMessage,
+          confidence: 95,
+          reasoning: `User approved all suggestions with: "${userMessage}"`,
+          verified: true,
+          versionInfo: {
+            versionNumber: 1,
+            changeType: 'created',
+            reasoning: 'Bulk approval of all suggestions',
+          },
+        }));
+
+        this.log(`📦 Created ${itemsToRecord.length} items for recording:`);
+        itemsToRecord.forEach((item, idx) => {
+          this.log(`  ${idx + 1}. ${item.item}`);
+        });
+
+        return {
+          agent: 'PersistenceManager',
+          message: '',
+          showToUser: false,
+          metadata: {
+            recorded: true,
+            itemsToRecord,
+            recordedCount: itemsToRecord.length,
+            recordingSummary: `Recorded ${itemsToRecord.length} suggestions as decided`,
+          },
+        };
+      } else {
+        this.log('⚠️ Bulk approval detected but could not extract suggestions from previous message');
+        this.log('⚠️ Falling back to normal Claude-based recording');
+        // Fall through to normal Claude processing below
+      }
+    } else {
+      this.log('ℹ️ No bulk approval detected - using normal Claude-based recording');
+    }
 
     // Determine verification strictness based on workflow intent
     const isStrictIntent = workflowIntent === 'deciding' || workflowIntent === 'modifying';
@@ -246,10 +397,11 @@ Return ONLY valid JSON matching the system prompt format.`,
       });
 
       return {
-        agent: this.name,
+        agent: 'PersistenceManager',
         message: '', // Silent recording - UI shows checkmarks
         showToUser: false,
         metadata: {
+          recorded: true,
           itemsToRecord: analysis.itemsToRecord,
           recordedCount: itemCount,
           recordingSummary: analysis.summary || `Recorded ${itemCount} items`,
@@ -265,10 +417,11 @@ Return ONLY valid JSON matching the system prompt format.`,
     }
 
     return {
-      agent: this.name,
+      agent: 'PersistenceManager',
       message: analysis.confirmationMessage || '',
       showToUser: analysis.needsConfirmation,
       metadata: {
+        recorded: analysis.verified && analysis.shouldRecord,
         verified: analysis.verified,
         shouldRecord: analysis.shouldRecord,
         state: analysis.state,
@@ -284,7 +437,7 @@ Return ONLY valid JSON matching the system prompt format.`,
    * Record items based on reviewer findings
    * Used when "Review Conversation" command identifies missing items
    */
-  async recordFromReview(reviewFindings: any[], conversationHistory: any[], projectState: ProjectState): Promise<AgentResponse> {
+  async recordFromReview(reviewFindings: any[], conversationHistory: any[], projectState: ProjectState): Promise<PersistenceManagerResponse> {
     this.log('Recording items from review findings');
     console.log('[PersistenceManager] reviewFindings:', JSON.stringify(reviewFindings, null, 2));
     console.log('[PersistenceManager] conversationHistory length:', conversationHistory.length);
@@ -299,10 +452,14 @@ Return ONLY valid JSON matching the system prompt format.`,
     if (missingItems.length === 0) {
       console.log('[PersistenceManager] No missing items to record - returning empty response');
       return {
-        agent: this.name,
+        agent: 'PersistenceManager',
         message: '',
         showToUser: false,
-        metadata: { itemsRecorded: [] },
+        metadata: {
+          recorded: false,
+          itemsToRecord: [],
+          recordedCount: 0,
+        },
       };
     }
 
@@ -359,10 +516,11 @@ Return ONLY valid JSON in this format:
     const itemCount = recordingPlan.itemsToRecord?.length || 0;
 
     return {
-      agent: this.name,
+      agent: 'PersistenceManager',
       message: '', // Don't show recording confirmation in chat
       showToUser: false, // Silent recording - UI handles visual feedback
       metadata: {
+        recorded: itemCount > 0,
         itemsToRecord: recordingPlan.itemsToRecord || [],
         recordedCount: itemCount,
         recordingSummary: recordingPlan.summary, // Keep for UI use
@@ -373,7 +531,7 @@ Return ONLY valid JSON in this format:
   /**
    * Track a change to an existing item (handles versioning)
    */
-  async trackChange(item: any, changeType: string, reasoning: string, triggeredBy: string): Promise<AgentResponse> {
+  async trackChange(item: any, changeType: string, reasoning: string, triggeredBy: string): Promise<PersistenceManagerResponse> {
     this.log(`Tracking ${changeType} change`);
 
     const versionRecord = {
@@ -387,14 +545,14 @@ Return ONLY valid JSON in this format:
       previousVersion: item.currentVersion || null,
     };
 
-    // Return standardized AgentResponse format
+    // Return standardized PersistenceManagerResponse format
     return {
-      agent: this.name,
+      agent: 'PersistenceManager',
       message: '', // Internal tracking - no user-facing message
       showToUser: false,
       metadata: {
-        versionRecord,
         tracked: true,
+        versionRecord,
       },
     };
   }
@@ -402,7 +560,7 @@ Return ONLY valid JSON in this format:
   /**
    * Verify data without recording (can be used standalone)
    */
-  async verify(data: any, userMessage: string): Promise<AgentResponse> {
+  async verify(data: any, userMessage: string): Promise<PersistenceManagerResponse> {
     this.log('Standalone verification check');
 
     const messages = [
@@ -442,12 +600,19 @@ Return ONLY valid JSON:
 
     this.log(`Verification: ${verification.approved ? 'APPROVED' : 'REJECTED'}`);
 
-    // Return proper AgentResponse format
+    // Return proper PersistenceManagerResponse format
     return {
-      agent: this.name,
+      agent: 'PersistenceManager',
       message: '', // Verification results are metadata, not shown to user
       showToUser: false,
-      metadata: verification,
+      metadata: {
+        verified: verification.approved,
+        approved: verification.approved,
+        confidence: verification.confidence,
+        issues: verification.issues,
+        reasoning: verification.reasoning,
+        recommendation: verification.recommendation,
+      },
     };
   }
 }

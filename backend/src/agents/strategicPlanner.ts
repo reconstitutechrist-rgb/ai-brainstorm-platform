@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { AgentResponse } from '../types';
+import { AgentResponse, isStrategicPlannerResponse } from '../types';
 
 /**
  * StrategicPlanner Agent
@@ -131,7 +131,7 @@ Maintain clear traceability to the user's original vision.`,
     const response = await this.callClaude(messages, 2000);
 
     return {
-      agent: this.name,
+      agent: 'StrategicPlanner',
       message: response,
       showToUser: true,
       metadata: {
@@ -172,7 +172,7 @@ Return as structured JSON matching the research() format in system prompt.`,
     const response = await this.callClaude(messages, 2000);
 
     return {
-      agent: this.name,
+      agent: 'StrategicPlanner',
       message: response,
       showToUser: true,
       metadata: {
@@ -333,7 +333,7 @@ Return ONLY valid JSON with:
     this.log(`Critical path identified: ${priorities.criticalPath?.length || 0} items`);
 
     return {
-      agent: this.name,
+      agent: 'StrategicPlanner',
       message: '', // Internal analysis - no user-facing message
       showToUser: false,
       metadata: priorities,
@@ -363,6 +363,19 @@ Return ONLY valid JSON with:
       projectContext,
     });
 
+    // Extract metadata safely with type guards
+    let nextRecommended = 'Review specifications';
+    let criticalPath: string[] = [];
+    let quickWins: string[] = [];
+    let blockers: string[] = [];
+
+    if (isStrategicPlannerResponse(prioritizationResult)) {
+      nextRecommended = prioritizationResult.metadata.nextRecommended || nextRecommended;
+      criticalPath = prioritizationResult.metadata.criticalPath || criticalPath;
+      quickWins = prioritizationResult.metadata.quickWins || quickWins;
+      blockers = prioritizationResult.metadata.blockers || blockers;
+    }
+
     // Combine all results
     const comprehensivePlan = `# Comprehensive Strategic Plan: ${projectTitle}
 
@@ -373,29 +386,34 @@ ${translationResult.message}
 ${researchResult.message}
 
 ## Phase 3: Prioritization & Critical Path
-**Next Recommended Action:** ${prioritizationResult.metadata?.nextRecommended || 'Review specifications'}
+**Next Recommended Action:** ${nextRecommended}
 
 **Critical Path:**
-${(prioritizationResult.metadata?.criticalPath || []).map((item: string, idx: number) => `${idx + 1}. ${item}`).join('\n')}
+${criticalPath.map((item: string, idx: number) => `${idx + 1}. ${item}`).join('\n')}
 
 **Quick Wins:**
-${(prioritizationResult.metadata?.quickWins || []).map((item: string) => `- ${item}`).join('\n')}
+${quickWins.map((item: string) => `- ${item}`).join('\n')}
 
 **Current Blockers:**
-${(prioritizationResult.metadata?.blockers || []).map((item: string) => `- ${item}`).join('\n') || '- None identified'}
+${blockers.map((item: string) => `- ${item}`).join('\n') || '- None identified'}
 
 ---
 *This comprehensive plan combines vision translation, vendor research, and strategic prioritization.*`;
 
     return {
-      agent: this.name,
+      agent: 'StrategicPlanner',
       message: comprehensivePlan,
       showToUser: true,
       metadata: {
-        comprehensivePlan: true,
-        translation: translationResult.metadata,
-        research: researchResult.metadata,
-        prioritization: prioritizationResult.metadata,
+        comprehensivePlan: {
+          translation: translationResult.metadata,
+          research: researchResult.metadata,
+          prioritization: prioritizationResult.metadata,
+          nextRecommended,
+          criticalPath,
+          quickWins,
+          blockers,
+        },
       },
     };
   }
