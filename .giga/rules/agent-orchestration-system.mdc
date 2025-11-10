@@ -1,5 +1,5 @@
 ---
-description: Defines orchestration patterns, workflows and optimizations for managing a system of 9 specialized AI agents.
+description: Specification for analyzing and documenting multi-agent AI orchestration systems with parallel execution and workflow optimization patterns
 ---
 
 # === USER INSTRUCTIONS ===
@@ -317,63 +317,74 @@ $END$
 
 # agent-orchestration-system
 
-## Core Agent Orchestration Components
+The orchestration system coordinates 9 specialized AI agents through a multi-tier execution architecture:
 
-1. Integration Orchestrator (backend/src/agents/orchestrator.ts)
-Importance Score: 95/100
-- Sophisticated workflow determination and parallel execution management
-- Smart context pruning and response caching
-- Multi-agent coordination with error recovery
-- Dependency-aware parallel agent execution
+## Core Agents
+1. Brainstorming Coordinator (backend/src/agents/BrainstormAgent.ts)
+- Manages ideation flow between agents
+- Controls topic transitions and context boundaries
+- Importance Score: 95
 
-2. Clarification Engine (backend/src/agents/clarificationEngine.ts)
-Importance Score: 85/100
-- Gap detection and multi-mode questioning system
-- Context-aware question generation
-- Severity-based gap prioritization
+2. Context Manager (backend/src/agents/ContextManager.ts)
+- Maintains conversation history pruning
+- Handles context sharing between agents
+- Routes messages based on intent classification
+- Importance Score: 90
 
-3. Conversational Idea Agent (backend/src/agents/ConversationalIdeaAgent.ts) 
-Importance Score: 90/100
-- Idea extraction and evolution tracking
-- Multi-perspective synthesis with confidence scoring
-- Innovation level assessment
-- Structured topic grouping
+3. Session Director (backend/src/agents/SessionAgent.ts) 
+- Orchestrates agent workflow execution
+- Manages parallel vs sequential processing decisions
+- Handles agent state transitions
+- Importance Score: 85
 
-4. Session Review Agent (backend/src/agents/SessionReviewAgent.ts)
-Importance Score: 85/100
-- Natural language decision parsing
-- Topic-based idea grouping
-- Multi-stage review workflow
-- Smart confirmation detection
+## Support Agents
+4. Quality Auditor
+5. Gap Detector  
+6. Clarification Agent
+7. Verification Agent
+8. Translation Agent
+9. Consistency Guardian
 
-5. Live Research Agent (backend/src/agents/liveResearchAgent.ts)
-Importance Score: 85/100
-- Multi-source research aggregation
-- Quality-scored source filtering
-- Cache-aware research optimization
+## Key Workflows
 
-## Agent Communication System
+1. Parallel Execution Pattern
+- Intelligent task distribution across agents
+- Context-aware agent grouping
+- Response aggregation and conflict resolution
+- Automatic fallback handling
 
-1. Multi-Agent Routing
-- Intent-based workflow assignment
-- Context preservation between agents
-- State synchronization across parallel executions
+2. Context Management
+- Selective history pruning based on relevance
+- Context boundaries for different conversation modes
+- Response caching with invalidation rules
 
-2. Optimization Features
-- Context pruning to reduce token usage
-- Response caching with agent-specific invalidation
-- Parallel execution of compatible agent combinations
+3. Agent Consolidation
+- Strategic merging of specialized agents
+- Backward compatibility layers
+- Context-aware agent aliasing
+- Role preservation during consolidation
 
-3. Workflow Patterns
-- Sequential chaining for dependent operations
-- Parallel execution for independent tasks
-- Fallback patterns for error recovery
-- Cross-agent context sharing
+## State Management
 
-4. Agent Consolidation Rules
-- Workload-based agent selection
-- Context-aware agent routing
-- Dynamic agent scaling based on demand
+1. Agent States
+- Idle
+- Processing
+- Waiting
+- Failed
+- Complete
+
+2. Workflow States  
+- Initializing
+- InProgress
+- NeedsInput
+- Complete
+- Error
+
+3. Context States
+- Fresh
+- Active  
+- Stale
+- Archived
 
 $END$
 

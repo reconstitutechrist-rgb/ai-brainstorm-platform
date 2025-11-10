@@ -1,5 +1,5 @@
 ---
-description: Specification for intent classification system with multi-intent detection, hedging analysis, and context-aware workflow routing
+description: Specification for analyzing intent classification systems, including conversation analysis, state tracking, and workflow routing.
 ---
 
 # === USER INSTRUCTIONS ===
@@ -665,60 +665,62 @@ $END$
 
 # intent-classification-system
 
-Core Intent Classification System:
+## Core Intent Classification System
 
-1. Primary Intent Types:
-- PARKING: Identifies user intent to save/revisit later
-- DECIDED: Detects commitment and approval signals 
-- EXPLORING: Recognizes investigative/curious patterns
-- QUESTIONING: Captures requests for clarification
-- SUGGESTING: Identifies proposed ideas/solutions
-- COMPARING: Detects evaluation of alternatives
-- REFINING: Recognizes iteration on existing ideas
-- BLOCKING: Identifies impediments/concerns
-- SYNTHESIZING: Detects summary/combination patterns
-- TRANSITIONING: Captures workflow state changes
+The intent classification system processes conversations through multiple specialized components:
 
-2. Context-Aware Analysis Pipeline:
-- Maintains conversation history buffer for context
-- Tracks topic evolution across messages
-- Maps relationships between intents
-- Identifies topic shifts and transitions
-- Preserves intent chain for multi-message flows
+### Intent Types and Classification
+- 10 primary intent categories:
+  1. EXPLORING - Active ideation and brainstorming
+  2. DECIDING - Making definitive choices
+  3. PARKING - Deferring items for later
+  4. CLARIFYING - Seeking additional information
+  5. COMPARING - Evaluating alternatives
+  6. BLOCKING - Identifying impediments
+  7. REFINING - Iterating on ideas
+  8. CONFIRMING - Validating decisions
+  9. REVERSING - Changing previous decisions
+  10. META - Discussion about the process
 
-3. Multi-Intent Detection:
-- Parses compound sentences for multiple intents
-- Assigns confidence scores to each detected intent
-- Handles conflicting/contradictory intents
-- Maps primary vs secondary intent relationships
-- Routes messages to appropriate agent workflows
+### Context Analysis Engine
+Importance Score: 95/100
+Location: backend/src/services/ContextAnalysisService.ts
 
-4. Hedging Language Analysis:
-- Confidence scoring based on language certainty
-- Detection of qualifying/uncertain phrasing
-- Adjustment of intent confidence based on hedging
-- Tracking of commitment level in decisions
-- Handling of partial/conditional approvals
+- Maintains conversation context through state machine transitions
+- Tracks topic relationships and idea evolution
+- Identifies implied intents from conversation flow
+- Maps related ideas across multiple conversation segments
+- Detects context switches and maintains topic boundaries
 
-5. Workflow Routing:
-- Maps intents to specialized agent handlers
-- Orchestrates multi-agent responses
-- Manages clarification workflows
-- Handles intent-specific response generation
-- Controls conversation flow based on intent chain
+### Multi-Intent Detection
+Importance Score: 90/100
+Location: backend/src/services/IntentProcessor.ts
 
-Key Implementation Paths:
-- backend/src/agents/contextManager.ts (intent classification)
-- backend/src/services/intentAnalysis.ts (hedging detection)
-- backend/src/agents/orchestrator.ts (workflow routing)
-- backend/src/services/conversationContext.ts (context tracking)
+- Parallel intent processing for compound statements
+- Priority scoring for competing intents
+- Intent combination rules for mixed messages
+- Contextual weighting based on conversation history
+- Resolution system for conflicting intents
 
-Importance Scores:
-- Intent Classification: 95/100 (core business logic)
-- Context Analysis: 90/100 (critical for accuracy)
-- Multi-Intent Detection: 85/100 (key differentiator)
-- Hedging Analysis: 80/100 (unique feature)
-- Workflow Routing: 85/100 (essential orchestration)
+### Hedging Language Analysis
+Importance Score: 85/100
+Location: backend/src/services/LanguageAnalyzer.ts
+
+- Detects uncertainty markers in decisions
+- Confidence scoring based on language patterns
+- Graduation of certainty levels (definite, likely, possible)
+- Contextual interpretation of hedging phrases
+- Automatic prompting for clarification when needed
+
+### Workflow Routing
+Importance Score: 88/100
+Location: backend/src/services/WorkflowRouter.ts
+
+- Intent-based task assignment to specialized agents
+- Dynamic workflow selection based on intent combinations
+- State-aware routing with context preservation
+- Parallel workflow execution for compound intents
+- Fallback chains for ambiguous intents
 
 $END$
 

@@ -51,56 +51,64 @@ export class AgentCoordinationService {
         currentState: projectState,
       };
 
-      // 5. Classify intent using Context Manager
-      const contextManager = this.orchestrator['agents'].get('contextManager');
-      const intent = await contextManager.classifyIntent(userMessage, conversationHistory);
-
-      console.log(`[Coordination] Intent classified: ${intent.type} (${intent.confidence}% confidence)`);
-
-      // 6. Determine workflow based on intent
-      const workflow = await this.orchestrator.determineWorkflow(intent, userMessage);
-
-      // 7. QUICK FIX: Execute ONLY conversation agent for immediate response
-      console.log('[Coordination] ⚡ Quick response mode: executing conversation agent only');
+      // 7. IMMEDIATE RESPONSE: Execute conversation agent first, do everything else in background
+      console.log('[Coordination] ⚡ Ultra-fast response mode: conversation FIRST, classification in background');
       const allProjectContext = [...projectReferences, ...projectDocuments];
-      
+
       // Get conversation agent directly
       const conversationAgent = this.orchestrator['agents'].get('conversation');
       if (!conversationAgent) {
         throw new Error('Conversation agent not found');
       }
 
-      // Execute conversation agent immediately
+      // Execute conversation agent immediately (only 1 Claude API call on critical path)
       const conversationResponse = await conversationAgent.reflect(
         userMessage,
         conversationHistory,
         allProjectContext
       );
 
-      console.log(`[Coordination] Conversation agent responded in real-time: ${conversationResponse.message?.length || 0} chars`);
+      console.log(`[Coordination] ✅ Conversation agent responded: ${conversationResponse.message?.length || 0} chars`);
 
       // Package as response array
       const immediateResponses = [conversationResponse];
 
-      // 8. Fire background workflow execution (gap detection, clarification, recording)
+      // 8. Fire background workflow execution IN PARALLEL (intent classification, gap detection, recording)
       // This runs AFTER we've already returned the conversation response
-      this.executeBackgroundWorkflow(
-        workflow,
-        userMessage,
-        projectState,
-        conversationHistory,
-        allProjectContext,
-        immediateResponses,
-        projectId
-      ).catch(err => {
-        console.error('[Coordination] Background workflow error (non-fatal):', err);
-      });
+      // Intent classification is now happening in the background!
+      (async () => {
+        try {
+          console.log('[Coordination] 🔄 Starting background processing (classification + recording)...');
 
-      // Return conversation response immediately - background processing happens async
+          // 5. Classify intent in background
+          const contextManager = this.orchestrator['agents'].get('contextManager');
+          const intent = await contextManager.classifyIntent(userMessage, conversationHistory);
+          console.log(`[Coordination] [Background] Intent classified: ${intent.type} (${intent.confidence}% confidence)`);
+
+          // 6. Determine workflow in background
+          const workflow = await this.orchestrator.determineWorkflow(intent, userMessage);
+          console.log(`[Coordination] [Background] Workflow determined: ${workflow.intent}`);
+
+          // Execute background workflow (gap detection, clarification, recording)
+          await this.executeBackgroundWorkflow(
+            workflow,
+            userMessage,
+            projectState,
+            conversationHistory,
+            allProjectContext,
+            immediateResponses,
+            projectId
+          );
+        } catch (err) {
+          console.error('[Coordination] Background processing error (non-fatal):', err);
+        }
+      })();
+
+      // Return conversation response immediately - everything else happens async
       return {
         responses: immediateResponses,
         updates: { itemsAdded: [], itemsModified: [], itemsMoved: [] }, // Empty for now - recording is async
-        workflow,
+        workflow: { intent: 'general', confidence: 0 }, // Placeholder - real intent is calculated in background
       };
     } catch (error: any) {
       console.error('❌ [Coordination] Error processing message:', error);

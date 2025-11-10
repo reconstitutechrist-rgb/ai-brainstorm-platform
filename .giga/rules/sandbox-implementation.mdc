@@ -1,5 +1,5 @@
 ---
-description: Specifies the technical implementation of conversational sandboxes with background idea extraction and state management
+description: Specification for implementing an AI-assisted conversational sandbox with multi-state idea progression and topic grouping
 ---
 
 # === USER INSTRUCTIONS ===
@@ -553,51 +553,49 @@ $END$
 
 # sandbox-implementation
 
-Core Architecture:
-The sandbox implements a multi-state idea refinement system with background processing and instant responses.
+Conversational Sandbox Core Components:
 
-State Management:
-- Ideas progress through defined states:
-  - mentioned: Initial detection in conversation
+1. Idea State Management
+Importance Score: 95/100
+- Manages progression through defined states:
+  - mentioned: Initial capture from conversation
   - exploring: Active discussion/refinement
-  - refined: Core concept established
-  - ready_to_extract: Validated for extraction
+  - refined: Clear understanding established  
+  - ready_to_extract: Validated for project inclusion
+- Background state transition monitoring
+- Automatic state updates based on conversation signals
 
-Background Processing:
-1. Continuous Topic Analysis
-- Groups related ideas using semantic clustering
-- Maintains topic relationships across conversations
-- Updates groupings as new context emerges
+2. Topic Clustering Engine
+Importance Score: 90/100
+- Real-time semantic grouping of related ideas
+- Progressive refinement of clusters during conversation
+- Automatic topic extraction with confidence scoring
+- Dynamic reorganization based on conversation context
+- Cross-reference detection between topics
 
-2. Idea Extraction Pipeline
-- Monitors conversations for potential ideas
-- Classifies innovation level (practical/moderate/experimental)
-- Tracks source attribution (user/ai/collaborative)
-- Assigns confidence scores for extraction readiness
+3. Background Idea Extraction 
+Importance Score: 85/100
+- Continuous monitoring of conversation for implied ideas
+- Classification of ideas by:
+  - Source: user_generated, ai_suggested, collaborative
+  - Confidence: low, medium, high
+  - Innovation: practical, moderate, experimental
+- Automatic metadata enrichment from context
 
-3. Progressive Refinement
-- Manages idea evolution through state transitions
-- Preserves context across conversation segments
-- Enables parallel exploration of related concepts
-- Maintains topic coherence during refinement
+4. Instant Response Architecture
+Importance Score: 88/100
+- Parallel processing pipelines:
+  - Fast response generation (<500ms)
+  - Background context analysis
+  - Progressive idea refinement
+- State synchronization between pipelines
+- Context preservation across response cycles
 
-Core Files:
-`backend/src/agents/ConversationalIdeaAgent.ts` (Score: 90)
-- Handles idea detection and evolution tracking
-- Manages state transitions and confidence scoring
-- Coordinates topic grouping and relationship mapping
-
-`frontend/src/components/sandbox/IdeaBoardPanel.tsx` (Score: 85) 
-- Implements visual idea organization
-- Manages real-time state updates
-- Coordinates extraction workflow
-
-`backend/src/services/contextGroupingService.ts` (Score: 85)
-- Performs semantic topic clustering
-- Maintains idea relationships
-- Updates groupings dynamically
-
-Architecture ensures instant response while enabling background processing for idea refinement and organization.
+Integration Points:
+- Idea state transitions trigger topic re-clustering
+- Background extraction feeds topic clustering
+- Response generation incorporates current topics
+- State changes influence response context
 
 $END$
 

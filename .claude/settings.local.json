@@ -35,7 +35,8 @@
       "Bash(timeout 3 bash:*)",
       "Bash(npm install)",
       "Bash(tasklist:*)",
-      "Bash(cut:*)"
+      "Bash(cut:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

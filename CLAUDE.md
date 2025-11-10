@@ -91,75 +91,58 @@ $END$
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The system implements an AI-powered brainstorming and research platform with these core business components:
+Multi-Agent Project Management System
 
-## Orchestration Layer (95/100)
-`backend/src/agents/orchestrator.ts`
-- Multi-agent coordination system managing 8 specialized AI agents
-- Intent-based workflow routing with conditional execution
-- Context preservation between agent handoffs
-- Parallel execution optimization for compatible combinations
+Core Business Components:
 
-## Core Agents
+1. Intelligent Agent Orchestration (95/100)
+- Coordinates 18 specialized AI agents through composite pattern architecture
+- Conditional workflow determination based on conversation context
+- Complex agent state management with context sharing
+- Parallel/sequential execution based on dependencies
+- Location: backend/src/agents/orchestrator.ts
 
-### ClarificationEngine (85/100)
-`backend/src/agents/clarificationEngine.ts`
-- Gap detection and clarification workflow
-- Multi-mode questioning system
-- Context-aware question generation
-- Gap prioritization based on severity
+2. Research Intelligence Hub (90/100)
+- Unified research system combining web and document sources
+- Intent classification (research/discovery/gap_analysis)  
+- Cross-source synthesis with automatic quality scoring
+- Document suggestion engine with relevance scoring
+- Location: backend/src/services/unifiedResearchAgent.ts
 
-### ConversationalIdeaAgent (90/100)
-`backend/src/agents/ConversationalIdeaAgent.ts` 
-- Idea extraction and evolution tracking
-- Multi-perspective synthesis with confidence scoring
-- Dynamic conversation mode management
-- Innovation level assessment
-- Topic-based grouping system
+3. Session Analytics System (85/100)
+- Multi-stage idea lifecycle management (mention→explore→refine→decide)
+- Innovation level classification (practical/moderate/experimental)
+- Topic clustering and conflict detection
+- Blockers and bottleneck identification
+- Location: backend/src/services/sessionService.ts
 
-## Research & Analysis
+4. Conversational Intelligence (85/100)
+- Seven distinct conversation modes (exploration, clarification, generation, etc.)
+- Real-time idea extraction from natural dialogue
+- Quick prompt suggestions based on context
+- Intent detection with confidence scoring
+- Location: backend/src/services/brainstormDocumentService.ts
 
-### UnifiedResearchAgent (90/100)
-`backend/src/agents/unifiedResearchAgent.ts`
-- Multi-source research orchestration
-- Query intent analysis
-- Source relevance scoring
-- Cross-source synthesis
-- Document gap analysis
+5. Canvas Management System (80/100) 
+- Dynamic clustering of related project items
+- State-based visual organization
+- Capacity management with graduated warnings
+- Auto-positioning based on semantic relationships
+- Location: frontend/src/components/canvas/VisualCanvas.tsx
 
-### SourceQualityService (90/100)
-`backend/src/services/sourceQualityService.ts`
-- Domain reputation scoring system
-- Content freshness analysis
-- Author credibility assessment
-- Citation analysis framework
+Integration Architecture:
+- Agent Orchestration drives core conversation flow
+- Research System feeds unified information
+- Session Analytics tracks progress and blockers
+- Conversational Intelligence extracts structured data
+- Canvas System provides visual organization
 
-## Session Management
-
-### SessionService (85/100)
-`backend/src/services/sessionService.ts`
-- Project state snapshot generation
-- Blocker detection system
-- State transition tracking
-- Activity pattern analysis
-
-### SandboxService (90/100)
-`backend/src/services/sandboxService.ts`
-- Isolated exploration environment
-- Alternative version management
-- Selective idea extraction
-- Impact analysis system
-
-## Document Processing
-
-### BrainstormDocumentService (90/100)
-`backend/src/services/brainstormDocumentService.ts`
-- Intelligent document generation
-- Decision categorization
-- Rejection reasoning tracking
-- Structured documentation with citations
-
-The system's unique value comes from sophisticated AI agent orchestration, context-aware processing, and intelligent document generation - all optimized for collaborative brainstorming and research synthesis.
+Key Workflows:
+1. Multi-agent research and analysis
+2. Structured brainstorming sessions  
+3. Document generation and synthesis
+4. Project state visualization
+5. Session progress tracking
 
 $END$
 

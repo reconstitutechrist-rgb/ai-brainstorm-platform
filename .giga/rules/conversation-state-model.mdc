@@ -1,5 +1,5 @@
 ---
-description: Rules for handling conversation states (decided/exploring/parked), state transitions, verification, and cache invalidation in AI-assisted brainstorming
+description: Specifies conversation state management rules, including state transitions, verification modes, and context tracking
 ---
 
 # === USER INSTRUCTIONS ===
@@ -427,46 +427,57 @@ $END$
 
 # conversation-state-model
 
-Three-State Decision Model:
-- DECIDED: Final approved decisions with confidence scores
-- EXPLORING: Active items under discussion/consideration 
-- PARKED: Temporarily suspended or deprioritized items
+## State Management System
+Importance Score: 95/100
 
-State Transition Rules:
-1. Natural Language Classification (85/100)
-- Pattern matching for 30+ variations of parking intent
-- Recognition of 15+ commitment/approval patterns
-- Analysis of 12+ exploration signals
-- Contextual confidence scoring 50-100%
-- Hedging language detection with score adjustment
+Implements three-state conversation model:
+- DECIDED: Final confirmed decisions
+- EXPLORING: Active discussion items
+- PARKED: Deferred or blocked items
 
-2. Multi-Intent Processing (90/100)
-- Detection of multiple intents within single messages
-- Weighted scoring for mixed state signals
-- Resolution of conflicting intentions based on:
-  - Previous message context
-  - Recent state changes
-  - Explicit vs implicit signals
+Core state transition rules:
+1. Direct transitions allowed between any states
+2. State changes require explicit verification mode
+3. Implicit state detection through context analysis
+4. Multi-item batch state updates supported
 
-3. Verification System (85/100)
-- Two-stage verification for state changes
-- Confirmation requirement for DECIDED transitions
-- Grace period for PARKED state changes
-- Automatic reversion on timeout
-- Project impact assessment before changes
+## Verification Modes
+Importance Score: 90/100
 
-4. Cache Management (80/100)
-- State-aware cache invalidation
-- Dependency tracking between related items
-- Partial cache updates for minor changes
-- Background cache rebuilding
-- Change propagation through item relationships
+Implements three verification levels:
+1. EXPLICIT: Direct user confirmation required
+2. CONTEXTUAL: AI-driven state inference
+3. HYBRID: Combined user+AI verification
 
-Key Implementation Paths:
-- backend/src/agents/persistenceManager.ts
-- backend/src/services/sessionCompletionService.ts
-- backend/src/agents/contextManager.ts
-- frontend/src/hooks/useCardCapacity.ts
+## Context-Aware Approval Detection
+Importance Score: 85/100
+
+Natural language patterns for state changes:
+- Decided triggers: "Let's go with", "We'll use", "Confirmed"
+- Exploring triggers: "What about", "Could we", "Let's consider" 
+- Parking triggers: "Save for later", "Come back to", "Not now"
+
+## Cache Invalidation Rules
+Importance Score: 80/100
+
+State-specific cache management:
+- DECIDED items: Cache until explicit change
+- EXPLORING items: Short-term cache with context expiry
+- PARKED items: Long-term cache with periodic review
+
+## Conversation Context Model
+Importance Score: 85/100
+
+Maintains hierarchical context structure:
+1. Session context
+2. Topic context
+3. Decision context
+4. Reference context
+
+Context inheritance rules:
+- Child contexts inherit parent states
+- State changes propagate upward
+- Context merging for related topics
 
 $END$
 
