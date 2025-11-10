@@ -103,7 +103,7 @@ export class ConversationalIntelligenceService {
         console.warn(`[ConversationalIntelligence] Documents: ${docsWithoutContent.map((d: any) => d.filename).join(', ')}`);
 
         // Return helpful error message
-        return {
+        const response: QAResponse = {
           type: 'qa',
           content: `I found ${docsWithoutContent.length} uploaded document(s) that don't have extracted content yet:\n\n${docsWithoutContent.map((d: any) => `- ${d.filename}`).join('\n')}\n\nThese documents were uploaded before content extraction was implemented. To fix this, you can:\n\n1. Re-upload these documents (recommended for best results)\n2. Or, have the system administrator run the backfill endpoint to extract content from existing documents\n\nOnce the content is extracted, I'll be able to answer questions about your project using information from these documents.`,
           metadata: {
@@ -114,7 +114,8 @@ export class ConversationalIntelligenceService {
               filename: d.filename
             }))
           }
-        } as QAResponse;
+        };
+        return response;
       }
     }
 
