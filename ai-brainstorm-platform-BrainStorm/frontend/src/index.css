@@ -1,0 +1,546 @@
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+@theme {
+  --color-cyan-bg: #4a9aba;
+  --color-cyan-bg-dark: #001a33;
+  --color-cyan-primary: #00d4ff;
+  --color-cyan-secondary: #0099ff;
+  --color-cyan-accent: #00ffff;
+  --color-blue-deep: #001a33;
+}
+
+/* ===================================
+   BODY & HTML - Cyan/Blue Futuristic Background
+   =================================== */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a3a52 25%, #2a5a7a 50%, #1a3a52 75%, #0a0e27 100%) !important;
+  background-size: 400% 400% !important;
+  animation: gradientShift 30s ease infinite !important; /* Slower: 15s → 30s */
+  transition: background 0.3s ease;
+}
+
+body.dark,
+html.dark body {
+  background: linear-gradient(135deg, #000000 0%, #001a33 25%, #000000 50%, #001a33 75%, #000000 100%) !important;
+  background-size: 400% 400% !important;
+}
+
+/* ===================================
+   GLASSMORPHISM - Frosted Glass Panels
+   =================================== */
+
+/* Light Mode - Frosted White Glass (Cleaner & Lighter) */
+.glass {
+  background: rgba(255, 255, 255, 0.75) !important; /* Increased opacity: 0.7 → 0.75 */
+  backdrop-filter: blur(8px) !important; /* Reduced blur: 12px → 8px */
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important; /* Softer border: 0.4 → 0.3 */
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important; /* Lighter shadow: 0.15 → 0.08 */
+}
+
+/* Dark Mode - Smoky Black Glass (Cleaner & Lighter) */
+.dark .glass {
+  background: rgba(26, 26, 26, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important;
+}
+
+/* Separate classes for conditional dark mode */
+.glass-dark {
+  background: rgba(26, 26, 26, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08) !important;
+}
+
+/* Stronger Glass - Extra Blur (Refined) */
+.glass-strong {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important; /* Reduced: 16px → 12px */
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important; /* Softer: 0.5 → 0.4 */
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.12) !important; /* Lighter: 0.30 → 0.12 */
+}
+
+.dark .glass-strong,
+.glass-dark-strong {
+  background: rgba(26, 26, 26, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* Softer: 0.2 → 0.15 */
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.12) !important;
+}
+
+/* Subtle Glass - Light Touch (Minimal) */
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.6) !important; /* Increased: 0.5 → 0.6 */
+  backdrop-filter: blur(6px) !important; /* Reduced: 8px → 6px */
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important; /* Softer: 0.3 → 0.25 */
+}
+
+.dark .glass-subtle,
+.glass-dark-subtle {
+  background: rgba(26, 26, 26, 0.6) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ===================================
+   ANGULAR ACCENT CORNERS - Geometric Brackets
+   =================================== */
+.angular-accent {
+  position: relative;
+}
+
+.angular-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-left: 3px solid #00d4ff;
+  border-top: 3px solid #00d4ff;
+  z-index: 10;
+}
+
+.angular-accent::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-right: 3px solid #00d4ff;
+  border-bottom: 3px solid #00d4ff;
+  z-index: 10;
+}
+
+.dark .angular-accent::before,
+.dark .angular-accent::after {
+  border-color: #00ffff;
+}
+
+/* Large angular accents for hero sections */
+.angular-accent-lg::before,
+.angular-accent-lg::after {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* ===================================
+   3D HOVER EFFECTS - Lift and Glow (Subtle)
+   =================================== */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px) !important; /* Reduced: -6px → -3px */
+  box-shadow: 0 8px 20px 0 rgba(31, 38, 135, 0.12) !important; /* Lighter: 0.30 → 0.12 */
+}
+
+.hover-lift:active {
+  transform: translateY(-1px) !important; /* Reduced: -2px → -1px */
+}
+
+.hover-scale {
+  transition: transform 0.3s ease !important;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02) !important; /* Reduced: 1.03 → 1.02 */
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease !important;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.4) !important; /* Softer: 0.6 → 0.4 */
+}
+
+/* ===================================
+   CUSTOM SCROLLBAR - Cyan/Blue
+   =================================== */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.4);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.6);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+}
+
+/* ===================================
+   TEXT EFFECTS
+   =================================== */
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-shadow-soft {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-strong {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===================================
+   GLOW EFFECTS - Cyan Shimmer (Subtle)
+   =================================== */
+.glow-cyan {
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3); /* Softer: 0.5 → 0.3 */
+}
+
+.glow-cyan-strong {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); /* Softer: 0.8 → 0.5 */
+}
+
+.glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite; /* Slower: 2s → 3s */
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3); /* Softer: 0.4 → 0.3 */
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.5); /* Softer: 0.7 → 0.5 */
+  }
+}
+
+/* ===================================
+   GRADIENT BACKGROUNDS
+   =================================== */
+.gradient-cyan {
+  background: linear-gradient(135deg, #4a9aba 0%, #2a5a7a 100%);
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #001a33 0%, #000000 100%);
+}
+
+.gradient-animated {
+  background: linear-gradient(270deg, #4a9aba, #00d4ff, #4a9aba);
+  background-size: 400% 400%;
+  animation: gradient-shift 30s ease infinite; /* Slower: 15s → 30s */
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ===================================
+   BUTTON COMPONENTS - Cyan/Blue
+   =================================== */
+.btn-primary {
+  padding: 0.75rem 1.75rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
+  box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  color: #00d4ff;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #00d4ff;
+}
+
+.dark .btn-secondary {
+  color: #00ffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+}
+
+.dark .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #00ffff;
+}
+
+/* ===================================
+   BADGE COMPONENTS
+   =================================== */
+.badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-cyan {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.4);
+}
+
+.dark .badge-cyan {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+}
+
+.badge-blue {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.badge-gray {
+  background: rgba(107, 114, 128, 0.2);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.4);
+}
+
+/* ===================================
+   LOADING SKELETON
+   =================================== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===================================
+   FOCUS STATES
+   =================================== */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.5);
+}
+
+.dark .focus-ring:focus {
+  box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.5);
+}
+
+/* ===================================
+   UTILITY CLASSES
+   =================================== */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* ===================================
+   ANIMATIONS (Slower & Smoother)
+   =================================== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite; /* Slower: 3s → 4s */
+}
+
+/* ===================================
+   RESPONSIVE ADJUSTMENTS
+   =================================== */
+@media (max-width: 768px) {
+  .glass,
+  .glass-dark,
+  .glass-strong {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  .angular-accent::before,
+  .angular-accent::after {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+  }
+}
+
+/* ===================================
+   SMOOTH TRANSITIONS
+   =================================== */
+* {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button, a, input, textarea, select {
+  transition-duration: 200ms;
+}
+
+/* ===================================
+   CANVAS ANIMATIONS
+   =================================== */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out;
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Canvas card glow effects (Subtle) */
+@keyframes card-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.25); /* Softer: 0.3 → 0.25 */
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.4); /* Softer: 0.6 → 0.4 */
+  }
+}
+
+.canvas-card-dragging {
+  animation: card-glow 2s ease-in-out infinite; /* Slower: 1.5s → 2s */
+}
+
+/* ===================================
+   PRINT STYLES
+   =================================== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .glass,
+  .glass-dark {
+    background: white !important;
+    border: 1px solid #ddd !important;
+  }
+
+  body {
+    background: white !important;
+  }
+}

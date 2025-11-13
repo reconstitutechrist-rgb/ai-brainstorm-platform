@@ -1,0 +1,484 @@
+---
+description: Specifies conversation state management rules, including state transitions, verification modes, and context tracking
+---
+
+# === USER INSTRUCTIONS ===
+description: Comprehensive documentation of the conversation state management system with three-state decision model, verification modes, and context-aware transitions
+# Conversation State Model
+## Overview
+The conversation state model manages how ideas and decisions progress through the brainstorming lifecycle. The system uses a **three-state model** (decided, exploring, parked) with intelligent state transitions driven by intent classification and context-aware approval detection.
+**Key Features:**
+- Automatic state transitions based on user signals
+- Pre-verification before recording decisions
+- Context-aware approval detection (distinguishing genuine decisions from acknowledgments)
+- Batch recording via review workflow
+- Simple approval shortcuts for efficiency
+- Cache invalidation on state changes
+## The Three States
+### 1. Decided
+**Definition:** Ideas that have been explicitly chosen for implementation or adoption.
+**Characteristics:**
+- High confidence in the decision
+- User explicitly confirmed selection
+- Ready for action/implementation
+- Appears in "Decided Ideas" section
+**Entry Signals:**
+- "I want to use [idea]"
+- "Let's go with [approach]"
+- "Yes" (after AI suggestion)
+- "Perfect, that's exactly what we need"
+- "Let's implement [solution]"
+**State Behavior:**
+- Recorded by PersistenceManagerAgent with verification
+- Triggers cache invalidation
+- May trigger strategic planning workflow
+- Marked with `status: 'decided'` in database
+### 2. Exploring
+**Definition:** Ideas actively being investigated, refined, or considered.
+**Characteristics:**
+- Under active discussion
+- Not yet committed to
+- May evolve or change
+- Appears in "Exploring Ideas" section
+**Entry Signals:**
+- "What if we tried [idea]?"
+- "Maybe we could [approach]"
+- "Let's think about [option]"
+- "I'm curious about [concept]"
+**State Behavior:**
+- More permissive validation rules
+- Can be freely modified or discarded
+- Encourages open exploration
+- Marked with `status: 'exploring'` in database
+### 3. Parked
+**Definition:** Ideas temporarily set aside for later consideration.
+**Characteristics:**
+- Not currently active
+- Preserved for future reference
+- Not abandoned permanently
+- Appears in "Parked Ideas" section
+**Entry Signals:**
+- "Let's park this for now"
+- "Come back to this later"
+- "Set this aside"
+- "Table this discussion"
+**State Behavior:**
+- Minimal validation required
+- Can be reactivated to exploring state
+- Preserved in conversation history
+- Marked with `status: 'parked'` in database
+## State Transition Flow
+```
+┌─────────────┐
+│  Initial    │
+│  Message    │
+└──────┬──────┘
+       │
+       v
+┌─────────────────┐
+│ ContextManager  │
+│ Classifies      │
+│ Intent          │
+└──────┬──────────┘
+       │
+       v
+┌─────────────────────────────────────┐
+│  Intent-Based State Selection       │
+├─────────────────────────────────────┤
+│ brainstorming → exploring           │
+│ deciding      → decided              │
+│ modifying     → exploring            │
+│ parking       → parked               │
+│ questioning   → exploring            │
+│ exploring     → exploring            │
+└──────┬──────────────────────────────┘
+       │
+       v
+┌──────────────────┐
+│ Workflow         │
+│ Execution        │
+└──────┬───────────┘
+       │
+       v
+┌──────────────────────┐
+│ PersistenceManager   │
+│ Verifies & Records   │
+│ (if appropriate)     │
+└──────────────────────┘
+```
+## Verification Modes
+### Permissive Mode
+**Used for:**
+- Brainstorming workflows
+- Exploring workflows
+**Behavior:**
+- More lenient validation
+- Records ideas without strict confirmation
+- Assumes user wants to capture thoughts
+- Allows rapid idea generation
+**Validation Checks:**
+- Idea has substance (not empty)
+- Not duplicate of recent idea
+- Contains actionable content
+### Balanced Mode
+**Used for:**
+- Deciding workflows
+- Modifying workflows
+**Behavior:**
+- Stricter validation rules
+- Requires clear decision signals
+- Pre-verifies before recording
+- Context-aware approval detection
+**Validation Checks:**
+- Explicit decision language present
+- Not just acknowledgment of AI response
+- Clear selection among alternatives
+- Actionable decision made
+## Context-Aware Approval Detection
+### The Challenge
+Distinguishing between:
+- **Genuine Decision:** "Yes, let's use React for the frontend"
+- **Acknowledgment:** "Yes, I see what you mean"
+### Detection Algorithm
+The ContextManager analyzes:
+1. **Previous AI Message Content**
+   - Did AI make a specific suggestion?
+   - Did AI present options/alternatives?
+2. **User Response Context**
+   - Is response immediately after AI suggestion?
+   - Does response reference specific suggestion?
+   - Contains elaboration beyond "yes"?
+3. **Decision Markers**
+   - References specific option: "Let's go with option A"
+   - Contains reasoning: "Yes, because..."
+   - Adds details: "Yes, and we should also..."
+   - Expresses commitment: "I want to proceed with..."
+### Example: Context-Aware Decision
+```
+AI: "I suggest using PostgreSQL for better relational data handling. Would you like to proceed?"
+User: "Yes"
+Analysis:
+- Previous message: AI made specific suggestion (PostgreSQL)
+- User response: Single word after suggestion
+- Context: Clear decision signal
+- Result: DECIDED state, record "Use PostgreSQL"
+```
+```
+AI: "That approach could work well for your use case."
+User: "Yes"
+Analysis:
+- Previous message: AI acknowledged user idea (no specific suggestion)
+- User response: Simple acknowledgment
+- Context: Not a decision point
+- Result: EXPLORING state, no recording
+```
+## Recording Workflow
+### Standard Recording Flow
+1. **Intent Classification**
+   - ContextManager analyzes message
+   - Determines appropriate intent
+2. **Workflow Execution**
+   - Orchestrator runs intent-based workflow
+   - ConversationAgent generates response
+   - QualityAuditor validates (if applicable)
+3. **Pre-Verification**
+   - PersistenceManager checks if recording appropriate
+   - Applies mode-specific validation rules
+   - Evaluates context-aware signals
+4. **Recording Decision**
+   - **Record:** If verification passes and decision detected
+   - **Skip:** If acknowledgment or unclear decision
+   - **Hold:** If requires user clarification
+5. **State Update**
+   - Update conversation state
+   - Invalidate relevant caches
+   - Log state transition
+### Review-Based Recording
+The ReviewerAgent can process conversation history in batch:
+1. **User Triggers Review**
+   - Command: "review conversation"
+   - Or: Automatic periodic review
+2. **ReviewerAgent Analysis**
+   - Scans full conversation history
+   - Identifies missed decisions/ideas
+   - Extracts implicit decisions
+   - Groups related ideas
+3. **Batch Presentation**
+   - Presents found items to user
+   - User confirms/rejects each
+   - User can edit before recording
+4. **Batch Recording**
+   - PersistenceManager records confirmed items
+   - Assigns appropriate states
+   - Updates conversation metadata
+## Simple Approval Shortcuts
+### Feature: Fast Responses for Simple Approvals
+When user sends single-word affirmatives without context:
+- "ok"
+- "sure"
+- "thanks"
+- "got it"
+**Behavior:**
+- System provides brief acknowledgment
+- **No Claude API call** (saves cost/time)
+- Response time: <100ms
+- Minimal token usage
+**Implementation:**
+```typescript
+const simpleAffirmatives = ['ok', 'okay', 'sure', 'thanks', 'got it', 'understood'];
+const isSimpleApproval = simpleAffirmatives.includes(message.trim().toLowerCase());
+if (isSimpleApproval && !previousAISuggestion) {
+  return { response: "Understood!", skipClaude: true };
+}
+```
+**Exceptions (still call Claude):**
+- Simple "yes" after AI suggestion (potential decision)
+- Follows up previous question
+- Part of ongoing decision process
+## Cache Invalidation
+### Cache Invalidation Triggers
+The ResponseCache invalidates entries when:
+1. **State Changes**
+   - exploring → decided
+   - decided → exploring
+   - Any transition to/from parked
+2. **Explicit Edits**
+   - User edits decision text
+   - User deletes decision
+   - User changes decision state
+3. **Agent-Specific Triggers**
+   - PersistenceManager: After any recording
+   - ContextManager: After state transition
+   - ConversationAgent: After explicit edit
+4. **Batch Invalidation**
+   - Review workflow completion
+   - Project-wide state change
+   - Manual cache clear
+### Invalidation Scope
+**Agent-Specific Invalidation:**
+```typescript
+cache.invalidate('persistence_manager'); // Only PersistenceManager cache
+```
+**Full Invalidation:**
+```typescript
+cache.invalidateAll(); // All agent caches
+```
+**Selective Invalidation:**
+```typescript
+cache.invalidateMatching({ state: 'decided' }); // All decided-state caches
+```
+## Integration with Intent Classification
+### Intent → State Mapping
+| Intent | Default State | Verification Mode |
+|--------|--------------|-------------------|
+| brainstorming | exploring | permissive |
+| deciding | decided | balanced |
+| modifying | exploring | balanced |
+| parking | parked | permissive |
+| questioning | exploring | permissive |
+| exploring | exploring | permissive |
+| reviewing | (varies) | balanced |
+| development | exploring | balanced |
+| general | (none) | N/A |
+### Multi-Intent Handling
+When multiple intents detected:
+1. **Primary Intent**
+   - Strongest confidence score
+   - Determines workflow
+2. **Secondary Intents**
+   - Logged for context
+   - May influence verification
+   - Noted in conversation metadata
+**Example:**
+```
+Message: "I like option A, but let's park option B for later"
+Intents Detected:
+- Primary: deciding (85% confidence) → decided state
+- Secondary: parking (75% confidence) → note to park option B
+Action:
+- Record option A as decided
+- Record option B as parked
+```
+## State Persistence
+### Database Storage
+**conversations table:**
+```sql
+{
+  conversation_state: 'decided' | 'exploring' | 'parked',
+  last_state_change: timestamp,
+  state_history: jsonb
+}
+```
+**project_items table:**
+```sql
+{
+  status: 'decided' | 'exploring' | 'parked',
+  decision_confidence: float,
+  decision_timestamp: timestamp,
+  verification_mode: 'permissive' | 'balanced'
+}
+```
+### State History Tracking
+Each state change recorded:
+```typescript
+{
+  from_state: 'exploring',
+  to_state: 'decided',
+  timestamp: '2025-10-28T10:30:00Z',
+  trigger: 'user_explicit',
+  confidence: 0.95,
+  message_id: 'msg_123'
+}
+```
+## Performance Characteristics
+**State Transition Time:**
+- Intent classification: 200-500ms
+- Verification: 50-100ms
+- Recording: 100-200ms
+- Total: <1 second
+**Cache Impact:**
+- State change invalidates 5-10 cache entries
+- Revalidation: 1-3 seconds for affected agents
+- Hit rate after invalidation: Recovers within 2-3 requests
+## Source Code References
+**State Management:**
+- [contextManager.ts](backend/src/agents/contextManager.ts) - Intent classification and state detection
+- [persistenceManager.ts](backend/src/agents/persistenceManager.ts) - Verification and recording logic
+- [conversation.ts](backend/src/agents/conversation.ts) - Conversation flow management
+**Supporting Services:**
+- [agentCoordination.ts](backend/src/services/agentCoordination.ts) - State-workflow coordination
+- [responseCache.ts](backend/src/services/responseCache.ts) - Cache invalidation
+**Database Models:**
+- [types/index.ts](backend/src/types/index.ts) - State type definitions
+For intent classification details, see: [intent-classification-system.mdc](.giga/rules/intent-classification-system.mdc)
+
+---
+description: Handles conversation state management including decision tracking, mode transitions, and context-aware approval detection
+---
+
+
+
+# conversation-state-model
+
+## State Machine Implementation
+Handles three core conversation states with specific transition rules:
+
+1. DECIDED State
+- Triggered by explicit approval phrases or strong agreement patterns
+- Requires confidence score > 85% for automatic transition
+- Maintains decision metadata including source messages and context
+- Implements verification modes for critical decisions
+
+2. EXPLORING State
+- Default state for new conversation threads
+- Tracks exploration depth and branch points
+- Maintains topic relationship graph
+- Implements context pruning for long exploration chains
+
+3. PARKED State
+- Handles explicitly deferred items
+- Tracks parking reason and revival conditions
+- Maintains priority queue for parked items
+- Implements automatic revival triggers based on context
+
+## Context-Aware Approval Detection
+Implements sophisticated natural language understanding for decisions:
+
+1. Direct Approval Patterns
+- Explicit confirmation phrases ("yes", "approved", "let's do it")
+- Agreement indicators with confidence scoring
+- Multi-message confirmation chains
+
+2. Implicit Approval Detection
+- Context-based approval inference
+- Historical pattern matching
+- Semantic similarity scoring against previous decisions
+
+## State Transition Rules
+Manages conversation flow with specific business rules:
+
+1. Decision Progression
+- EXPLORING → DECIDED requires explicit approval or high confidence
+- EXPLORING → PARKED requires deferral trigger or timeout
+- PARKED → EXPLORING requires context match or manual trigger
+
+2. State Verification
+- Double confirmation for critical decisions
+- Automatic rollback for low confidence transitions
+- Cache invalidation on state changes
+
+## Session Context Management
+Implements conversation context tracking:
+
+1. Context Hierarchy
+- Global session context
+- Topic-specific sub-contexts
+- Decision-specific metadata
+
+2. Context Invalidation
+- Time-based expiration rules
+- Topic boundary detection
+- State-change triggered pruning
+
+$END$
+
+ If you're using this file in context, clearly say in italics in one small line that "Context added by Giga conversation-state-model" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.
+# === END USER INSTRUCTIONS ===
+
+# conversation-state-model
+
+## State Management System
+Importance Score: 95/100
+
+Implements three-state conversation model:
+- DECIDED: Final confirmed decisions
+- EXPLORING: Active discussion items
+- PARKED: Deferred or blocked items
+
+Core state transition rules:
+1. Direct transitions allowed between any states
+2. State changes require explicit verification mode
+3. Implicit state detection through context analysis
+4. Multi-item batch state updates supported
+
+## Verification Modes
+Importance Score: 90/100
+
+Implements three verification levels:
+1. EXPLICIT: Direct user confirmation required
+2. CONTEXTUAL: AI-driven state inference
+3. HYBRID: Combined user+AI verification
+
+## Context-Aware Approval Detection
+Importance Score: 85/100
+
+Natural language patterns for state changes:
+- Decided triggers: "Let's go with", "We'll use", "Confirmed"
+- Exploring triggers: "What about", "Could we", "Let's consider" 
+- Parking triggers: "Save for later", "Come back to", "Not now"
+
+## Cache Invalidation Rules
+Importance Score: 80/100
+
+State-specific cache management:
+- DECIDED items: Cache until explicit change
+- EXPLORING items: Short-term cache with context expiry
+- PARKED items: Long-term cache with periodic review
+
+## Conversation Context Model
+Importance Score: 85/100
+
+Maintains hierarchical context structure:
+1. Session context
+2. Topic context
+3. Decision context
+4. Reference context
+
+Context inheritance rules:
+- Child contexts inherit parent states
+- State changes propagate upward
+- Context merging for related topics
+
+$END$
+
+ If you're using this file in context, clearly say in italics in one small line that "Context added by Giga conversation-state-model" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.

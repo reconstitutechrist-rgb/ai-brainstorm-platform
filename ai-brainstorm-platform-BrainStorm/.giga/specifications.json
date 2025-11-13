@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "Complete system overview detailing the multi-agent AI orchestration architecture, key components, and high-level data flow between major subsystems"
+  },
+  {
+    "fileName": "agent-orchestration-system.mdc",
+    "description": "Comprehensive documentation of the 9-agent orchestration system with parallel execution, workflow patterns, optimization features (context pruning, response caching), and agent consolidation history"
+  },
+  {
+    "fileName": "conversation-state-model.mdc",
+    "description": "Comprehensive documentation of the conversation state management system with three-state decision model (decided/exploring/parked), verification modes, context-aware approval detection, and cache invalidation mechanisms"
+  },
+  {
+    "fileName": "sandbox-implementation.mdc",
+    "description": "Technical implementation of the conversational sandbox with background idea extraction, progressive refinement states (mentioned → exploring → refined → ready_to_extract), topic grouping, and instant response architecture"
+  },
+  {
+    "fileName": "intent-classification-system.mdc",
+    "description": "Comprehensive documentation of the intent classification system with 10 intent types, context-aware analysis, multi-intent detection, hedging language analysis, and workflow routing algorithms"
+  }
+]

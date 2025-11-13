@@ -1,0 +1,471 @@
+/* ============================================
+   GLOBAL FUTURISTIC CYAN/BLUE THEME
+   Applied across entire application
+   Minimal, clean, productivity-focused design
+   ============================================ */
+
+/* Color Variables */
+:root {
+  --primary-cyan: #00d4ff;
+  --secondary-cyan: #0099ff;
+  --accent-cyan: #00ffff;
+  --dark-blue-bg: #0a0e27;
+  --mid-blue-bg: #1a3a52;
+  --deep-blue-bg: #2a5a7a;
+  --darkest-bg: #001a33;
+
+  /* Dark mode colors */
+  --dark-mode-bg: #000000;
+  --dark-mode-secondary: #001a33;
+}
+
+/* ============================================
+   ANIMATED BACKGROUNDS
+   ============================================ */
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.app-background {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a3a52 25%, #2a5a7a 50%, #1a3a52 75%, #0a0e27 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 30s ease infinite;
+  position: relative;
+  min-height: 100vh;
+}
+
+body.dark-mode .app-background {
+  background: linear-gradient(135deg, #000000 0%, #001a33 25%, #000000 50%, #001a33 75%, #000000 100%);
+  background-size: 400% 400%;
+}
+
+/* Subtle radial glow overlay - reduced intensity */
+.app-background::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.04) 0%, transparent 25%),
+    radial-gradient(circle at 80% 70%, rgba(0, 255, 255, 0.03) 0%, transparent 25%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.dark-mode .app-background::before {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.08) 0%, transparent 20%),
+    radial-gradient(circle at 80% 70%, rgba(0, 255, 255, 0.06) 0%, transparent 20%);
+}
+
+/* ============================================
+   GLASS CARD EFFECTS - Cleaner & Lighter
+   ============================================ */
+
+.glass-card {
+  background: rgba(26, 58, 82, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  position: relative;
+  transition: all 0.4s ease;
+}
+
+body.dark-mode .glass-card {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 212, 255, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.glass-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(0, 212, 255, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}
+
+body.dark-mode .glass-card:hover {
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 212, 255, 0.4),
+    0 0 60px rgba(0, 212, 255, 0.2);
+}
+
+/* Top border glow on hover - subtle */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.glass-card:hover::before {
+  opacity: 0.7;
+}
+
+/* Smaller glass cards */
+.glass-card-sm {
+  background: rgba(26, 58, 82, 0.5);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .glass-card-sm {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(0, 212, 255, 0.2);
+}
+
+.glass-card-sm:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+/* ============================================
+   CYAN/BLUE BUTTONS - Clean & Minimal
+   ============================================ */
+
+.btn-metallic-primary {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 50%, #00ffff 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 16px 48px;
+  font-weight: 600;
+  font-size: 18px;
+  color: #001a33;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  box-shadow:
+    0 4px 15px rgba(0, 212, 255, 0.3),
+    0 6px 25px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .btn-metallic-primary {
+  box-shadow:
+    0 4px 20px rgba(0, 212, 255, 0.4),
+    0 8px 35px rgba(0, 212, 255, 0.3),
+    0 0 50px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-metallic-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(0, 212, 255, 0.4),
+    0 10px 40px rgba(0, 212, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Shimmer effect - subtle */
+.btn-metallic-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.btn-metallic-primary:hover::before {
+  left: 200%;
+}
+
+.btn-metallic-secondary {
+  background: rgba(26, 58, 82, 0.5);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 14px 40px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #00d4ff;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  box-shadow:
+    0 4px 12px rgba(0, 212, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.btn-metallic-secondary:hover {
+  background: rgba(26, 58, 82, 0.7);
+  border-color: rgba(0, 212, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Small button variant */
+.btn-metallic-sm {
+  padding: 10px 24px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/* ============================================
+   CYAN/BLUE ICON BADGES
+   ============================================ */
+
+.metallic-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 50%, #00ffff 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow:
+    0 4px 15px rgba(0, 212, 255, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s ease;
+}
+
+.metallic-icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+  border-radius: 16px 16px 0 0;
+}
+
+.metallic-icon:hover {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow:
+    0 6px 20px rgba(0, 212, 255, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+
+.metallic-icon-sm {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.metallic-icon-sm::before {
+  border-radius: 12px 12px 0 0;
+}
+
+/* ============================================
+   GRADIENT TEXT
+   ============================================ */
+
+.text-gradient {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 50%, #00ffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+body.dark-mode .text-gradient {
+  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.3));
+}
+
+/* ============================================
+   INPUT FIELDS
+   ============================================ */
+
+.input-metallic {
+  background: rgba(26, 58, 82, 0.4);
+  border: 2px solid rgba(0, 212, 255, 0.2);
+  border-radius: 12px;
+  padding: 14px 20px;
+  color: #ffffff;
+  font-size: 16px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+body.dark-mode .input-metallic {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.input-metallic:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.input-metallic::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   BADGES & STATUS INDICATORS
+   ============================================ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(26, 58, 82, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #00d4ff;
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 2px 8px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .status-badge {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow:
+    0 2px 12px rgba(0, 212, 255, 0.3),
+    0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  background: #00d4ff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 8px rgba(0, 212, 255, 0.5),
+    0 0 15px rgba(0, 212, 255, 0.3);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.75; }
+}
+
+/* ============================================
+   PROGRESS BARS
+   ============================================ */
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(26, 58, 82, 0.4);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff 0%, #00ffff 100%);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+/* ============================================
+   TOOLTIPS
+   ============================================ */
+
+.tooltip-metallic {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #00d4ff;
+  font-size: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(26, 58, 82, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00d4ff 0%, #0099ff 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(26, 58, 82, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00ffff 0%, #00d4ff 100%);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   ANIMATIONS - Slower & Subtler
+   ============================================ */
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 212, 255, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.5); }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .btn-metallic-primary {
+    padding: 14px 32px;
+    font-size: 16px;
+  }
+
+  .glass-card {
+    border-radius: 16px;
+  }
+
+  .metallic-icon {
+    width: 48px;
+    height: 48px;
+  }
+}

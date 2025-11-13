@@ -1,0 +1,1436 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
+import { EmbeddingService } from './embeddingService';
+import { phase3Config } from '../config/phase3.config';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+export interface GeneratedDocument {
+  id: string;
+  project_id: string;
+  document_type: 'project_brief' | 'decision_log' | 'rejection_log' | 'technical_specs' | 'project_establishment' | 'rfp' | 'implementation_plan' | 'next_steps' | 'open_questions' | 'risk_assessment';
+  title: string;
+  content: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  metadata?: any;
+}
+
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  version_number: number;
+  content: string;
+  title: string;
+  change_summary?: string;
+  change_reason?: string;
+  diff_from_previous?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface VersionDiff {
+  from_version: number;
+  to_version: number;
+  from_content: string;
+  to_content: string;
+  from_title: string;
+  to_title: string;
+  changes: DiffChange[];
+}
+
+export interface DiffChange {
+  type: 'added' | 'removed' | 'unchanged';
+  value: string;
+}
+
+export interface DocumentRecommendation {
+  document_type: GeneratedDocument['document_type'];
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  estimated_value: string;
+}
+
+export interface QualityScore {
+  overall_score: number; // 0-100
+  completeness: number; // 0-100
+  consistency: number; // 0-100
+  citation_coverage: number; // 0-100
+  readability: number; // 0-100
+  confidence: number; // 0-100
+  issues: string[];
+  suggestions: string[];
+}
+
+export class GeneratedDocumentsService {
+  private embeddingService: EmbeddingService;
+
+  constructor(private supabase: SupabaseClient) {
+    this.embeddingService = new EmbeddingService(supabase);
+  }
+
+  /**
+   * Get all generated documents for a project
+   * Excludes deprecated document types (vendor_comparison)
+   */
+  async getByProject(projectId: string): Promise<GeneratedDocument[]> {
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .neq('document_type', 'vendor_comparison')
+      .order('document_type', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch generated documents: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Get a specific generated document by ID
+   */
+  async getById(documentId: string): Promise<GeneratedDocument | null> {
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch generated document: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Generate or regenerate all documents for a project
+   */
+  async generateDocuments(projectId: string): Promise<GeneratedDocument[]> {
+    // Fetch project data (items are stored in JSONB column, not separate table)
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    // First, ensure all messages have embeddings
+    console.log('Generating missing embeddings for project messages...');
+    try {
+      await this.embeddingService.generateMissingEmbeddings(projectId);
+    } catch (error) {
+      console.error('Failed to generate embeddings:', error);
+      // Continue anyway - we'll fall back to regular message fetching
+    }
+
+    // Fetch uploaded documents for context
+    const { data: uploadedDocs } = await this.supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+
+    const baseContext = {
+      project,
+      items: project.items || [],
+      uploadedDocuments: uploadedDocs || [],
+    };
+
+    // Generate all document types
+    const documentTypes: Array<GeneratedDocument['document_type']> = [
+      'project_brief',
+      'decision_log',
+      'rejection_log',
+      'technical_specs',
+      'project_establishment',
+      'next_steps',
+      'open_questions',
+      'risk_assessment',
+      'rfp',
+      'implementation_plan',
+    ];
+
+    const generatedDocs: GeneratedDocument[] = [];
+
+    for (const docType of documentTypes) {
+      const doc = await this.generateSingleDocument(projectId, docType, baseContext);
+      generatedDocs.push(doc);
+    }
+
+    return generatedDocs;
+  }
+
+  /**
+   * Generate a single document of a specific type
+   */
+  private async generateSingleDocument(
+    projectId: string,
+    documentType: GeneratedDocument['document_type'],
+    baseContext: any
+  ): Promise<GeneratedDocument> {
+    // Use semantic search to find relevant messages for this document type
+    let relevantMessages: any[] = [];
+    try {
+      const semanticMessages = await this.embeddingService.findRelevantMessagesForDocument(
+        documentType,
+        projectId,
+        50 // Get top 50 most relevant messages
+      );
+      relevantMessages = semanticMessages;
+      console.log(`Found ${relevantMessages.length} semantically relevant messages for ${documentType}`);
+    } catch (error) {
+      console.error('Semantic search failed, falling back to recent messages:', error);
+      // Fallback: get recent messages
+      const { data: recentMessages } = await this.supabase
+        .from('messages')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      relevantMessages = recentMessages || [];
+    }
+
+    // Build context with semantically relevant messages
+    const context = {
+      ...baseContext,
+      messages: relevantMessages,
+    };
+
+    const prompt = this.getPromptForDocumentType(documentType, context);
+
+    // Call Claude API to generate the document
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const content = message.content[0].type === 'text' ? message.content[0].text : '';
+    const title = this.getTitleForDocumentType(documentType, context.project.title);
+
+    // Upsert the document (insert or update if exists)
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .upsert(
+        {
+          project_id: projectId,
+          document_type: documentType,
+          title,
+          content,
+        },
+        {
+          onConflict: 'project_id,document_type',
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save generated document: ${error.message}`);
+    }
+
+    // Generate embedding for the document (Phase 3.3)
+    if (data && content && content.trim().length > 0) {
+      this.embeddingService.generateAndStoreDocumentEmbedding(data.id, content)
+        .then(() => {
+          console.log(`[GeneratedDocs] ✅ Embedding generated for ${documentType}`);
+        })
+        .catch((err: any) => {
+          console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for ${documentType}:`, err);
+          // Don't fail the whole document generation if embedding fails
+        });
+    }
+
+    return data;
+  }
+
+  /**
+   * Get the appropriate prompt for each document type
+   */
+  private getPromptForDocumentType(
+    documentType: GeneratedDocument['document_type'],
+    context: any
+  ): string {
+    const { project, items, messages, uploadedDocuments } = context;
+
+    const decidedItems = items.filter((i: any) => i.state === 'decided');
+    const rejectedItems = items.filter((i: any) => i.state === 'rejected');
+    const exploringItems = items.filter((i: any) => i.state === 'exploring');
+
+    // Build uploaded documents summary
+    const uploadedDocsSummary = uploadedDocuments && uploadedDocuments.length > 0
+      ? uploadedDocuments.map((doc: any) =>
+          `- ${doc.filename} (${doc.file_type || 'unknown type'})${doc.description ? ': ' + doc.description : ''}`
+        ).join('\n')
+      : 'No documents uploaded yet';
+
+    const baseContext = `
+Project: ${project.title}
+Description: ${project.description || 'No description provided'}
+
+Uploaded Project Documents (${uploadedDocuments?.length || 0}):
+${uploadedDocsSummary}
+
+Decided Items (${decidedItems.length}):
+${decidedItems.map((i: any, idx: number) => `${idx + 1}. ${i.text}`).join('\n') || 'None yet'}
+
+Items Being Explored (${exploringItems.length}):
+${exploringItems.map((i: any, idx: number) => `${idx + 1}. ${i.text}`).join('\n') || 'None yet'}
+
+Rejected Items (${rejectedItems.length}):
+${rejectedItems.map((i: any, idx: number) => `${idx + 1}. ${i.text}`).join('\n') || 'None yet'}
+
+Recent Conversation Context:
+${messages.slice(-10).map((m: any) => `${m.role}: ${m.content}`).join('\n\n') || 'No conversation history yet'}
+`;
+
+    switch (documentType) {
+      case 'project_brief':
+        return `${baseContext}
+
+Generate a comprehensive PROJECT BRIEF document in markdown format. Include:
+- Executive summary
+- Project goals and objectives
+- Current decisions made
+- Key features and requirements
+
+Write this as a professional, well-structured document that could be shared with stakeholders. DO NOT include next steps, open questions, or risk assessments - those are tracked in separate documents.`;
+
+      case 'decision_log':
+        return `${baseContext}
+
+Generate a DECISION LOG document in markdown format. For each decided item:
+- List the decision clearly
+- Include when it was decided (if citation data available)
+- Explain the reasoning or user quote that led to the decision
+- Note any alternatives that were considered
+
+Format as a clean, chronological log of all project decisions.`;
+
+      case 'rejection_log':
+        return `${baseContext}
+
+Generate a REJECTION LOG document in markdown format. For each rejected item:
+- State what was rejected
+- Explain why it was rejected
+- Note any alternatives or lessons learned
+
+This document helps track what the user explicitly does NOT want, which is just as important as what they do want.`;
+
+      case 'technical_specs':
+        return `${baseContext}
+
+Generate a TECHNICAL SPECIFICATIONS document in markdown format. Include:
+- Technical requirements based on decisions
+- Architecture considerations
+- Technology stack suggestions
+- Implementation details
+- Technical constraints and considerations
+${uploadedDocuments && uploadedDocuments.length > 0 ? '- Reference any uploaded documents that contain technical requirements or specifications' : ''}
+
+Write this for developers who will implement the project.`;
+
+      case 'project_establishment':
+        return `${baseContext}
+
+Generate a PROJECT ESTABLISHMENT document in markdown format. This document captures what the user has ESTABLISHED and DEFINED about the project. Include:
+- **Project Definition**: Core purpose, vision, and what the user wants to build
+- **User Requirements**: What the user has explicitly stated they need
+- **Project Goals**: Objectives and success criteria the user has established
+- **Constraints & Boundaries**: Limitations, restrictions, or boundaries the user has set
+- **User Preferences**: Specific preferences, style choices, or approaches the user wants
+- **Project Context**: Background information, target audience, use cases the user has defined
+- **Established Facts**: Key information about the project that the user has confirmed
+${uploadedDocuments && uploadedDocuments.length > 0 ? '- Reference any uploaded documents that contain project requirements or definitions' : ''}
+
+This document is the foundation - the "source of truth" for what the user wants their project to be. Focus on capturing user-established definitions, not suggestions or technical details.`;
+
+      case 'rfp':
+        return `${baseContext}
+
+Generate a professional REQUEST FOR PROPOSAL (RFP) document in markdown format. This document should be ready to send to potential vendors. Include:
+
+# Request for Proposal: ${project.title}
+
+## 1. Project Overview
+- Executive summary and project goals
+
+## 2. Scope of Work
+- Detailed requirements based on decided items
+- Expected deliverables
+
+## 3. Technical Requirements
+- Technical specifications from decided items
+${uploadedDocuments && uploadedDocuments.length > 0 ? '- Reference technical requirements from uploaded documents' : ''}
+
+## 4. Timeline
+- Expected project duration and key milestones
+
+## 5. Budget
+- Budget range (if discussed in decisions)
+
+## 6. Vendor Qualifications
+- Required experience, skills, and portfolio
+
+## 7. Submission Requirements
+- How to respond, what to include in proposal
+
+## 8. Evaluation Criteria
+- How proposals will be evaluated
+
+## 9. Terms and Conditions
+- Contract terms, payment structure, etc.
+
+Write this as a comprehensive, professional RFP ready to send to vendors.`;
+
+      case 'implementation_plan':
+        return `${baseContext}
+
+Generate a detailed IMPLEMENTATION PLAN document in markdown format. Include:
+
+# Implementation Plan: ${project.title}
+
+## 1. Executive Summary
+- Overview of implementation approach
+
+## 2. Project Phases
+- Break down into phases with timelines
+- Phase 1: Discovery & Planning
+- Phase 2: Design
+- Phase 3: Development
+- Phase 4: Testing & QA
+- Phase 5: Deployment & Launch
+
+## 3. Milestones and Deliverables
+- Key milestones with completion dates
+- Deliverables for each phase
+
+## 4. Resource Requirements
+- Team composition needed
+- Tools and technologies required
+- Infrastructure needs
+
+## 5. Budget Breakdown
+- Cost estimates by phase
+- Resource allocation
+
+## 6. Risk Assessment
+- Potential risks and mitigation strategies
+
+## 7. Success Criteria
+- How to measure successful implementation
+- KPIs and metrics
+
+## 8. Next Steps
+- Immediate actions to take
+- Dependencies and blockers
+
+Write this as a professional, actionable implementation plan.`;
+
+      case 'next_steps':
+        return `${baseContext}
+
+Generate a NEXT STEPS document in markdown format. Based on all project decisions, exploring ideas, and conversation history, create a clear action plan. Include:
+
+# Next Steps: ${project.title}
+
+## Immediate Actions (Next 1-2 weeks)
+- Prioritized list of immediate tasks to move the project forward
+- Who should do each task (if discussed)
+- Expected timeline for each
+
+## Short-term Actions (Next 1-3 months)
+- Key milestones and deliverables
+- Dependencies between tasks
+- Resource requirements
+
+## Long-term Planning (3+ months)
+- Future considerations
+- Strategic initiatives
+- Scaling considerations
+
+## Blockers & Dependencies
+- What needs to be resolved before proceeding
+- External dependencies
+- Decisions still needed
+
+## Resources Needed
+- Team members or expertise required
+- Tools or technology needed
+- Budget considerations (if discussed)
+
+Write this as an actionable, prioritized task list that helps move the project forward.`;
+
+      case 'open_questions':
+        return `${baseContext}
+
+Generate an OPEN QUESTIONS document in markdown format. Based on the conversation and project context, identify questions that still need answers. Include:
+
+# Open Questions: ${project.title}
+
+## Critical Questions (Must Answer Before Proceeding)
+List questions that are blockers to progress:
+- Questions about core requirements
+- Unresolved technical decisions
+- Budget or resource questions that impact planning
+
+## Important Questions (Should Answer Soon)
+Questions that would significantly improve the project:
+- Feature scope clarifications
+- User experience questions
+- Integration or compatibility questions
+
+## Future Considerations (Nice to Explore)
+Questions for future phases:
+- Scaling questions
+- Enhancement opportunities
+- Long-term strategy questions
+
+For each question, include:
+- The question itself
+- Why it matters (context and impact)
+- Who should answer it (if known)
+- Any dependencies or related questions
+
+Write this to help stakeholders identify what decisions still need to be made.`;
+
+      case 'risk_assessment':
+        return `${baseContext}
+
+Generate a RISK ASSESSMENT document in markdown format. Based on project decisions and requirements, identify potential risks. Include:
+
+# Risk Assessment: ${project.title}
+
+## High-Priority Risks
+Risks that could seriously impact project success:
+- **Risk Description**: What could go wrong
+- **Impact**: What would happen if this risk materialized
+- **Likelihood**: How likely is this risk (High/Medium/Low)
+- **Mitigation Strategy**: How to prevent or minimize this risk
+- **Contingency Plan**: What to do if the risk occurs
+
+## Medium-Priority Risks
+Risks that could cause delays or issues:
+- Same format as above
+
+## Low-Priority Risks
+Minor risks worth monitoring:
+- Same format as above
+
+## Technical Risks
+- Technology choices and compatibility issues
+- Performance or scalability concerns
+- Security or compliance risks
+
+## Business Risks
+- Budget overruns
+- Timeline delays
+- Resource availability
+- Market or competitive risks
+
+## Mitigation Summary
+- Key actions to reduce overall risk
+- Monitoring and review process
+- Risk ownership and accountability
+
+Write this as a professional risk assessment that helps stakeholders make informed decisions.`;
+
+      default:
+        throw new Error(`Unknown document type: ${documentType}`);
+    }
+  }
+
+  /**
+   * Get the appropriate title for each document type
+   * Note: Project name is not included as it's already clear from context
+   */
+  private getTitleForDocumentType(
+    documentType: GeneratedDocument['document_type'],
+    projectTitle: string
+  ): string {
+    switch (documentType) {
+      case 'project_brief':
+        return 'Project Brief';
+      case 'decision_log':
+        return 'Decision Log';
+      case 'rejection_log':
+        return 'Rejection Log';
+      case 'technical_specs':
+        return 'Technical Specifications';
+      case 'project_establishment':
+        return 'Project Establishment';
+      case 'rfp':
+        return 'Request for Proposal';
+      case 'implementation_plan':
+        return 'Implementation Plan';
+      case 'next_steps':
+        return 'Next Steps';
+      case 'open_questions':
+        return 'Open Questions';
+      case 'risk_assessment':
+        return 'Risk Assessment';
+      default:
+        return 'Document';
+    }
+  }
+
+  /**
+   * Delete a generated document
+   */
+  async delete(documentId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('generated_documents')
+      .delete()
+      .eq('id', documentId);
+
+    if (error) {
+      throw new Error(`Failed to delete generated document: ${error.message}`);
+    }
+  }
+
+  // ============================================
+  // VERSION MANAGEMENT METHODS
+  // ============================================
+
+  /**
+   * Get version history for a document
+   */
+  async getVersionHistory(documentId: string): Promise<DocumentVersion[]> {
+    const { data, error } = await this.supabase
+      .from('document_versions')
+      .select('*')
+      .eq('document_id', documentId)
+      .order('version_number', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch version history: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Get a specific version of a document
+   */
+  async getVersion(documentId: string, versionNumber: number): Promise<DocumentVersion | null> {
+    const { data, error } = await this.supabase
+      .from('document_versions')
+      .select('*')
+      .eq('document_id', documentId)
+      .eq('version_number', versionNumber)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch version: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Generate a diff between two versions
+   */
+  async getVersionDiff(documentId: string, fromVersion: number, toVersion: number): Promise<VersionDiff> {
+    // Fetch both versions
+    const [from, to] = await Promise.all([
+      this.getVersion(documentId, fromVersion),
+      this.getVersion(documentId, toVersion)
+    ]);
+
+    if (!from || !to) {
+      throw new Error('One or both versions not found');
+    }
+
+    // Generate diff using simple line-by-line comparison
+    const changes = this.computeTextDiff(from.content, to.content);
+
+    return {
+      from_version: fromVersion,
+      to_version: toVersion,
+      from_content: from.content,
+      to_content: to.content,
+      from_title: from.title,
+      to_title: to.title,
+      changes
+    };
+  }
+
+  /**
+   * Simple diff algorithm (line-by-line comparison)
+   */
+  private computeTextDiff(oldText: string, newText: string): DiffChange[] {
+    const oldLines = oldText.split('\n');
+    const newLines = newText.split('\n');
+    const changes: DiffChange[] = [];
+
+    // Simple line matching algorithm
+    let oldIndex = 0;
+    let newIndex = 0;
+
+    while (oldIndex < oldLines.length || newIndex < newLines.length) {
+      if (oldIndex < oldLines.length && newIndex < newLines.length) {
+        if (oldLines[oldIndex] === newLines[newIndex]) {
+          changes.push({ type: 'unchanged', value: oldLines[oldIndex] });
+          oldIndex++;
+          newIndex++;
+        } else {
+          // Check if line was removed
+          if (!newLines.includes(oldLines[oldIndex])) {
+            changes.push({ type: 'removed', value: oldLines[oldIndex] });
+            oldIndex++;
+          }
+          // Check if line was added
+          else if (!oldLines.includes(newLines[newIndex])) {
+            changes.push({ type: 'added', value: newLines[newIndex] });
+            newIndex++;
+          } else {
+            // Line might have moved or changed
+            changes.push({ type: 'removed', value: oldLines[oldIndex] });
+            changes.push({ type: 'added', value: newLines[newIndex] });
+            oldIndex++;
+            newIndex++;
+          }
+        }
+      } else if (oldIndex < oldLines.length) {
+        changes.push({ type: 'removed', value: oldLines[oldIndex] });
+        oldIndex++;
+      } else {
+        changes.push({ type: 'added', value: newLines[newIndex] });
+        newIndex++;
+      }
+    }
+
+    return changes;
+  }
+
+  /**
+   * Rollback to a specific version
+   */
+  async rollbackToVersion(documentId: string, versionNumber: number, userId?: string): Promise<GeneratedDocument> {
+    // Get the version to rollback to
+    const version = await this.getVersion(documentId, versionNumber);
+    if (!version) {
+      throw new Error(`Version ${versionNumber} not found`);
+    }
+
+    // Update the current document with the old version's content
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .update({
+        title: version.title,
+        content: version.content,
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to rollback document: ${error.message}`);
+    }
+
+    // Optionally add a note in the version history about the rollback
+    await this.addChangeNote(documentId, data.version, `Rolled back to version ${versionNumber}`, userId);
+
+    return data;
+  }
+
+  /**
+   * Generate an AI summary of changes between versions
+   */
+  async generateChangeSummary(documentId: string, fromVersion: number, toVersion: number): Promise<string> {
+    const diff = await this.getVersionDiff(documentId, fromVersion, toVersion);
+
+    // Count changes
+    const added = diff.changes.filter(c => c.type === 'added').length;
+    const removed = diff.changes.filter(c => c.type === 'removed').length;
+
+    // Use Claude to generate a human-readable summary
+    const prompt = `Analyze these document changes and provide a concise summary (2-3 sentences):
+
+Old Title: ${diff.from_title}
+New Title: ${diff.to_title}
+
+Changes:
+- ${added} lines added
+- ${removed} lines removed
+
+Old Content Preview:
+${diff.from_content.substring(0, 500)}...
+
+New Content Preview:
+${diff.to_content.substring(0, 500)}...
+
+Provide a brief, professional summary of what changed and why it might matter.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const summary = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    // Store the summary in the version
+    await this.supabase
+      .from('document_versions')
+      .update({ change_summary: summary })
+      .eq('document_id', documentId)
+      .eq('version_number', toVersion);
+
+    return summary;
+  }
+
+  /**
+   * Add a change note to a version
+   */
+  private async addChangeNote(documentId: string, versionNumber: number, note: string, userId?: string): Promise<void> {
+    await this.supabase
+      .from('document_versions')
+      .update({
+        change_reason: note,
+        created_by: userId
+      })
+      .eq('document_id', documentId)
+      .eq('version_number', versionNumber);
+  }
+
+  /**
+   * Get document recommendations based on project state
+   */
+  async getRecommendations(projectId: string): Promise<DocumentRecommendation[]> {
+    // Fetch project data
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    // Fetch existing documents
+    const existingDocs = await this.getByProject(projectId);
+    const existingTypes = new Set(existingDocs.map(d => d.document_type));
+
+    // Fetch recent messages
+    const { data: messages } = await this.supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Analyze project state
+    const items = project.items || [];
+    const decidedCount = items.filter((i: any) => i.state === 'decided').length;
+    const exploringCount = items.filter((i: any) => i.state === 'exploring').length;
+    const hasDocuments = items.some((i: any) => i.type === 'document');
+    const messageCount = messages?.length || 0;
+
+    // Build analysis prompt
+    const prompt = `Analyze this project and recommend which documents to generate next.
+
+Project: ${project.title}
+Status: ${project.status}
+Items: ${items.length} total (${decidedCount} decided, ${exploringCount} exploring)
+Messages: ${messageCount}
+Has attached documents: ${hasDocuments}
+
+Existing documents: ${existingTypes.size > 0 ? Array.from(existingTypes).join(', ') : 'None'}
+
+Available document types:
+1. project_brief - Overview and scope
+2. decision_log - All decisions with rationale
+3. rejection_log - Rejected ideas and why
+4. technical_specs - Technical requirements and architecture
+5. project_establishment - Charter and governance
+6. rfp - Request for Proposal
+7. implementation_plan - Step-by-step execution plan
+8. next_steps - Immediate action items
+9. open_questions - Unresolved questions
+10. risk_assessment - Risks and mitigation strategies
+
+Recent activity snippet:
+${messages?.slice(0, 5).map((m: any) => `${m.role}: ${m.content.substring(0, 100)}...`).join('\n')}
+
+Recommend up to 3 documents that would be most valuable right now. For each, provide:
+1. Document type (exact name from list above)
+2. Priority (high/medium/low)
+3. Reason (one sentence)
+4. Estimated value (one sentence)
+
+Format as JSON array:
+[
+  {
+    "document_type": "project_brief",
+    "priority": "high",
+    "reason": "Project has many decisions but no overview document",
+    "estimated_value": "Provides stakeholders with quick project understanding"
+  }
+]`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    // Extract JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('Failed to parse recommendations from AI response');
+    }
+
+    const recommendations: DocumentRecommendation[] = JSON.parse(jsonMatch[0]);
+
+    // Filter out already existing documents
+    return recommendations.filter(rec => !existingTypes.has(rec.document_type));
+  }
+
+  /**
+   * Generate a document from research query results
+   * Phase 3.1: Automatic Document Generation from Research
+   */
+  async generateFromResearch(
+    researchQueryId: string,
+    documentType: GeneratedDocument['document_type'],
+    userId?: string
+  ): Promise<GeneratedDocument> {
+    // Fetch the research query
+    const { data: researchQuery, error: queryError } = await this.supabase
+      .from('research_queries')
+      .select('*')
+      .eq('id', researchQueryId)
+      .single();
+
+    if (queryError || !researchQuery) {
+      throw new Error(`Research query not found: ${queryError?.message}`);
+    }
+
+    if (researchQuery.status !== 'completed') {
+      throw new Error('Research query is not completed yet');
+    }
+
+    // Fetch the project
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', researchQuery.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Project not found: ${projectError?.message}`);
+    }
+
+    // Fetch saved references from the research
+    let researchReferences: any[] = [];
+    if (researchQuery.metadata?.savedReferences && researchQuery.metadata.savedReferences.length > 0) {
+      const { data: refs } = await this.supabase
+        .from('references')
+        .select('*')
+        .in('id', researchQuery.metadata.savedReferences);
+
+      researchReferences = refs || [];
+    }
+
+    // Build context enriched with research findings
+    const researchContext = {
+      query: researchQuery.query,
+      synthesis: researchQuery.metadata?.synthesis || '',
+      sources: researchQuery.metadata?.sources || [],
+      references: researchReferences,
+      duration: researchQuery.metadata?.duration || 0,
+      timestamp: researchQuery.created_at,
+    };
+
+    // Get existing project context
+    const { data: uploadedDocs } = await this.supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('created_at', { ascending: false });
+
+    const baseContext = {
+      project,
+      items: project.items || [],
+      uploadedDocuments: uploadedDocs || [],
+      researchContext, // Add research context
+    };
+
+    // Use semantic search for relevant messages
+    let relevantMessages: any[] = [];
+    try {
+      const semanticMessages = await this.embeddingService.findRelevantMessagesForDocument(
+        documentType,
+        project.id,
+        50
+      );
+      relevantMessages = semanticMessages;
+    } catch (error) {
+      console.error('Semantic search failed, falling back to recent messages:', error);
+      const { data: recentMessages } = await this.supabase
+        .from('messages')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      relevantMessages = recentMessages || [];
+    }
+
+    const context = {
+      ...baseContext,
+      messages: relevantMessages,
+    };
+
+    // Generate prompt with research context
+    const prompt = this.getPromptForDocumentTypeWithResearch(documentType, context);
+
+    // Call Claude API to generate the document
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const content = message.content[0].type === 'text' ? message.content[0].text : '';
+    const title = this.getTitleForDocumentType(documentType, context.project.title);
+
+    // Upsert the document
+    const { data, error } = await this.supabase
+      .from('generated_documents')
+      .upsert(
+        {
+          project_id: project.id,
+          document_type: documentType,
+          title,
+          content,
+          metadata: {
+            generated_from_research: true,
+            research_query_id: researchQueryId,
+            research_query: researchQuery.query,
+            generated_by: userId,
+            generated_at: new Date().toISOString(),
+          },
+        },
+        {
+          onConflict: 'project_id,document_type',
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save generated document: ${error.message}`);
+    }
+
+    console.log(`[GeneratedDocs] Generated ${documentType} from research query ${researchQueryId}`);
+
+    // Generate embedding for the research-generated document (Phase 3.3)
+    if (data && data.content && data.content.trim().length > 0) {
+      this.embeddingService.generateAndStoreDocumentEmbedding(data.id, data.content)
+        .then(() => {
+          console.log(`[GeneratedDocs] ✅ Embedding generated for research-based ${documentType}`);
+        })
+        .catch((err: any) => {
+          console.error(`[GeneratedDocs] ⚠️ Embedding generation failed for research-based ${documentType}:`, err);
+          // Don't fail the whole document generation if embedding fails
+        });
+    }
+
+    return data;
+  }
+
+  /**
+   * Get prompt for document type with research context integration
+   */
+  private getPromptForDocumentTypeWithResearch(
+    documentType: GeneratedDocument['document_type'],
+    context: any
+  ): string {
+    const { researchContext } = context;
+
+    // Build research findings summary
+    const researchSummary = researchContext ? `
+RESEARCH FINDINGS:
+Query: "${researchContext.query}"
+Date: ${new Date(researchContext.timestamp).toLocaleDateString()}
+Duration: ${researchContext.duration}ms
+
+Research Synthesis:
+${researchContext.synthesis}
+
+Research Sources (${researchContext.sources?.length || 0}):
+${researchContext.sources?.map((s: any, idx: number) =>
+  `${idx + 1}. ${s.title || 'Untitled'}
+   URL: ${s.url}
+   ${s.analysis ? `Analysis: ${s.analysis.substring(0, 200)}...` : ''}`
+).join('\n\n') || 'No sources available'}
+
+Saved References (${researchContext.references?.length || 0}):
+${researchContext.references?.map((r: any, idx: number) =>
+  `${idx + 1}. ${r.title}
+   Type: ${r.type}
+   ${r.content ? `Content Preview: ${r.content.substring(0, 150)}...` : ''}`
+).join('\n\n') || 'No references saved'}
+` : '';
+
+    // Get base prompt and enhance with research context
+    const basePrompt = this.getPromptForDocumentType(documentType, context);
+
+    if (!researchContext) {
+      return basePrompt;
+    }
+
+    // Prepend research context to the base prompt
+    return `${researchSummary}
+
+${basePrompt}
+
+IMPORTANT: Incorporate the research findings above into the document. Use the research synthesis, sources, and references to provide evidence-based insights and recommendations. Cite specific sources where appropriate using markdown links.`;
+  }
+
+  /**
+   * Calculate quality score for a document
+   */
+  async calculateQualityScore(documentId: string): Promise<QualityScore> {
+    const document = await this.getById(documentId);
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    // Fetch project to get items with citations
+    const { data: project } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', document.project_id)
+      .single();
+
+    const items = project?.items || [];
+    const itemsWithCitations = items.filter((i: any) => i.citation);
+
+    // Basic metrics
+    const wordCount = document.content.split(/\s+/).length;
+    const sectionCount = (document.content.match(/^#{1,3}\s/gm) || []).length;
+    const hasIntroduction = /^#\s.*introduction/i.test(document.content);
+    const hasConclusion = /^#\s.*(conclusion|summary|next steps)/i.test(document.content);
+
+    // Citation metrics
+    const citationMatches = document.content.match(/\[.*?\]\(.*?\)/g) || [];
+    const citationCount = citationMatches.length;
+    const citationDensity = wordCount > 0 ? (citationCount / wordCount) * 100 : 0;
+
+    // AI-powered quality analysis
+    const prompt = `Analyze this document for quality and provide scores:
+
+Title: ${document.title}
+Type: ${document.document_type}
+Word Count: ${wordCount}
+Sections: ${sectionCount}
+Citations: ${citationCount}
+
+Content Preview:
+${document.content.substring(0, 1000)}...
+
+Provide quality assessment with scores (0-100):
+1. Completeness - Has all expected sections for this document type
+2. Consistency - Consistent terminology and formatting
+3. Citation Coverage - Adequate support for claims
+4. Readability - Clear structure and language
+5. Confidence - Overall reliability and thoroughness
+
+Also identify 2-3 specific issues and 2-3 improvement suggestions.
+
+Format as JSON:
+{
+  "completeness": 85,
+  "consistency": 90,
+  "citation_coverage": 75,
+  "readability": 80,
+  "confidence": 82,
+  "issues": ["Missing risk analysis section", "Some technical terms undefined"],
+  "suggestions": ["Add glossary", "Include timeline", "Add more data visualizations"]
+}`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = message.content[0].type === 'text' ? message.content[0].text : '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      throw new Error('Failed to parse quality scores from AI response');
+    }
+
+    const aiScores = JSON.parse(jsonMatch[0]);
+
+    // Calculate overall score as weighted average
+    const overall_score = Math.round(
+      (aiScores.completeness * 0.25) +
+      (aiScores.consistency * 0.15) +
+      (aiScores.citation_coverage * 0.20) +
+      (aiScores.readability * 0.20) +
+      (aiScores.confidence * 0.20)
+    );
+
+    return {
+      overall_score,
+      completeness: aiScores.completeness,
+      consistency: aiScores.consistency,
+      citation_coverage: aiScores.citation_coverage,
+      readability: aiScores.readability,
+      confidence: aiScores.confidence,
+      issues: aiScores.issues || [],
+      suggestions: aiScores.suggestions || [],
+    };
+  }
+
+  /**
+   * Check if a document needs re-examination based on project changes
+   * Phase 3.1: Re-examination System
+   */
+  async checkIfNeedsReexamination(documentId: string): Promise<{
+    needsReexamination: boolean;
+    reason?: string;
+    decidedItemsChanged: number;
+    newDecidedItems: number;
+  }> {
+    // Get the document with its metadata
+    const { data: document, error: docError } = await this.supabase
+      .from('generated_documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (docError || !document) {
+      throw new Error(`Failed to fetch document: ${docError?.message}`);
+    }
+
+    // Get current project state
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', document.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    const currentDecidedItems = project.items?.filter((i: any) => i.state === 'decided') || [];
+    const sourceItemsHash = document.metadata?.source_items_hash || '';
+    const sourceItemsCount = document.metadata?.source_items_count || 0;
+
+    // Calculate hash of current decided items
+    const currentItemsText = currentDecidedItems.map((item: any) => item.text).sort().join('|');
+    const currentHash = this.simpleHash(currentItemsText);
+
+    // Check if hash changed or count changed significantly
+    const hashChanged = sourceItemsHash !== '' && currentHash !== sourceItemsHash;
+    const countDifference = Math.abs(currentDecidedItems.length - sourceItemsCount);
+    const significantCountChange = countDifference >= phase3Config.reexamination.significantChangeThreshold;
+
+    let needsReexamination = false;
+    let reason = '';
+    const decidedItemsChanged = hashChanged ? countDifference : 0;
+    const newDecidedItems = Math.max(0, currentDecidedItems.length - sourceItemsCount);
+
+    if (hashChanged) {
+      needsReexamination = true;
+      reason = `Project decisions have changed. ${decidedItemsChanged} items modified, ${newDecidedItems} new items added.`;
+    } else if (significantCountChange) {
+      needsReexamination = true;
+      reason = `Significant project changes detected. ${newDecidedItems} new decided items added.`;
+    }
+
+    return {
+      needsReexamination,
+      reason,
+      decidedItemsChanged,
+      newDecidedItems,
+    };
+  }
+
+  /**
+   * Re-examine and regenerate a document with current project data
+   * Phase 3.1: Re-examination System
+   */
+  async reexamineDocument(documentId: string, userId?: string): Promise<{
+    document: GeneratedDocument;
+    changes: string[];
+    previousVersion: number;
+  }> {
+    // Get the current document
+    const document = await this.getById(documentId);
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    const previousVersion = document.version;
+    const previousContent = document.content;
+
+    // Get current project data
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', document.project_id)
+      .single();
+
+    if (projectError || !project) {
+      throw new Error(`Failed to fetch project: ${projectError?.message}`);
+    }
+
+    // Regenerate the document with current project data
+    // Build the context for document regeneration
+    const items = project.items || [];
+    const decidedItems = items.filter((i: any) => i.state === 'decided');
+    const exploringItems = items.filter((i: any) => i.state === 'exploring');
+    const rejectedItems = items.filter((i: any) => i.state === 'rejected');
+
+    const baseContext = {
+      project: { title: project.title, description: project.description || '' },
+      items,
+      decidedItems,
+      exploringItems,
+      rejectedItems,
+      messages: [],
+      uploadedDocuments: [],
+    };
+
+    const prompt = this.getPromptForDocumentType(document.document_type, baseContext);
+
+    // Call Claude API to regenerate
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const newContent = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    // Calculate what changed
+    const changes = await this.identifyChanges(previousContent, newContent);
+
+    // Update the document and create a new version
+    const { data: updated, error: updateError } = await this.supabase
+      .from('generated_documents')
+      .update({
+        content: newContent,
+        version: previousVersion + 1,
+        updated_at: new Date().toISOString(),
+        metadata: {
+          ...document.metadata,
+          last_reexamined_at: new Date().toISOString(),
+          reexamined_by: userId,
+          source_items_count: project.items?.filter((i: any) => i.state === 'decided').length || 0,
+          source_items_hash: this.simpleHash(
+            project.items?.filter((i: any) => i.state === 'decided')
+              .map((item: any) => item.text)
+              .sort()
+              .join('|') || ''
+          ),
+        },
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to update document: ${updateError.message}`);
+    }
+
+    // Create version history entry
+    await this.supabase.from('document_versions').insert([{
+      document_id: documentId,
+      version_number: previousVersion,
+      content: previousContent,
+      title: document.title,
+      change_summary: `Re-examined with updated project data`,
+      change_reason: 'Project decisions changed',
+      created_by: userId,
+      created_at: document.updated_at,
+    }]);
+
+    return {
+      document: updated,
+      changes,
+      previousVersion,
+    };
+  }
+
+  /**
+   * Identify changes between two document versions
+   * Phase 3.1: Re-examination System
+   */
+  private async identifyChanges(oldContent: string, newContent: string): Promise<string[]> {
+    const truncLength = phase3Config.reexamination.contentTruncationLength;
+    const prompt = `Compare these two versions of a document and identify the KEY changes in bullet points.
+
+OLD VERSION:
+${oldContent.substring(0, truncLength)}
+
+NEW VERSION:
+${newContent.substring(0, truncLength)}
+
+List ONLY the significant changes (new sections, removed content, major updates).
+Return as a JSON array of strings, max 5 changes.
+
+Example: ["Added technical requirements section", "Updated timeline from Q2 to Q3", "Removed vendor comparison table"]`;
+
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const responseText = message.content[0].type === 'text' ? message.content[0].text : '[]';
+      const changesMatch = responseText.match(/\[[\s\S]*?\]/);
+      if (changesMatch) {
+        return JSON.parse(changesMatch[0]);
+      }
+      return ['Content updated with current project data'];
+    } catch (error) {
+      console.error('Error identifying changes:', error);
+      return ['Content updated with current project data'];
+    }
+  }
+
+  /**
+   * Simple hash function for detecting content changes
+   * Phase 3.1: Re-examination System
+   */
+  private simpleHash(text: string): string {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
+  }
+}
