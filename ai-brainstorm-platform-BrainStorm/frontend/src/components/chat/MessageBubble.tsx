@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Bot, User as UserIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import type { Message } from '../../types';
 
 interface MessageBubbleProps {
@@ -9,6 +10,18 @@ interface MessageBubbleProps {
   isDarkMode: boolean;
   animate?: boolean;
 }
+
+const formatTimestamp = (timestamp: string): string => {
+  const date = new Date(timestamp);
+
+  if (isToday(date)) {
+    return format(date, 'h:mm a');
+  } else if (isYesterday(date)) {
+    return `Yesterday ${format(date, 'h:mm a')}`;
+  } else {
+    return format(date, 'MMM d, h:mm a');
+  }
+};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isDarkMode, animate = true }) => {
   const isUser = message.role === 'user';
@@ -53,12 +66,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isDarkMod
               isDarkMode ? 'border-white/10' : 'border-gray-200'
             }`}
           >
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            {isUser ? (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            ) : (
+              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
+            )}
           </div>
 
           {/* Timestamp */}
           <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-            {format(new Date(message.created_at), 'h:mm a')}
+            {formatTimestamp(message.created_at)}
           </div>
         </div>
       </div>

@@ -28,11 +28,23 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const scrollToBottom = (force = false) => {
+    if (force) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+
+    // Only auto-scroll if user is near the bottom (within 100px)
+    const container = scrollContainerRef.current;
+    if (container) {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
   };
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages (only if user is already near bottom)
   useEffect(() => {
     const messageCountChanged = messages.length > prevMessageCountRef.current;
 
