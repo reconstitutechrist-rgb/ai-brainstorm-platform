@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Upload, Send, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
@@ -24,6 +24,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isSessionActive,
   isDarkMode,
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight (content height) up to maxHeight
+      const newHeight = Math.min(textarea.scrollHeight, 120);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [value]);
+
   return (
     <div className="p-6 border-t border-cyan-primary/20">
       <div className="flex items-end space-x-3">
@@ -40,6 +54,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         <div className="flex-1 relative">
           <textarea
+            ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={onKeyDown}
@@ -55,9 +70,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             } focus:outline-none focus:ring-2 focus:ring-cyan-primary/50 ${
               !isSessionActive ? 'opacity-50 cursor-not-allowed' : ''
             }`}
-            style={{ maxHeight: '120px' }}
+            style={{ maxHeight: '120px', overflow: 'auto' }}
             aria-label="Message input"
           />
+          {/* Enter key hint */}
+          {isSessionActive && (
+            <div className={`absolute bottom-1 right-2 text-xs ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            } pointer-events-none`}>
+              Shift+Enter for new line
+            </div>
+          )}
         </div>
 
         <button

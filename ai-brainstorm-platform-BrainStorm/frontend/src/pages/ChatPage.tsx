@@ -7,6 +7,7 @@ import { useChatStore } from '../store/chatStore';
 import { useSessionStore } from '../store/sessionStore';
 import { useAgentStore } from '../store/agentStore';
 import { useChat, useMessageLoader } from '../hooks';
+import { showToast } from '../utils/toast';
 import '../styles/homepage.css';
 import {
   ChatPageHeader,
@@ -283,7 +284,7 @@ export const ChatPage: React.FC = () => {
     const result = await sendMessage(messageText);
 
     if (!result.success && result.error) {
-      alert(result.error);
+      showToast(result.error, 'error');
       setInputMessage(messageText); // Re-add message on error
     }
   };
@@ -338,7 +339,7 @@ export const ChatPage: React.FC = () => {
     const result = await sendMessage(message);
 
     if (!result.success && result.error) {
-      alert('Failed to send your response. Please try again.');
+      showToast('Failed to send your response. Please try again.', 'error');
     }
   };
 
@@ -351,7 +352,7 @@ export const ChatPage: React.FC = () => {
     if (capacity.canAddCard) {
       toggleItemArchive(itemId);
     } else {
-      alert('Canvas is at capacity (30 cards). Please archive some cards before restoring.');
+      showToast('Canvas is at capacity (30 cards). Please archive some cards before restoring.', 'info');
     }
   };
 
@@ -376,7 +377,7 @@ export const ChatPage: React.FC = () => {
       clearSelection();
     } catch (error) {
       console.error('Failed to archive selected cards:', error);
-      alert('Failed to archive selected cards. Please try again.');
+      showToast('Failed to archive selected cards. Please try again.', 'error');
     } finally {
       setIsArchiving(false);
     }
@@ -397,7 +398,7 @@ export const ChatPage: React.FC = () => {
       clearSelection();
     } catch (error) {
       console.error('Failed to archive all cards:', error);
-      alert('Failed to archive all cards. Please try again.');
+      showToast('Failed to archive all cards. Please try again.', 'error');
     } finally {
       setIsArchiving(false);
     }
