@@ -18,9 +18,7 @@ import analysisChatRoutes from './routes/analysis-chat';
 import analysisTemplatesRoutes from './routes/analysis-templates';
 import sessionReviewRoutes from './routes/session-review';
 import brainstormSessionsRoutes from './routes/brainstorm-sessions';
-console.log('[DEBUG] About to import intelligenceHub routes...');
 import intelligenceHubRoutes from './routes/intelligenceHub';
-console.log('[DEBUG] Successfully imported intelligenceHub routes:', typeof intelligenceHubRoutes);
 import cacheRoutes from './routes/cache';
 import researchStreamRoutes from './routes/research-stream';
 import { testConnection } from './services/supabase';
@@ -69,9 +67,7 @@ app.use('/api/analysis', analysisChatRoutes); // Phase 4.1
 app.use('/api/analysis-templates', analysisTemplatesRoutes); // Phase 4.2
 app.use('/api/session-review', sessionReviewRoutes); // Sandbox session review
 app.use('/api/brainstorm-sessions', brainstormSessionsRoutes); // Brainstorm sessions
-console.log('[DEBUG] Registering intelligence hub routes at /api/intelligence-hub...');
 app.use('/api/intelligence-hub', intelligenceHubRoutes); // Intelligence Hub conversational search
-console.log('[DEBUG] Intelligence hub routes registered successfully');
 app.use('/api/cache', cacheRoutes); // Cache management endpoints
 app.use('/api/research-stream', researchStreamRoutes); // Streaming research endpoints (SSE)
 

@@ -1,8 +1,6 @@
-console.log('[DEBUG] Loading intelligenceSearchAgent.ts...');
 import { BaseAgent } from './base';
 import Anthropic from '@anthropic-ai/sdk';
 import { SupabaseClient } from '@supabase/supabase-js';
-console.log('[DEBUG] IntelligenceSearchAgent dependencies imported');
 
 interface SearchFilters {
   docTypes?: string[];

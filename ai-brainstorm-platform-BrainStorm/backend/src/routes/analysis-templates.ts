@@ -125,8 +125,8 @@ router.post('/custom', async (req, res) => {
 
     const customTemplate = createCustomTemplate(name, description, fields as TemplateField[]);
 
-    // TODO: Save to database for persistence
-    // For now, we're creating it in-memory
+    // NOTE: Custom templates are currently stored in-memory only
+    // Future enhancement: Persist custom templates to database for cross-session availability
 
     res.json({
       success: true,

@@ -1,20 +1,14 @@
-console.log('[DEBUG] Loading intelligenceHub.ts route file...');
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
-console.log('[DEBUG] About to import IntelligenceSearchAgent...');
 import { IntelligenceSearchAgent } from '../agents/intelligenceSearchAgent';
 import { ConversationalIntelligenceService } from '../services/conversationalIntelligenceService';
-console.log('[DEBUG] IntelligenceSearchAgent imported successfully');
 
 const router = Router();
-console.log('[DEBUG] Creating IntelligenceSearchAgent instance...');
 const searchAgent = new IntelligenceSearchAgent(supabase);
 const conversationalService = new ConversationalIntelligenceService(supabase);
-console.log('[DEBUG] IntelligenceSearchAgent instance created successfully');
 
 // Test route to verify routes are registered
 router.get('/test', (req: Request, res: Response) => {
-  console.log('[DEBUG] Test route hit!');
   res.json({ success: true, message: 'Intelligence Hub routes are working!' });
 });
 

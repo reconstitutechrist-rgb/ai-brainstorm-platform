@@ -553,9 +553,10 @@ Return ONLY a JSON array in this exact format:
     this.log(`Searching documents for project ${projectId}...`);
 
     try {
-      // Search using semantic similarity
-      // TODO: Implement semantic similarity search
-      const semanticResults: any[] = []; // Placeholder - was: await searchSemanticSimilarity(query, projectId, maxResults);
+      // NOTE: Semantic similarity search not yet implemented
+      // Future enhancement: Implement vector embeddings for semantic document search
+      // For now, document search functionality is disabled (returns empty results)
+      const semanticResults: any[] = [];
 
       const documentSources: Array<{
         id: string;
