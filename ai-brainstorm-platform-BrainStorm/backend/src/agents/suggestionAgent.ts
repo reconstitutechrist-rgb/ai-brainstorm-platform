@@ -1,6 +1,7 @@
 import { BaseAgent } from './base';
 import { AgentResponse, ProjectState } from '../types';
 import { CanvasAnalysisService, OrganizationSuggestion } from '../services/canvasAnalysisService';
+import { SuggestionCacheService, ProjectContext } from '../services/suggestionCache';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Suggestion {
@@ -16,6 +17,7 @@ export interface Suggestion {
 
 export class SuggestionAgent extends BaseAgent {
   private canvasAnalysisService?: CanvasAnalysisService;
+  private cacheService?: SuggestionCacheService;
 
   constructor(supabase?: SupabaseClient) {
     const systemPrompt = `You are the Suggestion Agent - you provide intelligent, contextual suggestions to help users make progress on their projects.
@@ -72,6 +74,7 @@ QUALITY CRITERIA:
     // Initialize canvas analysis service if supabase client is provided
     if (supabase) {
       this.canvasAnalysisService = new CanvasAnalysisService(supabase);
+      this.cacheService = new SuggestionCacheService(supabase);
     }
   }
 
@@ -88,6 +91,30 @@ QUALITY CRITERIA:
     const exploringCount = projectState.exploring?.length || 0;
     const parkedCount = projectState.parked?.length || 0;
     const totalItems = decidedCount + exploringCount + parkedCount;
+
+    // Build context for caching
+    const context: ProjectContext = {
+      messageCount: conversationHistory.length,
+      decidedCount,
+      exploringCount,
+      parkedCount,
+      recentActivity,
+    };
+
+    // Try to get cached suggestions first (allow stale for instant response)
+    if (this.cacheService && projectId) {
+      const cached = await this.cacheService.getCachedSuggestions(projectId, context, true);
+      if (cached) {
+        if (cached.isStale) {
+          this.log('Using stale cache while revalidating in background');
+          // Trigger background regeneration without blocking
+          this.regenerateInBackground(projectId, context, projectState, conversationHistory, recentActivity);
+        } else {
+          this.log('Using fresh cached suggestions');
+        }
+        return cached.suggestions;
+      }
+    }
 
     // Generate canvas organization suggestions if available
     let canvasSuggestions: Suggestion[] = [];
@@ -168,7 +195,128 @@ Return ONLY valid JSON array matching your system prompt format.`,
 
     this.log(`Total suggestions: ${allSuggestions.length} (${canvasSuggestions.length} canvas + ${suggestions.length} AI)`);
 
+    // Cache the generated suggestions
+    if (this.cacheService && projectId) {
+      await this.cacheService.cacheSuggestions(projectId, context, allSuggestions);
+      this.log('Suggestions cached');
+    }
+
     return allSuggestions;
+  }
+
+  /**
+   * Regenerate suggestions in the background (for stale-while-revalidate)
+   */
+  private regenerateInBackground(
+    projectId: string,
+    context: ProjectContext,
+    projectState: ProjectState,
+    conversationHistory: any[],
+    recentActivity?: string
+  ): void {
+    // Fire and forget - don't await
+    this.generateFreshSuggestions(projectId, context, projectState, conversationHistory, recentActivity)
+      .then(() => this.log('Background regeneration complete'))
+      .catch(error => this.log(`Background regeneration error: ${error}`));
+  }
+
+  /**
+   * Generate fresh suggestions and cache them
+   */
+  private async generateFreshSuggestions(
+    projectId: string,
+    context: ProjectContext,
+    projectState: ProjectState,
+    conversationHistory: any[],
+    recentActivity?: string
+  ): Promise<void> {
+    try {
+      // Generate canvas organization suggestions if available
+      let canvasSuggestions: Suggestion[] = [];
+      if (this.canvasAnalysisService) {
+        try {
+          const orgSuggestions = await this.canvasAnalysisService.generateOrganizationSuggestions(projectId);
+          canvasSuggestions = orgSuggestions.map((org: OrganizationSuggestion) => ({
+            id: org.id,
+            type: org.type,
+            title: org.title,
+            description: org.description,
+            reasoning: org.reasoning,
+            priority: org.priority,
+            agentType: 'canvas-organization',
+            actionData: org.actionData,
+          }));
+        } catch (error) {
+          this.log(`Error generating canvas suggestions: ${error}`);
+        }
+      }
+
+      // Sanitize conversation history
+      const sanitizedHistory = conversationHistory.map(msg => ({
+        ...msg,
+        content: msg.content ? this.sanitizeText(msg.content) : msg.content
+      }));
+
+      const decidedCount = projectState.decided?.length || 0;
+      const exploringCount = projectState.exploring?.length || 0;
+      const parkedCount = projectState.parked?.length || 0;
+      const totalItems = decidedCount + exploringCount + parkedCount;
+
+      // Get recent conversation context
+      const recentConversation = sanitizedHistory.slice(-10);
+      const lastUserMessage = recentConversation.reverse().find(m => m.role === 'user');
+
+      const messages = [
+        {
+          role: 'user',
+          content: `Generate intelligent suggestions for this project.
+
+PROJECT STATE SUMMARY:
+- Decided items: ${decidedCount}
+- Exploring items: ${exploringCount}
+- Parked items: ${parkedCount}
+- Total items: ${totalItems}
+
+DECIDED ITEMS:
+${projectState.decided?.map((item: any) => `- ${item.text}`).join('\n') || 'None yet'}
+
+EXPLORING ITEMS (need decisions):
+${projectState.exploring?.map((item: any) => `- ${item.text}`).join('\n') || 'None yet'}
+
+PARKED ITEMS (might revisit):
+${projectState.parked?.map((item: any) => `- ${item.text}`).join('\n') || 'None yet'}
+
+RECENT CONVERSATION (last 10 messages):
+${recentConversation.reverse().map((m: any) => `[${m.role}]: ${m.content?.substring(0, 200) || ''}`).join('\n')}
+
+LAST USER MESSAGE: "${lastUserMessage?.content || 'No recent message'}"
+
+${recentActivity ? `RECENT ACTIVITY: ${recentActivity}` : ''}
+
+Based on this context, generate 3-5 highly relevant suggestions that will help the user make progress.
+Focus on what's most valuable RIGHT NOW given the current project state.
+
+Return ONLY valid JSON array matching your system prompt format.`,
+        },
+      ];
+
+      const response = await this.callClaude(messages, 1500);
+
+      // Parse JSON response
+      let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const aiSuggestions: Suggestion[] = JSON.parse(cleanResponse);
+
+      // Combine all suggestions
+      const allSuggestions = [...canvasSuggestions, ...aiSuggestions];
+
+      // Cache the generated suggestions
+      if (this.cacheService) {
+        await this.cacheService.cacheSuggestions(projectId, context, allSuggestions);
+        this.log(`Background regeneration: Cached ${allSuggestions.length} fresh suggestions`);
+      }
+    } catch (error) {
+      this.log(`Error in background regeneration: ${error}`);
+    }
   }
 
   /**

@@ -82,7 +82,10 @@ export const projectsApi = {
     return response.data;
   },
 
-  getSuggestions: async (projectId: string) => {
+  getSuggestions: async (projectId: string, userId?: string) => {
+    const url = userId 
+      ? `/projects/${projectId}/suggestions?userId=${userId}`
+      : `/projects/${projectId}/suggestions`;
     const response = await api.get<{
       success: boolean;
       suggestions: Array<{
@@ -95,7 +98,53 @@ export const projectsApi = {
         agentType: string;
         actionData?: any;
       }>;
-    }>(`/projects/${projectId}/suggestions`);
+    }>(url);
+    return response.data;
+  },
+
+  dismissSuggestion: async (
+    projectId: string,
+    suggestionId: string,
+    userId: string,
+    suggestionType: string,
+    suggestionTitle: string,
+    suggestionPriority?: string,
+    suggestionAgentType?: string
+  ) => {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+    }>(`/projects/${projectId}/suggestions/${suggestionId}/dismiss`, {
+      userId,
+      suggestionType,
+      suggestionTitle,
+      suggestionPriority,
+      suggestionAgentType,
+    });
+    return response.data;
+  },
+
+  recordSuggestionFeedback: async (
+    projectId: string,
+    suggestionId: string,
+    userId: string,
+    suggestionType: string,
+    feedbackType: 'accept' | 'dismiss' | 'helpful' | 'not_helpful',
+    timeToActionSeconds?: number,
+    suggestionPriority?: string,
+    suggestionAgentType?: string
+  ) => {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+    }>(`/projects/${projectId}/suggestions/${suggestionId}/feedback`, {
+      userId,
+      suggestionType,
+      feedbackType,
+      timeToActionSeconds,
+      suggestionPriority,
+      suggestionAgentType,
+    });
     return response.data;
   },
 };

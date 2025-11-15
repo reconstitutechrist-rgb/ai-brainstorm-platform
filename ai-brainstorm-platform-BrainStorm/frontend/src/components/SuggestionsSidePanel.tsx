@@ -58,7 +58,8 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await projectsApi.getSuggestions(currentProject.id);
+      // Pass userId to filter out dismissed suggestions
+      const response = await projectsApi.getSuggestions(currentProject.id, user?.id);
 
       if (response.success && response.suggestions) {
         setSuggestions(response.suggestions);
@@ -72,7 +73,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [currentProject]);
+  }, [currentProject, user?.id]);
 
   // Load suggestions when project changes or panel opens
   useEffect(() => {
@@ -113,10 +114,29 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     setLastMessageCount(currentMessageCount);
   }, [messages.length, lastMessageCount, isOpen, currentProject, loadSuggestions]);
 
-  const handleDismiss = useCallback((suggestionId: string) => {
-    setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
-    showToast('Suggestion dismissed', 'info');
-  }, []);
+  const handleDismiss = useCallback(async (suggestion: Suggestion) => {
+    if (!currentProject || !user) return;
+
+    try {
+      // Record dismissal in backend
+      await projectsApi.dismissSuggestion(
+        currentProject.id,
+        suggestion.id,
+        user.id,
+        suggestion.type,
+        suggestion.title,
+        suggestion.priority,
+        suggestion.agentType
+      );
+
+      // Remove from local state
+      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+      showToast('Suggestion dismissed', 'info');
+    } catch (error) {
+      console.error('Error dismissing suggestion:', error);
+      showToast('Failed to dismiss suggestion', 'error');
+    }
+  }, [currentProject, user]);
 
   const handleCanvasAction = async (suggestion: Suggestion) => {
     if (!currentProject) return;
@@ -187,7 +207,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         showToast(result.message || 'Canvas updated successfully!', 'success');
 
         // Remove suggestion after successful application
-        handleDismiss(suggestion.id);
+        setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
 
         // Reload suggestions after a short delay
         setTimeout(() => {
@@ -209,10 +229,25 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
   const handleAccept = async (suggestion: Suggestion) => {
     if (!currentProject || !user) return;
 
+    const startTime = Date.now();
+
     try {
       // Handle canvas organization suggestions
       if (suggestion.type === 'canvas-organize' || suggestion.type === 'canvas-layout' || suggestion.type === 'canvas-cleanup') {
         await handleCanvasAction(suggestion);
+        
+        // Record accept feedback for canvas suggestions
+        const timeToAction = Math.floor((Date.now() - startTime) / 1000);
+        await projectsApi.recordSuggestionFeedback(
+          currentProject.id,
+          suggestion.id,
+          user.id,
+          suggestion.type,
+          'accept',
+          timeToAction,
+          suggestion.priority,
+          suggestion.agentType
+        );
         return;
       }
 
@@ -224,12 +259,26 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
           user.id
         );
 
+        // Record accept feedback
+        const timeToAction = Math.floor((Date.now() - startTime) / 1000);
+        await projectsApi.recordSuggestionFeedback(
+          currentProject.id,
+          suggestion.id,
+          user.id,
+          suggestion.type,
+          'accept',
+          timeToAction,
+          suggestion.priority,
+          suggestion.agentType
+        );
+
         setTimeout(() => {
           loadSuggestions();
         }, 1000);
       }
 
-      handleDismiss(suggestion.id);
+      // Remove from local state
+      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
     } catch (error) {
       console.error('Error applying suggestion:', error);
     }
@@ -612,7 +661,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                             <span>Apply</span>
                           </button>
                           <button
-                            onClick={() => handleDismiss(suggestion.id)}
+                            onClick={() => handleDismiss(suggestion)}
                             className={`flex-1 px-3 py-2 rounded-lg ${
                               isDarkMode
                                 ? 'bg-white/10 hover:bg-white/20 text-gray-300'

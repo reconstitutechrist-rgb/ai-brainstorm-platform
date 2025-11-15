@@ -185,6 +185,118 @@ router.patch('/:projectId/items', async (req: Request, res: Response) => {
 });
 
 /**
+ * Dismiss a suggestion
+ */
+router.post('/:projectId/suggestions/:suggestionId/dismiss', async (req: Request, res: Response) => {
+  try {
+    const { projectId, suggestionId } = req.params;
+    const { userId, suggestionType, suggestionTitle } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId is required'
+      });
+    }
+
+    // Record dismissal
+    const { error: dismissError } = await supabase
+      .from('suggestion_dismissals')
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        suggestion_id: suggestionId,
+        suggestion_type: suggestionType,
+        suggestion_title: suggestionTitle,
+      });
+
+    if (dismissError) {
+      console.error('Error recording dismissal:', dismissError);
+      throw dismissError;
+    }
+
+    // Record feedback
+    const { error: feedbackError } = await supabase
+      .from('suggestion_feedback')
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        suggestion_id: suggestionId,
+        suggestion_type: suggestionType,
+        feedback_type: 'dismiss',
+        suggestion_priority: req.body.suggestionPriority,
+        suggestion_agent_type: req.body.suggestionAgentType,
+      });
+
+    if (feedbackError) {
+      console.error('Error recording feedback:', feedbackError);
+    }
+
+    // Update analytics
+    await supabase.rpc('update_suggestion_analytics', {
+      p_project_id: projectId,
+      p_suggestion_type: suggestionType,
+      p_feedback_type: 'dismiss'
+    });
+
+    res.json({ success: true, message: 'Suggestion dismissed' });
+  } catch (error) {
+    console.error('Dismiss suggestion error:', error);
+    res.status(500).json({ success: false, error: 'Failed to dismiss suggestion' });
+  }
+});
+
+/**
+ * Record feedback on a suggestion
+ */
+router.post('/:projectId/suggestions/:suggestionId/feedback', async (req: Request, res: Response) => {
+  try {
+    const { projectId, suggestionId } = req.params;
+    const { userId, suggestionType, feedbackType, timeToActionSeconds, suggestionPriority, suggestionAgentType } = req.body;
+
+    if (!userId || !feedbackType) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId and feedbackType are required'
+      });
+    }
+
+    // Record feedback
+    const { error: feedbackError } = await supabase
+      .from('suggestion_feedback')
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        suggestion_id: suggestionId,
+        suggestion_type: suggestionType,
+        feedback_type: feedbackType,
+        applied: feedbackType === 'accept',
+        time_to_action_seconds: timeToActionSeconds,
+        suggestion_priority: suggestionPriority,
+        suggestion_agent_type: suggestionAgentType,
+      });
+
+    if (feedbackError) {
+      console.error('Error recording feedback:', feedbackError);
+      throw feedbackError;
+    }
+
+    // Update analytics
+    await supabase.rpc('update_suggestion_analytics', {
+      p_project_id: projectId,
+      p_suggestion_type: suggestionType,
+      p_feedback_type: feedbackType,
+      p_time_to_action: timeToActionSeconds
+    });
+
+    res.json({ success: true, message: 'Feedback recorded' });
+  } catch (error) {
+    console.error('Record feedback error:', error);
+    res.status(500).json({ success: false, error: 'Failed to record feedback' });
+  }
+});
+
+/**
  * Get AI-generated suggestions for a project
  */
 router.get('/:projectId/suggestions', async (req: Request, res: Response) => {
@@ -235,7 +347,26 @@ router.get('/:projectId/suggestions', async (req: Request, res: Response) => {
       );
     }
 
-    res.json({ success: true, suggestions });
+    // Filter out dismissed suggestions if userId is provided
+    const userId = req.query.userId as string | undefined;
+    let filteredSuggestions = suggestions;
+    
+    if (userId) {
+      const { data: dismissedSuggestions } = await supabase
+        .from('suggestion_dismissals')
+        .select('suggestion_id')
+        .eq('user_id', userId)
+        .eq('project_id', projectId);
+
+      if (dismissedSuggestions && dismissedSuggestions.length > 0) {
+        const dismissedIds = new Set(dismissedSuggestions.map(d => d.suggestion_id));
+        filteredSuggestions = suggestions.filter(s => !dismissedIds.has(s.id));
+      }
+    }
+
+    // Note: The suggestionAgent already handles stale-while-revalidate internally
+    // It returns cached data (stale or fresh) immediately and regenerates in background if stale
+    res.json({ success: true, suggestions: filteredSuggestions });
   } catch (error) {
     console.error('Generate suggestions error:', error);
     res.status(500).json({

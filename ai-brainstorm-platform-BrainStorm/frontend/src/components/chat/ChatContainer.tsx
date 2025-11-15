@@ -25,7 +25,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, clas
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`flex-[7] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border h-[60vh] flex flex-col ${className}`}
+      className={`flex-[7] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border h-[70vh] flex flex-col ${className}`}
     >
       {children}
     </motion.div>
@@ -51,7 +51,7 @@ export const TrackingPanel: React.FC<ChatPanelProps> = ({ children, isDarkMode, 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`flex-[3] h-[60vh] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border ${className}`}
+      className={`flex-[3] h-[70vh] ${isDarkMode ? 'glass-dark border-gray-700/50' : 'glass border-white/50'} rounded-3xl shadow-glass border ${className}`}
     >
       {children}
     </motion.div>
