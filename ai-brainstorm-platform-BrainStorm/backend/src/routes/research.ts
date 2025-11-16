@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { UnifiedResearchAgent, ResearchSource, ResearchIntent } from '../agents/unifiedResearchAgent';
+import { ResearchOrchestrator } from '../orchestrators/ResearchOrchestrator';
 
 const router = Router();
 const unifiedResearchAgent = new UnifiedResearchAgent();
+const researchOrchestrator = new ResearchOrchestrator();
 
 /**
  * Start a new research query
@@ -553,5 +555,113 @@ async function performUnifiedResearchAsync(
       .eq('id', queryId);
   }
 }
+
+/**
+ * ============================================
+ * RESEARCH ORCHESTRATOR ENDPOINTS (Hybrid Architecture)
+ * ============================================
+ */
+
+/**
+ * Perform research with project context integration
+ * Separates new ideas from already-decided items
+ */
+router.post('/with-context', async (req: Request, res: Response) => {
+  try {
+    const {
+      query,
+      projectId,
+      includeWeb = true,
+      includeDocuments = true,
+      includeReferences = true,
+    } = req.body;
+
+    if (!query || !projectId) {
+      return res.status(400).json({
+        success: false,
+        error: 'query and projectId are required',
+      });
+    }
+
+    console.log(`[ResearchOrchestrator] Starting context-aware research for: "${query}" (project: ${projectId})`);
+
+    // Use ResearchOrchestrator for project context integration
+    const result = await researchOrchestrator.processResearchQuery({
+      projectId,
+      query,
+      includeWeb,
+      includeDocuments,
+      includeReferences,
+    });
+
+    console.log(`[ResearchOrchestrator] Research complete:`, {
+      newIdeas: result.newIdeas.length,
+      alreadyDecided: result.alreadyDecided.length,
+      totalSources: result.metadata.totalSources,
+    });
+
+    res.json({
+      success: true,
+      synthesis: result.synthesis,
+      newIdeas: result.newIdeas,
+      alreadyDecided: result.alreadyDecided,
+      metadata: result.metadata,
+    });
+  } catch (error: any) {
+    console.error('[ResearchOrchestrator] Error performing research:', error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to perform research: ${error.message || error.toString()}`,
+    });
+  }
+});
+
+/**
+ * Generate research-based document with optional verification
+ */
+router.post('/generate-document', async (req: Request, res: Response) => {
+  try {
+    const {
+      projectId,
+      documentType,
+      researchContext,
+      verify = false,
+    } = req.body;
+
+    if (!projectId || !documentType || !researchContext) {
+      return res.status(400).json({
+        success: false,
+        error: 'projectId, documentType, and researchContext are required',
+      });
+    }
+
+    console.log(`[ResearchOrchestrator] Generating ${documentType} document for project ${projectId}, verify=${verify}`);
+
+    const result = await researchOrchestrator.generateResearchDocument(
+      projectId,
+      documentType,
+      researchContext,
+      verify
+    );
+
+    console.log(`[ResearchOrchestrator] Document generated:`, {
+      length: result.document.length,
+      verified: result.qualityReport?.verified,
+      assumptions: result.qualityReport?.assumptionCount,
+    });
+
+    res.json({
+      success: true,
+      document: result.document,
+      qualityReport: result.qualityReport,
+    });
+  } catch (error: any) {
+    console.error('[ResearchOrchestrator] Error generating document:', error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to generate document: ${error.message || error.toString()}`,
+    });
+  }
+});
 
 export default router;

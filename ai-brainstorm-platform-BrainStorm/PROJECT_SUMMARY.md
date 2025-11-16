@@ -10,26 +10,31 @@ A sophisticated full-stack AI brainstorming platform featuring **8 specialized A
 
 ### **Backend (Node.js + Express + TypeScript)**
 
-#### 17 AI Agents + 1 Orchestrator
+#### 9 AI Agents + 4 Page-Specific Orchestrators
+**Core Agents (5):**
 1. ✅ **BaseAgent** - Foundation class for all agents
-2. ✅ **BrainstormingAgent** - Reflects and organizes user ideas
-3. ✅ **QuestionerAgent** - Asks strategic questions
-4. ✅ **RecorderAgent** - Documents decisions with citations
-5. ✅ **ContextManagerAgent** - Classifies intent and manages state
-6. ✅ **DevelopmentAgent** - Research and vendor recommendations
-7. ✅ **VerificationAgent** - Gatekeeps against assumptions
-8. ✅ **GapDetectionAgent** - Identifies missing information
-9. ✅ **ClarificationAgent** - Asks targeted clarifying questions
-10. ✅ **AccuracyAuditorAgent** - Continuous accuracy validation
-11. ✅ **AssumptionBlockerAgent** - Zero tolerance for assumptions
-12. ✅ **ReferenceAnalysisAgent** - Analyzes uploaded files
-13. ✅ **ConsistencyGuardianAgent** - Detects contradictions
-14. ✅ **TranslationAgent** - Converts vision to technical specs
-15. ✅ **PrioritizationAgent** - Sequences decisions
-16. ✅ **VersionControlAgent** - Tracks changes with reasoning
-17. ✅ **ReviewerAgent** - Comprehensive QA validation
-18. ✅ **ResourceManagerAgent** - Organizes references
-19. ✅ **IntegrationOrchestrator** - Coordinates all 17 agents
+2. ✅ **ContextManagerAgent** - Classifies intent and manages conversation context
+3. ✅ **ConversationAgent** - Generates natural responses to users
+4. ✅ **QualityAuditorAgent** - Verifies content, scans assumptions, checks consistency
+5. ✅ **StrategicPlannerAgent** - Prioritizes tasks and suggests next steps
+6. ✅ **PersistenceManagerAgent** - Manages project state and item persistence
+
+**Support Agents (4):**
+7. ✅ **ReferenceAnalysisAgent** - Analyzes uploaded files (images, PDFs, documents)
+8. ✅ **UnifiedResearchAgent** - Web + document research with synthesis
+9. ✅ **ReviewerAgent** - Comprehensive quality assurance
+10. ✅ **ResourceManagerAgent** - Organizes references and resources
+
+**Page-Specific Orchestrators (4):**
+11. ✅ **ChatOrchestrator** - Intent-based chat workflows
+12. ✅ **DocumentOrchestrator** - Auto-document generation with verification
+13. ✅ **ResearchOrchestrator** - Research with new vs. decided separation
+14. ✅ **SandboxOrchestrator** - Extraction validation with duplicate detection
+
+**Core Orchestrator:**
+15. ✅ **IntegrationOrchestrator** - Coordinates all 9 agents with parallel workflows
+
+Note: Consolidated from original 17 agents to 9 specialized agents for improved performance.
 
 #### Services
 - ✅ **Supabase Service** - Database connection and testing

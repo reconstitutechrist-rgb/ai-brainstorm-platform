@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
 import { CanvasCard } from './CanvasCard';
 import { ClusterContainer } from './ClusterContainer';
+import { CanvasErrorBoundary } from './CanvasErrorBoundary';
 import { useProjectStore } from '../../store/projectStore';
 import { calculateAutoPosition } from '../../hooks/useCanvasSync';
 
@@ -26,6 +27,14 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
     // Skip if currently dragging to prevent interference
     if (isDraggingRef.current) return;
 
+    // ✅ HIGH PRIORITY FIX: Clean up deleted items from positionedItemsRef to prevent memory leak
+    const currentItemIds = new Set(items.map(item => item.id));
+    const deletedItemIds = Array.from(positionedItemsRef.current).filter(
+      id => !currentItemIds.has(id)
+    );
+    deletedItemIds.forEach(id => positionedItemsRef.current.delete(id));
+
+    // Position new items
     items.forEach((item, index) => {
       // Only position items that haven't been positioned yet
       if (!item.position && !positionedItemsRef.current.has(item.id)) {
@@ -34,7 +43,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         positionedItemsRef.current.add(item.id);
       }
     });
-  }, [items.length, updateItemPosition]); // Only depend on length, not items array itself
+  }, [items, updateItemPosition]); // ✅ Fixed: Now depends on full items array to prevent stale data
 
   const handlePositionChange = (itemId: string, position: { x: number; y: number }) => {
     // Batch position updates to reduce re-renders
@@ -80,10 +89,15 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   const clusters = currentProject?.clusters || [];
 
   return (
-    <div className="relative w-full h-full overflow-auto scrollbar-thin">
+    <div
+      className="relative w-full h-full overflow-auto scrollbar-thin"
+      role="region"
+      aria-label="Canvas workspace with idea cards"
+    >
       {/* Grid Background */}
       <div
         className="absolute inset-0 opacity-10"
+        aria-hidden="true"
         style={{
           backgroundImage: `
             linear-gradient(to right, ${isDarkMode ? '#00d4ff' : '#00d4ff'} 1px, transparent 1px),
@@ -99,13 +113,18 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         style={{ width: '2000px', height: '2000px' }}
       >
         {items.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            role="status"
+            aria-live="polite"
+          >
             <div className="text-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 200 }}
                 className="text-8xl mb-6"
+                aria-hidden="true"
               >
                 💭
               </motion.div>
@@ -136,15 +155,16 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
                   isDarkMode={isDarkMode}
                 >
                   {clusterItems.map((item) => (
-                    <CanvasCard
-                      key={item.id}
-                      item={item}
-                      isDarkMode={isDarkMode}
-                      onArchive={onArchive}
-                      onPositionChange={handlePositionChange}
-                      onStateChange={handleStateChange}
-                      isInCluster={true}
-                    />
+                    <CanvasErrorBoundary key={item.id} isDarkMode={isDarkMode}>
+                      <CanvasCard
+                        item={item}
+                        isDarkMode={isDarkMode}
+                        onArchive={onArchive}
+                        onPositionChange={handlePositionChange}
+                        onStateChange={handleStateChange}
+                        isInCluster={true}
+                      />
+                    </CanvasErrorBoundary>
                   ))}
                 </ClusterContainer>
               );
@@ -152,16 +172,17 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
 
             {/* Render Unclustered Items */}
             {unclusteredItems.map((item) => (
-              <CanvasCard
-                key={item.id}
-                item={item}
-                isDarkMode={isDarkMode}
-                onArchive={onArchive}
-                onPositionChange={handlePositionChange}
-                onStateChange={handleStateChange}
-                isSelected={selectedCardIds.has(item.id)}
-                onToggleSelection={toggleCardSelection}
-              />
+              <CanvasErrorBoundary key={item.id} isDarkMode={isDarkMode}>
+                <CanvasCard
+                  item={item}
+                  isDarkMode={isDarkMode}
+                  onArchive={onArchive}
+                  onPositionChange={handlePositionChange}
+                  onStateChange={handleStateChange}
+                  isSelected={selectedCardIds.has(item.id)}
+                  onToggleSelection={toggleCardSelection}
+                />
+              </CanvasErrorBoundary>
             ))}
           </>
         )}

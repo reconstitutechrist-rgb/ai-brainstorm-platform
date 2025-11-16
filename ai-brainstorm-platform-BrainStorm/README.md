@@ -1,46 +1,64 @@
 # AI Brainstorm Platform
 
-A sophisticated multi-agent AI brainstorming platform powered by Claude Sonnet 4, featuring 18 specialized agents working together to transform ideas into actionable plans.
+A sophisticated multi-agent AI brainstorming platform powered by Claude Sonnet 4, featuring 9 specialized agents and 4 page-specific orchestrators working together to transform ideas into actionable plans.
 
 ## 🌟 Features
 
-- **18 Specialized AI Agents** - Each with unique responsibilities
-- **Multi-Agent Orchestration** - Agents collaborate seamlessly
+- **9 Specialized AI Agents** - Consolidated, focused agents with distinct capabilities
+- **4 Page-Specific Orchestrators** - Coordinate workflows for Chat, Documents, Research, and Sandbox
+- **Hybrid Architecture** - Page orchestrators coordinate shared agents
 - **Three-Column State System** - Decided / Exploring / Parked
+- **Auto-Document Generation** - Generate PRDs, Technical Specs, User Stories, Roadmaps
+- **Quality Control Modes** - Quick Generate vs. Verify & Generate
 - **Real-time Chat Interface** - Natural conversation with AI agents
-- **Zero Assumptions** - Strict accuracy validation
+- **Zero Assumptions** - Strict accuracy validation with assumption scanning
 - **Citation Tracking** - Full traceability of decisions
 - **Reference Analysis** - Upload images, videos, PDFs for AI analysis
+- **Sandbox Extraction** - Validate ideas before adding to main project
+- **Duplicate Detection** - Semantic similarity scoring prevents duplicates
 - **Dark Mode** - Beautiful glassmorphism UI with theme toggle
 - **Draggable Navigation** - Floating nav you can position anywhere
 
-## 🤖 The 18 AI Agents
+## 🤖 The 9 AI Agents
 
 ### Core Agents (5)
-1. **Brainstorming Agent** - Reflects and organizes user ideas
-2. **Questioner Agent** - Asks strategic clarifying questions
-3. **Recorder Agent** - Documents decisions with context
-4. **Context Manager** - Classifies intent and manages state
-5. **Development Agent** - Research and vendor recommendations
+1. **Context Manager Agent** - Classifies intent and manages conversation context
+2. **Conversation Agent** - Generates natural responses to users
+3. **Quality Auditor Agent** - Verifies content, scans assumptions, checks consistency
+4. **Strategic Planner Agent** - Prioritizes tasks and suggests next steps
+5. **Persistence Manager Agent** - Manages project state and item persistence
 
-### Quality Agents (6)
-6. **Verification Agent** - Gatekeeps against assumptions
-7. **Gap Detection Agent** - Identifies missing information
-8. **Clarification Agent** - Asks targeted questions
-9. **Accuracy Auditor** - Continuous accuracy validation
-10. **Assumption Blocker** - Zero tolerance for assumptions
-11. **Reference Analysis Agent** - Analyzes uploaded files
+### Support Agents (4)
+6. **Reference Analysis Agent** - Analyzes uploaded files (images, PDFs, documents)
+7. **Unified Research Agent** - Web + document research with synthesis
+8. **Reviewer Agent** - Comprehensive quality assurance
+9. **Resource Manager Agent** - Organizes references and resources
 
-### Support Agents (6)
-12. **Consistency Guardian** - Detects contradictions
-13. **Translation Agent** - Converts vision to technical specs
-14. **Prioritization Agent** - Sequences decisions
-15. **Version Control Agent** - Tracks changes with reasoning
-16. **Reviewer Agent** - Comprehensive QA
-17. **Resource Manager** - Organizes references
+## 🔄 The 4 Page-Specific Orchestrators
 
-### Meta (1)
-18. **Integration Orchestrator** - Coordinates all agents
+### ChatOrchestrator
+- Intent-based chat workflows
+- Automatic workflow determination
+- Quality metadata for responses
+- Next step suggestions
+
+### DocumentOrchestrator
+- Auto-generate PRD, Technical Spec, User Stories, Roadmap
+- Quick Generate (fast) vs. Verify & Generate (quality-checked)
+- Gap detection and completeness scoring
+- Assumption and conflict detection
+
+### ResearchOrchestrator
+- Separates new ideas from already-decided items
+- Semantic similarity scoring (Jaccard index)
+- Multi-source research (web, documents, references)
+- Context-aware synthesis
+
+### SandboxOrchestrator
+- Duplicate detection before extraction
+- Conflict analysis with project decisions
+- Extraction recommendations (skip/merge/extract)
+- Quality validation for extracted ideas
 
 ## 🏗️ Architecture
 
@@ -48,7 +66,8 @@ A sophisticated multi-agent AI brainstorming platform powered by Claude Sonnet 4
 ai-brainstorm-platform/
 ├── backend/                 # Node.js + Express + TypeScript
 │   ├── src/
-│   │   ├── agents/         # 18 AI agent implementations
+│   │   ├── agents/         # 9 AI agent implementations
+│   │   ├── orchestrators/  # 4 page-specific orchestrators (NEW)
 │   │   ├── routes/         # API endpoints
 │   │   ├── services/       # Business logic
 │   │   ├── types/          # TypeScript definitions
@@ -58,13 +77,18 @@ ai-brainstorm-platform/
 └── frontend/               # React + Vite + TypeScript
     ├── src/
     │   ├── components/     # Reusable UI components
-    │   ├── pages/          # Page components
+    │   ├── pages/          # Page components (Chat, Documents, Research, Sandbox)
     │   ├── store/          # Zustand state management
     │   ├── services/       # API client
     │   ├── types/          # TypeScript definitions
     │   └── App.tsx         # Main app component
     └── package.json
 ```
+
+For detailed architecture documentation, see:
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System overview and data flow
+- [ORCHESTRATORS.md](ORCHESTRATORS.md) - Page-specific orchestrator details
+- [AGENTS.md](AGENTS.md) - Agent capabilities and workflows
 
 ## 🚀 Getting Started
 

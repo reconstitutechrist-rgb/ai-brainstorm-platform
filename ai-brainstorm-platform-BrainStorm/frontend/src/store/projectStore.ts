@@ -8,6 +8,7 @@ interface ProjectState {
   loading: boolean;
   error: string | null;
   selectedCardIds: Set<string>;
+  pendingArchiveOps: Set<string>; // ✅ Track items with pending archive operations
   setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
   addProject: (project: Project) => void;
@@ -35,6 +36,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   loading: false,
   error: null,
   selectedCardIds: new Set<string>(),
+  pendingArchiveOps: new Set<string>(), // ✅ Initialize pending operations tracker
   setProjects: (projects) => set({ projects }),
   setCurrentProject: (project) => set({ currentProject: project }),
   addProject: (project) => set((state) => ({
@@ -96,14 +98,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const state = get();
     if (!state.currentProject) return;
 
+    // ✅ CRITICAL FIX: Prevent race condition from rapid clicking
+    if (state.pendingArchiveOps.has(itemId)) {
+      console.warn(`[projectStore] Archive operation already pending for item ${itemId}`);
+      return; // Ignore duplicate requests
+    }
+
     // Optimistic update
     const item = state.currentProject.items.find(i => i.id === itemId);
     if (!item) return;
 
     const willBeArchived = !item.isArchived;
 
+    // Mark operation as pending
     set((state) => {
-      if (!state.currentProject) return state;
+      const newPendingOps = new Set(state.pendingArchiveOps);
+      newPendingOps.add(itemId);
+
+      if (!state.currentProject) return { pendingArchiveOps: newPendingOps };
 
       const updatedItems = state.currentProject.items.map(item =>
         item.id === itemId
@@ -122,6 +134,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         projects: state.projects.map(p =>
           p.id === updatedProject.id ? updatedProject : p
         ),
+        pendingArchiveOps: newPendingOps,
       };
     });
 
@@ -132,11 +145,22 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       } else {
         await canvasApi.restoreCards(state.currentProject.id, [itemId]);
       }
+
+      // ✅ Remove from pending operations on success
+      set((state) => {
+        const newPendingOps = new Set(state.pendingArchiveOps);
+        newPendingOps.delete(itemId);
+        return { pendingArchiveOps: newPendingOps };
+      });
     } catch (error) {
       console.error('Failed to toggle archive:', error);
-      // Revert optimistic update on error
+
+      // Revert optimistic update on error and remove from pending
       set((state) => {
-        if (!state.currentProject) return state;
+        const newPendingOps = new Set(state.pendingArchiveOps);
+        newPendingOps.delete(itemId);
+
+        if (!state.currentProject) return { pendingArchiveOps: newPendingOps };
 
         const updatedItems = state.currentProject.items.map(item =>
           item.id === itemId
@@ -155,6 +179,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           projects: state.projects.map(p =>
             p.id === updatedProject.id ? updatedProject : p
           ),
+          pendingArchiveOps: newPendingOps,
         };
       });
       throw error;

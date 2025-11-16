@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { GeneratedDocumentsService } from '../services/generatedDocumentsService';
 import { getSupabaseClient } from '../config/supabase';
+import { DocumentOrchestrator } from '../orchestrators/DocumentOrchestrator';
 import '../types'; // Import type extensions
 
 const router = Router();
+const documentOrchestrator = new DocumentOrchestrator();
 
 /**
  * GET /api/generated-documents/project/:projectId
@@ -488,6 +490,138 @@ router.post('/:documentId/reexamine', async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to re-examine document',
+    });
+  }
+});
+
+// ============================================
+// DOCUMENT ORCHESTRATOR ENDPOINTS (Hybrid Architecture)
+// ============================================
+
+/**
+ * POST /api/generated-documents/quick-generate
+ * Quick generate document without verification (fast mode)
+ * Body: { projectId: string, documentType: string, userId?: string }
+ */
+router.post('/quick-generate', async (req, res) => {
+  try {
+    const { projectId, documentType, userId } = req.body;
+
+    if (!projectId || !documentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID and document type are required',
+      });
+    }
+
+    console.log(`[DocumentOrchestrator] Quick generating ${documentType} for project ${projectId}`);
+
+    const result = await documentOrchestrator.quickGenerate({
+      projectId,
+      documentType: documentType as any,
+      userId: userId || req.user?.id,
+    });
+
+    res.json({
+      success: true,
+      documentId: result.documentId,
+      content: result.content,
+      metadata: result.metadata,
+      message: 'Document generated successfully',
+    });
+  } catch (error: any) {
+    console.error('Quick generate document error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate document',
+    });
+  }
+});
+
+/**
+ * POST /api/generated-documents/verify-and-generate
+ * Generate document with quality checks (verified mode)
+ * Body: { projectId: string, documentType: string, userId?: string }
+ */
+router.post('/verify-and-generate', async (req, res) => {
+  try {
+    const { projectId, documentType, userId } = req.body;
+
+    if (!projectId || !documentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID and document type are required',
+      });
+    }
+
+    console.log(`[DocumentOrchestrator] Verify & generating ${documentType} for project ${projectId}`);
+
+    const result = await documentOrchestrator.verifyAndGenerate({
+      projectId,
+      documentType: documentType as any,
+      userId: userId || req.user?.id,
+    });
+
+    res.json({
+      success: true,
+      documentId: result.documentId,
+      content: result.content,
+      metadata: result.metadata,
+      qualityReport: result.qualityReport,
+      message: result.qualityReport?.verified
+        ? 'Document generated and verified successfully'
+        : 'Document generated with quality issues (see qualityReport)',
+    });
+  } catch (error: any) {
+    console.error('Verify and generate document error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate and verify document',
+    });
+  }
+});
+
+/**
+ * GET /api/generated-documents/:documentId/analyze-gaps
+ * Analyze document for gaps and completeness
+ */
+router.get('/:documentId/analyze-gaps', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const supabase = getSupabaseClient(req.user?.access_token);
+
+    // First get the document to find the project ID
+    const { data: document, error: docError } = await supabase
+      .from('generated_documents')
+      .select('project_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docError || !document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found',
+      });
+    }
+
+    console.log(`[DocumentOrchestrator] Analyzing gaps for document ${documentId}`);
+
+    const analysis = await documentOrchestrator.analyzeDocumentGaps(
+      document.project_id,
+      documentId
+    );
+
+    res.json({
+      success: true,
+      gaps: analysis.gaps,
+      suggestions: analysis.suggestions,
+      completeness: analysis.completeness,
+    });
+  } catch (error: any) {
+    console.error('Analyze gaps error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to analyze document gaps',
     });
   }
 });

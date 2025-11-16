@@ -8,12 +8,13 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 🚀 Getting Started (Read These First)
 
-### 1. [START.md](START.md)
-**Quick reference for running the app**
-- One-time database setup
-- Daily development commands
-- Browser access instructions
-- Perfect for: Getting up and running fast
+### 1. [README.md](README.md)
+**Main project overview and getting started**
+- Feature highlights
+- Technology stack
+- Architecture summary
+- Getting started basics
+- Perfect for: High-level understanding
 
 ### 2. [SETUP.md](SETUP.md)
 **Comprehensive setup guide**
@@ -24,27 +25,11 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 - Testing instructions
 - Perfect for: First-time setup
 
-### 3. [QUICKSTART.md](QUICKSTART.md)
-**5-minute setup guide**
-- Condensed setup steps
-- Quick troubleshooting
-- Essential commands
-- Perfect for: Experienced developers
-
 ---
 
 ## 📖 Understanding the Project
 
-### 4. [README.md](README.md)
-**Main project overview**
-- Feature highlights
-- Technology stack
-- Architecture summary
-- API documentation
-- Getting started basics
-- Perfect for: High-level understanding
-
-### 5. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
+### 3. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
 **Detailed technical summary**
 - Complete component checklist
 - All 9 AI agents described
@@ -53,7 +38,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 - Known issues
 - Perfect for: Technical deep dive
 
-### 6. [PROJECT_STATUS.md](PROJECT_STATUS.md)
+### 4. [PROJECT_STATUS.md](PROJECT_STATUS.md)
 **Current project status**
 - Completion metrics
 - What's been built
@@ -62,7 +47,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 - Testing recommendations
 - Perfect for: Status check
 
-### 7. [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md)
+### 5. [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md)
 **Comprehensive checklist**
 - Backend components ✅
 - Frontend components ✅
@@ -75,7 +60,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 🤖 AI Agent Documentation
 
-### 8. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
+### 6. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
 **Comprehensive AI agent reference**
 - All 9 agents documented in detail
 - Core agents (5): Conversation, Persistence, Quality, Strategic Planning, Context
@@ -105,7 +90,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 🏗️ Technical Documentation
 
-### 11. [ARCHITECTURE.md](ARCHITECTURE.md)
+### 9. [ARCHITECTURE.md](ARCHITECTURE.md)
 **System architecture diagrams**
 - System architecture diagram
 - Data flow visualization
@@ -115,7 +100,18 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 - Technology stack deep dive
 - Perfect for: Understanding how it all works
 
-### 12. [database/schema.sql](database/schema.sql)
+### 10. [ORCHESTRATORS.md](ORCHESTRATORS.md)
+**Page-specific orchestrator documentation** (NEW)
+- ChatOrchestrator - Intent-based chat workflows
+- DocumentOrchestrator - Auto-document generation with verification
+- ResearchOrchestrator - New vs. decided item separation
+- SandboxOrchestrator - Extraction validation and duplicate detection
+- Quality control system integration
+- Database integration patterns
+- Frontend integration examples
+- Perfect for: Understanding page-specific workflows
+
+### 11. [database/schema.sql](database/schema.sql)
 **Database schema**
 - Table definitions
 - Indexes
@@ -128,7 +124,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 🔧 Troubleshooting & Support
 
-### 13. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+### 12. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 **Common issues and solutions**
 - Backend issues
 - Frontend issues
@@ -145,9 +141,6 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ### I want to...
 
-#### **Get the app running quickly**
-→ [START.md](START.md)
-
 #### **Set up the project for the first time**
 → [SETUP.md](SETUP.md)
 
@@ -159,6 +152,12 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 #### **Understand the AI agents**
 → [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md)
+
+#### **Understand page-specific orchestrators**
+→ [ORCHESTRATORS.md](ORCHESTRATORS.md)
+
+#### **Generate documents automatically**
+→ [ORCHESTRATORS.md](ORCHESTRATORS.md) (DocumentOrchestrator section)
 
 #### **Migrate to unified research**
 → [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md)
@@ -182,7 +181,7 @@ Welcome to the AI Brainstorm Platform! This index will help you navigate all ava
 
 ## 📊 Documentation Stats
 
-- **Total Documents**: 13 files
+- **Total Documents**: 12 files
 - **Total Pages**: 150+
 - **Total Words**: 25,000+
 - **Coverage**: 100% complete
@@ -270,17 +269,18 @@ Database schema in standard SQL:
 ## 🎓 Reading Order Recommendations
 
 ### For First-Time Users
-1. [START.md](START.md) - Get it running
-2. [README.md](README.md) - Understand what it does
+1. [README.md](README.md) - Understand what it does
+2. [SETUP.md](SETUP.md) - Get it running
 3. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - If issues arise
 
 ### For Developers
 1. [SETUP.md](SETUP.md) - Complete setup
 2. [ARCHITECTURE.md](ARCHITECTURE.md) - Understand architecture
-3. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md) - AI agent reference
-4. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Technical details
-5. [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md) - Research API migration
-6. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debug guide
+3. [ORCHESTRATORS.md](ORCHESTRATORS.md) - Page-specific orchestrators
+4. [AGENTS_DOCUMENTATION.md](AGENTS_DOCUMENTATION.md) - AI agent reference
+5. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Technical details
+6. [MIGRATION_UNIFIED_RESEARCH.md](MIGRATION_UNIFIED_RESEARCH.md) - Research API migration
+7. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debug guide
 
 ### For Project Managers
 1. [PROJECT_STATUS.md](PROJECT_STATUS.md) - Current status
@@ -366,20 +366,19 @@ You now have access to complete documentation covering:
 
 | Document | Purpose | Length | Last Updated |
 |----------|---------|--------|--------------|
-| START.md | Quick reference | 1 page | 2025-10-13 |
+| README.md | Overview | 8 pages | 2025-11-15 |
 | SETUP.md | Comprehensive setup | 7 pages | 2025-10-13 |
-| QUICKSTART.md | Fast setup | 5 pages | 2025-10-13 |
-| README.md | Overview | 8 pages | 2025-10-13 |
 | PROJECT_SUMMARY.md | Technical details | 8 pages | 2025-10-13 |
 | PROJECT_STATUS.md | Status report | 15 pages | 2025-10-13 |
 | COMPLETION_CHECKLIST.md | Checklist | 10 pages | 2025-10-13 |
 | **AGENTS_DOCUMENTATION.md** | **AI agent reference** | **40 pages** | **2025-10-21** |
 | **UNIFIED_RESEARCH_COMPLETE.md** | **Research system** | **8 pages** | **2025-10-21** |
 | **MIGRATION_UNIFIED_RESEARCH.md** | **Migration guide** | **12 pages** | **2025-10-21** |
-| ARCHITECTURE.md | Architecture | 20 pages | 2025-10-13 |
+| ARCHITECTURE.md | Architecture | 20 pages | 2025-11-15 |
+| **ORCHESTRATORS.md** | **Page orchestrators** | **18 pages** | **2025-11-15** |
 | TROUBLESHOOTING.md | Debug guide | 12 pages | 2025-10-13 |
-| INDEX.md | This file | 6 pages | 2025-10-21 |
-| **TOTAL** | | **152 pages** | |
+| INDEX.md | This file | 6 pages | 2025-11-15 |
+| **TOTAL** | | **150 pages** | |
 
 ---
 

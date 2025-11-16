@@ -51,35 +51,43 @@
 │                           │                                            │
 │  ┌────────────────────────▼──────────────────────────────────────┐   │
 │  │             INTEGRATION ORCHESTRATOR                           │   │
-│  │  • Coordinates 17 specialized agents                           │   │
+│  │  • Coordinates 9 specialized agents                            │   │
 │  │  • Manages workflow execution                                  │   │
 │  │  • Handles conditional logic                                   │   │
 │  │  • Tracks workflow history                                     │   │
 │  └────────────────────────┬──────────────────────────────────────┘   │
 │                           │                                            │
+│  ┌────────────────────────▼──────────────────────────────────────┐   │
+│  │           PAGE-SPECIFIC ORCHESTRATORS (NEW)                    │   │
+│  │  • ChatOrchestrator - Chat page workflows                      │   │
+│  │  • DocumentOrchestrator - Auto-document generation             │   │
+│  │  • ResearchOrchestrator - Research with context separation     │   │
+│  │  • SandboxOrchestrator - Extraction validation                 │   │
+│  └────────────────────────┬──────────────────────────────────────┘   │
+│                           │                                            │
 │         ┌─────────────────┴──────────────────┐                        │
 │         │                                    │                        │
 │  ┌──────▼──────┐                   ┌────────▼────────┐               │
-│  │   17 AI     │                   │  Support        │               │
+│  │   9 AI      │                   │  Support        │               │
 │  │  AGENTS     │                   │  SERVICES       │               │
 │  ├─────────────┤                   ├─────────────────┤               │
 │  │ 1. Context  │                   │ • FileUpload    │               │
-│  │ 2. Brainstorm│                  │ • Supabase      │               │
-│  │ 3. Recorder │                   │ • Base Agent    │               │
-│  │ 4. Questioner│                  └────────┬────────┘               │
-│  │ 5. Development│                          │                        │
-│  │ 6. Verification│                         │                        │
-│  │ 7. GapDetection│                         │                        │
-│  │ 8. Clarification│                        │                        │
-│  │ 9. AccuracyAuditor│                      │                        │
-│  │ 10. AssumptionBlocker│                   │                        │
-│  │ 11. ReferenceAnalysis│                   │                        │
-│  │ 12. ConsistencyGuardian│                 │                        │
-│  │ 13. Translation│                         │                        │
-│  │ 14. Prioritization│                      │                        │
-│  │ 15. VersionControl│                      │                        │
-│  │ 16. Reviewer│                            │                        │
-│  │ 17. ResourceManager│                     │                        │
+│  │    Manager  │                   │ • Supabase      │               │
+│  │ 2. Conversa-│                   │ • Base Agent    │               │
+│  │    tion     │                   └────────┬────────┘               │
+│  │ 3. Quality  │                            │                        │
+│  │    Auditor  │                            │                        │
+│  │ 4. Strategic│                            │                        │
+│  │    Planner  │                            │                        │
+│  │ 5. Persiste-│                            │                        │
+│  │    nce Mgr  │                            │                        │
+│  │ 6. Reference│                            │                        │
+│  │    Analysis │                            │                        │
+│  │ 7. Unified  │                            │                        │
+│  │    Research │                            │                        │
+│  │ 8. Reviewer │                            │                        │
+│  │ 9. Resource │                            │                        │
+│  │    Manager  │                            │                        │
 │  └────────┬────┘                            │                        │
 │           │                                 │                        │
 │           └─────────────┬───────────────────┘                        │
@@ -357,27 +365,28 @@ ai-brainstorm-platform/
 │   │   │   ├── base.ts                 # BaseAgent class
 │   │   │   ├── orchestrator.ts         # Workflow coordinator
 │   │   │   ├── contextManager.ts       # Intent classification
-│   │   │   ├── brainstorm.ts           # Reflection
-│   │   │   ├── recorder.ts             # Decision documentation
-│   │   │   ├── questioner.ts           # Strategic questions
-│   │   │   ├── development.ts          # Research & vendors
-│   │   │   ├── verification.ts         # Assumption gate
-│   │   │   ├── gapDetection.ts         # Missing info
-│   │   │   ├── clarification.ts        # Follow-up questions
-│   │   │   ├── accuracyAuditor.ts      # Validation
-│   │   │   ├── assumptionBlocker.ts    # Assumption scan
+│   │   │   ├── conversation.ts         # User responses
+│   │   │   ├── qualityAuditor.ts       # Quality checks
+│   │   │   ├── strategicPlanner.ts     # Priority planning
+│   │   │   ├── persistenceManager.ts   # State persistence
 │   │   │   ├── referenceAnalysis.ts    # File analysis
-│   │   │   ├── consistencyGuardian.ts  # Contradiction check
-│   │   │   ├── translation.ts          # Vision → Specs
-│   │   │   ├── prioritization.ts       # Task sequencing
-│   │   │   ├── versionControl.ts       # Change tracking
+│   │   │   ├── unifiedResearchAgent.ts # Web + Doc research
 │   │   │   ├── reviewer.ts             # QA
 │   │   │   └── resourceManager.ts      # Resource org
+│   │   │
+│   │   ├── orchestrators/              # NEW: Page-specific orchestrators
+│   │   │   ├── ChatOrchestrator.ts     # Chat page workflows
+│   │   │   ├── DocumentOrchestrator.ts # Auto-doc generation
+│   │   │   ├── ResearchOrchestrator.ts # Research with separation
+│   │   │   └── SandboxOrchestrator.ts  # Extraction validation
 │   │   │
 │   │   ├── routes/
 │   │   │   ├── projects.ts             # Project CRUD
 │   │   │   ├── conversations.ts        # Chat endpoints
 │   │   │   ├── references.ts           # File uploads
+│   │   │   ├── research.ts             # Research endpoints
+│   │   │   ├── generated-documents.ts  # Document generation
+│   │   │   ├── sandbox.ts              # Sandbox operations
 │   │   │   └── agents.ts               # Agent info
 │   │   │
 │   │   ├── services/

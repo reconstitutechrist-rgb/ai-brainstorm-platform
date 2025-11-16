@@ -22,6 +22,36 @@ import {
   Minimize2,
 } from 'lucide-react';
 
+// Define specific action data types for type safety
+type ClusterActionData = {
+  action: 'cluster-cards';
+  clusters: Array<{
+    id: string;
+    title: string;
+    cardIds: string[];
+  }>;
+};
+
+type ArchiveActionData = {
+  action: 'archive-cards';
+  cardIdsToArchive: string[];
+};
+
+type LayoutActionData = {
+  action: 'optimize-layout';
+  layout?: 'grid' | 'flow' | 'circular';
+};
+
+type MessageActionData = {
+  suggestedMessage: string;
+};
+
+type SuggestionActionData =
+  | ClusterActionData
+  | ArchiveActionData
+  | LayoutActionData
+  | MessageActionData;
+
 interface Suggestion {
   id: string;
   type: 'action' | 'decision' | 'insight' | 'question' | 'canvas-organize' | 'canvas-layout' | 'canvas-cleanup';
@@ -30,7 +60,7 @@ interface Suggestion {
   reasoning: string;
   priority: 'low' | 'medium' | 'high';
   agentType: string;
-  actionData?: any;
+  actionData?: SuggestionActionData;
 }
 
 interface SuggestionsSidePanelProps {
@@ -48,6 +78,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
   const { messages } = useChatStore();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState<Set<string>>(new Set());
   const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -96,26 +127,51 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
+  // Focus management when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      // Focus the first interactive element when panel opens
+      const timer = setTimeout(() => {
+        const panel = document.querySelector('[role="complementary"]');
+        const firstFocusable = panel?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+        firstFocusable?.focus();
+      }, 100); // Small delay to allow animation to start
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // Auto-refresh when new messages arrive
   useEffect(() => {
     if (!isOpen || !currentProject) return;
-    
+
     const currentMessageCount = messages.length;
-    
-    // If message count increased, refresh suggestions after a short delay
+
+    // Only update if message count actually increased
     if (currentMessageCount > lastMessageCount && lastMessageCount > 0) {
       const timer = setTimeout(() => {
         loadSuggestions();
       }, 2000); // Wait 2 seconds after new message before refreshing
-      
+
+      // Update the message count AFTER setting timer
+      setLastMessageCount(currentMessageCount);
+
       return () => clearTimeout(timer);
+    } else if (lastMessageCount === 0) {
+      // Initialize on first render
+      setLastMessageCount(currentMessageCount);
     }
-    
-    setLastMessageCount(currentMessageCount);
-  }, [messages.length, lastMessageCount, isOpen, currentProject, loadSuggestions]);
+    // Don't include loadSuggestions in deps - it's stable via useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, lastMessageCount, isOpen, currentProject?.id]);
 
   const handleDismiss = useCallback(async (suggestion: Suggestion) => {
     if (!currentProject || !user) return;
+
+    // Prevent duplicate clicks
+    if (loadingSuggestions.has(suggestion.id)) return;
+
+    setLoadingSuggestions(prev => new Set(prev).add(suggestion.id));
 
     try {
       // Record dismissal in backend
@@ -135,36 +191,40 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     } catch (error) {
       console.error('Error dismissing suggestion:', error);
       showToast('Failed to dismiss suggestion', 'error');
+    } finally {
+      setLoadingSuggestions(prev => {
+        const next = new Set(prev);
+        next.delete(suggestion.id);
+        return next;
+      });
     }
-  }, [currentProject, user]);
+  }, [currentProject, user, loadingSuggestions]);
 
   const handleCanvasAction = async (suggestion: Suggestion) => {
     if (!currentProject) return;
 
+    // Prevent duplicate clicks
+    if (loadingSuggestions.has(suggestion.id)) return;
+
     // Set loading state
-    setIsLoading(true);
+    setLoadingSuggestions(prev => new Set(prev).add(suggestion.id));
 
     try {
       const { actionData } = suggestion;
 
       if (!actionData || !actionData.action) {
-        console.error('[SuggestionsSidePanel] Invalid canvas action data:', actionData);
-        showToast('Invalid canvas action data', 'error');
-        setIsLoading(false);
-        return;
+        throw new Error('Invalid canvas action data - missing action');
       }
 
       let result;
+      const actionType = actionData.action;
 
-      console.log('[SuggestionsSidePanel] Applying canvas action:', actionData.action);
+      console.log('[SuggestionsSidePanel] Applying canvas action:', actionType);
 
-      switch (actionData.action) {
+      switch (actionType) {
         case 'cluster-cards':
           if (!actionData.clusters || !Array.isArray(actionData.clusters)) {
-            console.error('[SuggestionsSidePanel] No clusters provided for clustering action');
-            showToast('No clustering data available', 'error');
-            setIsLoading(false);
-            return;
+            throw new Error('Invalid clustering data - clusters array required');
           }
           console.log(`[SuggestionsSidePanel] Clustering ${actionData.clusters.length} groups`);
           result = await canvasApi.applyClustering(currentProject.id, actionData.clusters);
@@ -172,10 +232,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
 
         case 'archive-cards':
           if (!actionData.cardIdsToArchive || !Array.isArray(actionData.cardIdsToArchive)) {
-            console.error('[SuggestionsSidePanel] No card IDs provided for archiving action');
-            showToast('No cards selected for archiving', 'error');
-            setIsLoading(false);
-            return;
+            throw new Error('Invalid archive data - cardIds array required');
           }
           console.log(`[SuggestionsSidePanel] Archiving ${actionData.cardIdsToArchive.length} cards`);
           result = await canvasApi.archiveCards(currentProject.id, actionData.cardIdsToArchive);
@@ -189,40 +246,50 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
         }
 
         default:
-          console.error('[SuggestionsSidePanel] Unknown canvas action:', actionData.action);
-          showToast(`Unknown action type: ${actionData.action}`, 'error');
-          setIsLoading(false);
-          return;
+          throw new Error(`Unknown action type: ${actionType}`);
       }
 
       console.log('[SuggestionsSidePanel] Canvas action result:', result);
 
-      if (result?.success && result?.project) {
-        // Update the project store with the new project data
-        updateProject(currentProject.id, result.project);
-
-        console.log('[SuggestionsSidePanel] Project updated successfully');
-
-        // Show success message
-        showToast(result.message || 'Canvas updated successfully!', 'success');
-
-        // Remove suggestion after successful application
-        setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
-
-        // Reload suggestions after a short delay
-        setTimeout(() => {
-          loadSuggestions();
-        }, 500);
-      } else {
-        console.error('[SuggestionsSidePanel] Canvas action failed:', result);
-        showToast('Failed to apply canvas action', 'error');
+      if (!result?.success || !result?.project) {
+        throw new Error(result?.message || 'Canvas action failed - no project data returned');
       }
+
+      // Only update project if we have valid data
+      updateProject(currentProject.id, result.project);
+
+      console.log('[SuggestionsSidePanel] Project updated successfully');
+
+      // Show success message
+      showToast(result.message || `${actionType} applied successfully!`, 'success');
+
+      // Only remove suggestion after successful update
+      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+
+      // Reload suggestions after a short delay
+      setTimeout(() => {
+        loadSuggestions();
+      }, 500);
     } catch (error) {
-      console.error('[SuggestionsSidePanel] Error applying canvas action:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      showToast(`Error: ${errorMessage}`, 'error');
+      console.error('[SuggestionsSidePanel] Canvas action error:', {
+        action: suggestion.actionData?.action,
+        error,
+        suggestion
+      });
+
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to apply canvas action - unknown error';
+
+      showToast(errorMessage, 'error');
+
+      // Don't remove suggestion on error - user can retry
     } finally {
-      setIsLoading(false);
+      setLoadingSuggestions(prev => {
+        const next = new Set(prev);
+        next.delete(suggestion.id);
+        return next;
+      });
     }
   };
 
@@ -234,20 +301,26 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     try {
       // Handle canvas organization suggestions
       if (suggestion.type === 'canvas-organize' || suggestion.type === 'canvas-layout' || suggestion.type === 'canvas-cleanup') {
+        // Canvas action handles its own error display and suggestion removal
         await handleCanvasAction(suggestion);
-        
-        // Record accept feedback for canvas suggestions
+
+        // Only record feedback if action succeeded
         const timeToAction = Math.floor((Date.now() - startTime) / 1000);
-        await projectsApi.recordSuggestionFeedback(
-          currentProject.id,
-          suggestion.id,
-          user.id,
-          suggestion.type,
-          'accept',
-          timeToAction,
-          suggestion.priority,
-          suggestion.agentType
-        );
+        try {
+          await projectsApi.recordSuggestionFeedback(
+            currentProject.id,
+            suggestion.id,
+            user.id,
+            suggestion.type,
+            'accept',
+            timeToAction,
+            suggestion.priority,
+            suggestion.agentType
+          );
+        } catch (feedbackError) {
+          // Don't fail the whole operation if feedback recording fails
+          console.error('Failed to record suggestion feedback:', feedbackError);
+        }
         return;
       }
 
@@ -261,26 +334,35 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
 
         // Record accept feedback
         const timeToAction = Math.floor((Date.now() - startTime) / 1000);
-        await projectsApi.recordSuggestionFeedback(
-          currentProject.id,
-          suggestion.id,
-          user.id,
-          suggestion.type,
-          'accept',
-          timeToAction,
-          suggestion.priority,
-          suggestion.agentType
-        );
+        try {
+          await projectsApi.recordSuggestionFeedback(
+            currentProject.id,
+            suggestion.id,
+            user.id,
+            suggestion.type,
+            'accept',
+            timeToAction,
+            suggestion.priority,
+            suggestion.agentType
+          );
+        } catch (feedbackError) {
+          console.error('Failed to record suggestion feedback:', feedbackError);
+        }
 
+        // Remove from local state only on success
+        setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+
+        // Reload suggestions after delay
         setTimeout(() => {
           loadSuggestions();
         }, 1000);
-      }
 
-      // Remove from local state
-      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+        showToast('Suggestion applied successfully', 'success');
+      }
     } catch (error) {
       console.error('Error applying suggestion:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to apply suggestion';
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -376,6 +458,8 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            role="complementary"
+            aria-label="AI Suggestions Panel"
             className={`fixed right-0 top-0 h-full w-full sm:w-[400px] lg:w-[420px] z-50 ${
               isDarkMode ? 'glass-dark' : 'glass'
             } shadow-2xl border-l-2 border-cyan-primary/30 flex flex-col`}
@@ -441,9 +525,11 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
               } space-y-3`}
             >
               {/* Type Filter */}
-              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-thin">
+              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-thin" role="group" aria-label="Filter suggestions by type">
                 <button
                   onClick={() => setFilterType('all')}
+                  aria-pressed={filterType === 'all'}
+                  aria-label="Show all suggestion types"
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                     filterType === 'all'
                       ? 'bg-cyan-primary text-white'
@@ -461,6 +547,8 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                     <button
                       key={type.id}
                       onClick={() => setFilterType(type.id)}
+                      aria-pressed={filterType === type.id}
+                      aria-label={`Filter by ${type.label}, ${count} suggestion${count !== 1 ? 's' : ''}`}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center space-x-1 ${
                         filterType === type.id
                           ? 'bg-cyan-primary text-white'
@@ -469,7 +557,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <Icon size={14} />
+                      <Icon size={14} aria-hidden="true" />
                       <span>{type.label}</span>
                       <span className="opacity-70">({count})</span>
                     </button>
@@ -577,11 +665,20 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: 100 }}
                         transition={{ delay: index * 0.05 }}
+                        role="article"
+                        aria-labelledby={`suggestion-title-${suggestion.id}`}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpanded(suggestion.id);
+                          }
+                        }}
                         className={`${
                           isDarkMode ? 'bg-white/5' : 'bg-white/50'
                         } rounded-xl p-4 border ${
                           isDarkMode ? 'border-white/10' : 'border-gray-200'
-                        } hover:border-cyan-primary/50 transition-all`}
+                        } hover:border-cyan-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
                       >
                         {/* Header */}
                         <div className="flex items-start justify-between mb-2">
@@ -604,16 +701,19 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                           </div>
                           <button
                             onClick={() => toggleExpanded(suggestion.id)}
+                            aria-expanded={isExpanded}
+                            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} suggestion details`}
                             className={`p-1 rounded ${
                               isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                             }`}
                           >
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {isExpanded ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
                           </button>
                         </div>
 
                         {/* Title */}
                         <h4
+                          id={`suggestion-title-${suggestion.id}`}
                           className={`font-semibold mb-2 ${
                             isDarkMode ? 'text-white' : 'text-gray-800'
                           }`}
@@ -652,24 +752,52 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
                         </AnimatePresence>
 
                         {/* Actions */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 relative">
                           <button
                             onClick={() => handleAccept(suggestion)}
-                            className="flex-1 px-3 py-2 rounded-lg bg-cyan-primary hover:bg-cyan-primary/80 text-white text-sm font-medium transition-all flex items-center justify-center space-x-1"
+                            disabled={loadingSuggestions.has(suggestion.id)}
+                            className={`flex-1 px-3 py-2 rounded-lg text-white text-sm font-medium transition-all flex items-center justify-center space-x-1 ${
+                              loadingSuggestions.has(suggestion.id)
+                                ? 'bg-cyan-primary/50 cursor-not-allowed'
+                                : 'bg-cyan-primary hover:bg-cyan-primary/80'
+                            }`}
                           >
-                            <ThumbsUp size={14} />
-                            <span>Apply</span>
+                            {loadingSuggestions.has(suggestion.id) ? (
+                              <>
+                                <RefreshCw size={14} className="animate-spin" />
+                                <span>Applying...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ThumbsUp size={14} />
+                                <span>Apply</span>
+                              </>
+                            )}
                           </button>
                           <button
                             onClick={() => handleDismiss(suggestion)}
-                            className={`flex-1 px-3 py-2 rounded-lg ${
-                              isDarkMode
+                            disabled={loadingSuggestions.has(suggestion.id)}
+                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center space-x-1 ${
+                              loadingSuggestions.has(suggestion.id)
+                                ? isDarkMode
+                                  ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : isDarkMode
                                 ? 'bg-white/10 hover:bg-white/20 text-gray-300'
                                 : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                            } text-sm font-medium transition-all flex items-center justify-center space-x-1`}
+                            }`}
                           >
-                            <ThumbsDown size={14} />
-                            <span>Dismiss</span>
+                            {loadingSuggestions.has(suggestion.id) ? (
+                              <>
+                                <RefreshCw size={14} className="animate-spin" />
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ThumbsDown size={14} />
+                                <span>Dismiss</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </motion.div>

@@ -150,11 +150,16 @@ export const ChatPage: React.FC = () => {
 
   // Load suggestion count when project changes
   useEffect(() => {
+    let isMounted = true;
+
     const loadSuggestionCount = async () => {
       if (currentProject && user) {
         try {
-          const response = await projectsApi.getSuggestions(currentProject.id);
-          if (response.success && response.suggestions) {
+          // Include userId to filter dismissed suggestions
+          const response = await projectsApi.getSuggestions(currentProject.id, user.id);
+
+          // Only update state if still mounted
+          if (isMounted && response.success && response.suggestions) {
             setSuggestionCount(response.suggestions.length);
           }
         } catch (error) {
@@ -166,8 +171,29 @@ export const ChatPage: React.FC = () => {
     loadSuggestionCount();
     // Refresh suggestion count every 30 seconds
     const interval = setInterval(loadSuggestionCount, 30000);
-    return () => clearInterval(interval);
-  }, [currentProject, user, messages]);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [currentProject?.id, user?.id]);
+
+  // Separate effect to reload on new messages
+  useEffect(() => {
+    if (messages.length > 0 && currentProject && user) {
+      const timer = setTimeout(() => {
+        projectsApi.getSuggestions(currentProject.id, user.id)
+          .then(response => {
+            if (response.success && response.suggestions) {
+              setSuggestionCount(response.suggestions.length);
+            }
+          })
+          .catch(error => console.error('Failed to load suggestion count:', error));
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length, currentProject?.id, user?.id]);
 
   // Auto-cluster canvas when enough cards exist
   useEffect(() => {

@@ -3,8 +3,10 @@ import { supabase } from '../services/supabase';
 import { IdeaGeneratorAgent } from '../agents/IdeaGeneratorAgent';
 import { ConversationalIdeaAgent, ConversationContext, Message } from '../agents/ConversationalIdeaAgent';
 import { ContextGroupingService, ExtractedIdea, TopicGroup } from '../services/ContextGroupingService';
+import { SandboxOrchestrator } from '../orchestrators/SandboxOrchestrator';
 
 const router = Router();
+const sandboxOrchestrator = new SandboxOrchestrator();
 
 /**
  * Background function to update topic groups cache
@@ -826,6 +828,163 @@ router.post('/conversation/extract', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Extract ideas from conversation error:', error);
     res.status(500).json({ success: false, error: 'Failed to extract ideas' });
+  }
+});
+
+/**
+ * ============================================
+ * SANDBOX ORCHESTRATOR ENDPOINTS (Hybrid Architecture)
+ * ============================================
+ */
+
+/**
+ * Quick extract ideas from sandbox (no verification)
+ * POST /api/sandbox/quick-extract
+ */
+router.post('/quick-extract', async (req: Request, res: Response) => {
+  try {
+    const { sandboxId, selectedIdeaIds } = req.body;
+
+    if (!sandboxId || !selectedIdeaIds || !Array.isArray(selectedIdeaIds)) {
+      return res.status(400).json({
+        success: false,
+        error: 'sandboxId and selectedIdeaIds (array) are required',
+      });
+    }
+
+    // Get sandbox to find project ID
+    const { data: sandbox, error: sandboxError } = await supabase
+      .from('sandbox_sessions')
+      .select('project_id')
+      .eq('id', sandboxId)
+      .single();
+
+    if (sandboxError || !sandbox) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sandbox not found',
+      });
+    }
+
+    console.log(`[SandboxOrchestrator] Quick extracting ${selectedIdeaIds.length} ideas from sandbox ${sandboxId}`);
+
+    const result = await sandboxOrchestrator.quickExtract({
+      sandboxId,
+      projectId: sandbox.project_id,
+      selectedIdeaIds,
+    });
+
+    res.json({
+      success: true,
+      extractedItems: result.extractedItems,
+      metadata: result.metadata,
+      message: `Extracted ${result.metadata.extracted} ideas to your project`,
+    });
+  } catch (error: any) {
+    console.error('Quick extract error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to extract ideas',
+    });
+  }
+});
+
+/**
+ * Verify & extract ideas from sandbox (with quality checks)
+ * POST /api/sandbox/verify-and-extract
+ */
+router.post('/verify-and-extract', async (req: Request, res: Response) => {
+  try {
+    const { sandboxId, selectedIdeaIds } = req.body;
+
+    if (!sandboxId || !selectedIdeaIds || !Array.isArray(selectedIdeaIds)) {
+      return res.status(400).json({
+        success: false,
+        error: 'sandboxId and selectedIdeaIds (array) are required',
+      });
+    }
+
+    // Get sandbox to find project ID
+    const { data: sandbox, error: sandboxError } = await supabase
+      .from('sandbox_sessions')
+      .select('project_id')
+      .eq('id', sandboxId)
+      .single();
+
+    if (sandboxError || !sandbox) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sandbox not found',
+      });
+    }
+
+    console.log(`[SandboxOrchestrator] Verify & extracting ${selectedIdeaIds.length} ideas from sandbox ${sandboxId}`);
+
+    const result = await sandboxOrchestrator.verifyAndExtract({
+      sandboxId,
+      projectId: sandbox.project_id,
+      selectedIdeaIds,
+    });
+
+    res.json({
+      success: true,
+      extractedItems: result.extractedItems,
+      validationReport: result.validationReport,
+      metadata: result.metadata,
+      message: result.validationReport?.verified
+        ? `Extracted ${result.metadata.extracted} verified ideas to your project`
+        : `Extracted ${result.metadata.extracted} ideas with quality warnings (see validationReport)`,
+    });
+  } catch (error: any) {
+    console.error('Verify and extract error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to verify and extract ideas',
+    });
+  }
+});
+
+/**
+ * Analyze sandbox for conflicts before extraction
+ * GET /api/sandbox/:sandboxId/analyze-conflicts
+ */
+router.get('/:sandboxId/analyze-conflicts', async (req: Request, res: Response) => {
+  try {
+    const { sandboxId } = req.params;
+
+    // Get sandbox to find project ID
+    const { data: sandbox, error: sandboxError } = await supabase
+      .from('sandbox_sessions')
+      .select('project_id')
+      .eq('id', sandboxId)
+      .single();
+
+    if (sandboxError || !sandbox) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sandbox not found',
+      });
+    }
+
+    console.log(`[SandboxOrchestrator] Analyzing conflicts for sandbox ${sandboxId}`);
+
+    const analysis = await sandboxOrchestrator.analyzeSandboxConflicts({
+      sandboxId,
+      projectId: sandbox.project_id,
+    });
+
+    res.json({
+      success: true,
+      conflicts: analysis.conflicts,
+      duplicates: analysis.duplicates,
+      recommendations: analysis.recommendations,
+    });
+  } catch (error: any) {
+    console.error('Analyze conflicts error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to analyze sandbox conflicts',
+    });
   }
 });
 

@@ -54,9 +54,15 @@ All agents inherit from `BaseAgent` and integrate with Claude Sonnet 4:
 8. **ReferenceAnalysisAgent** - Analyzes uploaded files (images, PDFs, videos, URLs)
 9. **ReviewerAgent** - Comprehensive QA on conversations and documents
 10. **ResourceManagerAgent** - Organizes references and resources
-11. **IntegrationOrchestrator** - Coordinates all 7 agents with parallel workflows
 
-Note: The system has been optimized from 17 individual agents to 8 total agents (4 consolidated core + 3 support + 1 orchestrator) for improved performance and reduced API calls.
+**Page-Specific Orchestrators:**
+11. **ChatOrchestrator** - Intent-based chat workflows with quality metadata
+12. **DocumentOrchestrator** - Auto-document generation with verification
+13. **ResearchOrchestrator** - Research with new vs. decided separation
+14. **SandboxOrchestrator** - Extraction validation with duplicate detection
+15. **IntegrationOrchestrator** - Coordinates all 9 agents with parallel workflows
+
+Note: The system has been optimized from 17 individual agents to 9 specialized agents (5 core + 4 support) plus 4 page-specific orchestrators for improved performance and reduced API calls.
 
 #### API Endpoints
 ```

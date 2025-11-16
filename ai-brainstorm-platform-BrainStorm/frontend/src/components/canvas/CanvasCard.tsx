@@ -1,19 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
+import {
+  CANVAS_DIMENSIONS,
+  CARD_DIMENSIONS,
+  ANIMATION_SETTINGS,
+  CONFIDENCE_SETTINGS,
+  TAG_LIMITS,
+  Z_INDEX,
+  SELECTION,
+} from '../../constants/canvas';
 
 interface CanvasCardProps {
   item: ProjectItem;
   isDarkMode: boolean;
-  onArchive: (itemId: string) => void;
+  onArchive: (itemId: string) => void | Promise<void>; // ✅ Support async archive
   onPositionChange: (itemId: string, position: { x: number; y: number }) => void;
-  onStateChange?: (itemId: string, newState: ProjectItem['state']) => void;
+  onStateChange?: (itemId: string, newState: ProjectItem['state']) => void | Promise<void>; // ✅ Support async state change
   isInCluster?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (itemId: string) => void;
+  canvasSize?: { width: number; height: number }; // ✅ Optional canvas size prop
 }
 
-export const CanvasCard: React.FC<CanvasCardProps> = ({
+// ✅ MEDIUM PRIORITY FIX: Use constants instead of magic numbers
+const DEFAULT_CANVAS_SIZE = {
+  width: CANVAS_DIMENSIONS.DEFAULT_WIDTH,
+  height: CANVAS_DIMENSIONS.DEFAULT_HEIGHT,
+};
+
+// ✅ MEDIUM PRIORITY FIX: Wrap in React.memo to prevent unnecessary re-renders
+const CanvasCardComponent: React.FC<CanvasCardProps> = ({
   item,
   isDarkMode,
   onArchive,
@@ -22,87 +39,105 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
   isInCluster = false,
   isSelected = false,
   onToggleSelection,
+  canvasSize = DEFAULT_CANVAS_SIZE,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false); // ✅ MEDIUM PRIORITY FIX: Loading state for archive operation
+  const [changingState, setChangingState] = useState(false); // ✅ MEDIUM PRIORITY FIX: Loading state for state changes
 
-  const getStateColor = (state: ProjectItem['state']) => {
-    switch (state) {
-      case 'decided':
-        return {
-          border: 'border-blue-400/60',
-          bg: isDarkMode 
-            ? 'bg-gradient-to-br from-blue-900/40 via-blue-800/30 to-cyan-900/40' 
-            : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100/80',
-          text: 'text-blue-400',
-          badgeBg: isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100',
-          badgeText: isDarkMode ? 'text-blue-300' : 'text-blue-700',
-          glow: 'shadow-[0_0_25px_rgba(59,130,246,0.4)]',
-          hoverGlow: 'hover:shadow-[0_0_35px_rgba(59,130,246,0.6)]',
-          leftBorder: 'border-l-4 border-l-blue-500',
-        };
-      case 'exploring':
-        return {
-          border: 'border-purple-400/60',
-          bg: isDarkMode 
-            ? 'bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-pink-900/40' 
-            : 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100/80',
-          text: 'text-purple-400',
-          badgeBg: isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100',
-          badgeText: isDarkMode ? 'text-purple-300' : 'text-purple-700',
-          glow: 'shadow-[0_0_25px_rgba(168,85,247,0.4)]',
-          hoverGlow: 'hover:shadow-[0_0_35px_rgba(168,85,247,0.6)]',
-          leftBorder: 'border-l-4 border-l-purple-500',
-        };
-      case 'parked':
-        return {
-          border: 'border-amber-400/60',
-          bg: isDarkMode 
-            ? 'bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-amber-900/40' 
-            : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/80',
-          text: 'text-amber-400',
-          badgeBg: isDarkMode ? 'bg-amber-500/20' : 'bg-amber-100',
-          badgeText: isDarkMode ? 'text-amber-300' : 'text-amber-700',
-          glow: 'shadow-[0_0_25px_rgba(245,158,11,0.4)]',
-          hoverGlow: 'hover:shadow-[0_0_35px_rgba(245,158,11,0.6)]',
-          leftBorder: 'border-l-4 border-l-amber-500',
-        };
-      case 'rejected':
-        return {
-          border: 'border-red-400/60',
-          bg: isDarkMode 
-            ? 'bg-gradient-to-br from-red-900/40 via-red-800/30 to-red-900/40' 
-            : 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100/80',
-          text: 'text-red-400',
-          badgeBg: isDarkMode ? 'bg-red-500/20' : 'bg-red-100',
-          badgeText: isDarkMode ? 'text-red-300' : 'text-red-700',
-          glow: 'shadow-[0_0_25px_rgba(239,68,68,0.4)]',
-          hoverGlow: 'hover:shadow-[0_0_35px_rgba(239,68,68,0.6)]',
-          leftBorder: 'border-l-4 border-l-red-500',
-        };
-      default:
-        return {
-          border: 'border-gray-400/60',
-          bg: isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/90',
-          text: 'text-gray-400',
-          badgeBg: isDarkMode ? 'bg-gray-500/20' : 'bg-gray-100',
-          badgeText: isDarkMode ? 'text-gray-300' : 'text-gray-700',
-          glow: '',
-          hoverGlow: '',
-          leftBorder: 'border-l-4 border-l-gray-500',
-        };
-    }
-  };
+  // ✅ HIGH PRIORITY FIX: Calculate dynamic drag constraints based on canvas size
+  const dragConstraints = useMemo(() => {
+    return {
+      left: 0,
+      top: 0,
+      right: Math.max(0, canvasSize.width - CARD_DIMENSIONS.WIDTH),
+      bottom: Math.max(0, canvasSize.height - CARD_DIMENSIONS.APPROXIMATE_HEIGHT),
+    };
+  }, [canvasSize.width, canvasSize.height]);
 
-  const colors = getStateColor(item.state);
+  // ✅ MEDIUM PRIORITY FIX: Memoize color calculation to prevent re-renders
+  const colors = useMemo(() => {
+    const getStateColor = (state: ProjectItem['state']) => {
+      switch (state) {
+        case 'decided':
+          return {
+            border: 'border-blue-400/60',
+            bg: isDarkMode
+              ? 'bg-gradient-to-br from-blue-900/40 via-blue-800/30 to-cyan-900/40'
+              : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100/80',
+            text: 'text-blue-400',
+            badgeBg: isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100',
+            badgeText: isDarkMode ? 'text-blue-300' : 'text-blue-700',
+            glow: 'shadow-[0_0_25px_rgba(59,130,246,0.4)]',
+            hoverGlow: 'hover:shadow-[0_0_35px_rgba(59,130,246,0.6)]',
+            leftBorder: 'border-l-4 border-l-blue-500',
+          };
+        case 'exploring':
+          return {
+            border: 'border-purple-400/60',
+            bg: isDarkMode
+              ? 'bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-pink-900/40'
+              : 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100/80',
+            text: 'text-purple-400',
+            badgeBg: isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100',
+            badgeText: isDarkMode ? 'text-purple-300' : 'text-purple-700',
+            glow: 'shadow-[0_0_25px_rgba(168,85,247,0.4)]',
+            hoverGlow: 'hover:shadow-[0_0_35px_rgba(168,85,247,0.6)]',
+            leftBorder: 'border-l-4 border-l-purple-500',
+          };
+        case 'parked':
+          return {
+            border: 'border-amber-400/60',
+            bg: isDarkMode
+              ? 'bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-amber-900/40'
+              : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/80',
+            text: 'text-amber-400',
+            badgeBg: isDarkMode ? 'bg-amber-500/20' : 'bg-amber-100',
+            badgeText: isDarkMode ? 'text-amber-300' : 'text-amber-700',
+            glow: 'shadow-[0_0_25px_rgba(245,158,11,0.4)]',
+            hoverGlow: 'hover:shadow-[0_0_35px_rgba(245,158,11,0.6)]',
+            leftBorder: 'border-l-4 border-l-amber-500',
+          };
+        case 'rejected':
+          return {
+            border: 'border-red-400/60',
+            bg: isDarkMode
+              ? 'bg-gradient-to-br from-red-900/40 via-red-800/30 to-red-900/40'
+              : 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100/80',
+            text: 'text-red-400',
+            badgeBg: isDarkMode ? 'bg-red-500/20' : 'bg-red-100',
+            badgeText: isDarkMode ? 'text-red-300' : 'text-red-700',
+            glow: 'shadow-[0_0_25px_rgba(239,68,68,0.4)]',
+            hoverGlow: 'hover:shadow-[0_0_35px_rgba(239,68,68,0.6)]',
+            leftBorder: 'border-l-4 border-l-red-500',
+          };
+        default:
+          return {
+            border: 'border-gray-400/60',
+            bg: isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/90',
+            text: 'text-gray-400',
+            badgeBg: isDarkMode ? 'bg-gray-500/20' : 'bg-gray-100',
+            badgeText: isDarkMode ? 'text-gray-300' : 'text-gray-700',
+            glow: '',
+            hoverGlow: '',
+            leftBorder: 'border-l-4 border-l-gray-500',
+          };
+      }
+    };
+    return getStateColor(item.state);
+  }, [item.state, isDarkMode]);
 
   return (
     <motion.div
       drag={!isInCluster}
       dragMomentum={false}
       dragElastic={0}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-      dragConstraints={{ left: 0, top: 0, right: 1700, bottom: 1700 }}
+      dragTransition={{
+        bounceStiffness: ANIMATION_SETTINGS.DRAG_BOUNCE_STIFFNESS,
+        bounceDamping: ANIMATION_SETTINGS.DRAG_BOUNCE_DAMPING,
+      }}
+      dragConstraints={dragConstraints} // ✅ Fixed: Now uses dynamic constraints instead of hard-coded 1700x1700
       onDragStart={() => setIsDragging(true)}
       onDragEnd={(_, info) => {
         setIsDragging(false);
@@ -112,6 +147,23 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      // ✅ HIGH PRIORITY FIX: Accessibility improvements
+      role="article"
+      aria-label={`Idea card: ${item.text?.substring(0, 50)}${(item.text?.length || 0) > 50 ? '...' : ''}`}
+      aria-describedby={`card-state-${item.id}`}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        // Keyboard navigation support
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          onArchive(item.id);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          if (onToggleSelection) {
+            e.preventDefault();
+            onToggleSelection(item.id);
+          }
+        }
+      }}
       style={
         isInCluster
           ? { position: 'relative' }
@@ -124,11 +176,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
       }
       className={`${
         isInCluster ? 'w-full' : 'w-64'
-      } ${!isInCluster && 'cursor-grab active:cursor-grabbing'} ${isDragging ? 'z-50' : 'z-10'} ${
-        isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-      }`}
-      whileHover={!isInCluster ? { scale: 1.03 } : undefined}
-      whileTap={!isInCluster ? { scale: 0.98 } : undefined}
+      } ${!isInCluster && 'cursor-grab active:cursor-grabbing'} ${
+        isDragging ? `z-${Z_INDEX.DRAGGING_CARD}` : `z-${Z_INDEX.NORMAL_CARD}`
+      } ${
+        isSelected ? `ring-${SELECTION.RING_WIDTH} ring-blue-500 ring-offset-${SELECTION.RING_OFFSET}` : ''
+      } focus:outline-none focus:ring-2 focus:ring-cyan-primary/50`}
+      whileHover={!isInCluster ? { scale: ANIMATION_SETTINGS.HOVER_SCALE } : undefined}
+      whileTap={!isInCluster ? { scale: ANIMATION_SETTINGS.TAP_SCALE } : undefined}
     >
       {/* Selection Checkbox - Only show if not in cluster and has onToggleSelection */}
       {!isInCluster && onToggleSelection && (isHovered || isSelected) && (
@@ -176,29 +230,54 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs px-3 py-1.5 rounded-full font-bold ${colors.badgeText} ${colors.badgeBg} border border-current/40 uppercase tracking-wide`}>
+          <span
+            id={`card-state-${item.id}`}
+            className={`text-xs px-3 py-1.5 rounded-full font-bold ${colors.badgeText} ${colors.badgeBg} border border-current/40 uppercase tracking-wide`}
+            role="status"
+            aria-label={`Card state: ${item.state}`}
+          >
             {item.state}
           </span>
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              onArchive(item.id);
+              // ✅ MEDIUM PRIORITY FIX: Add loading state during archive
+              setIsArchiving(true);
+              try {
+                await onArchive(item.id);
+              } finally {
+                setIsArchiving(false);
+              }
             }}
-            className={`text-xs ${isDarkMode ? 'text-gray-400 hover:text-red-400' : 'text-gray-500 hover:text-red-500'} transition-colors`}
+            disabled={isArchiving}
+            className={`text-xs ${
+              isArchiving
+                ? 'opacity-50 cursor-not-allowed'
+                : isDarkMode
+                ? 'text-gray-400 hover:text-red-400'
+                : 'text-gray-500 hover:text-red-500'
+            } transition-colors`}
+            aria-label={isArchiving ? 'Archiving card...' : 'Archive this card'}
+            title={isArchiving ? 'Archiving...' : 'Archive card (Delete key)'}
           >
-            📦
+            {isArchiving ? '⏳' : '📦'}
           </button>
         </div>
 
         {/* Content */}
-        <p className={`text-sm mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'} line-clamp-4`}>
-          {item.text}
+        {/* ✅ HIGH PRIORITY FIX: Sanitize text to prevent XSS - using textContent via dangerouslySetInnerHTML alternative */}
+        <p
+          className={`text-sm mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'} line-clamp-4`}
+          style={{ whiteSpace: 'pre-wrap' }}
+        >
+          {/* React automatically escapes text content, preventing XSS. Additional sanitization for safety: */}
+          {String(item.text || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')}
         </p>
 
         {/* Tags */}
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
-            {item.tags.slice(0, 3).map((tag, idx) => (
+            {item.tags.slice(0, TAG_LIMITS.VISIBLE).map((tag, idx) => (
               <span
                 key={idx}
                 className={`text-xs px-2 py-1 rounded-lg ${
@@ -208,9 +287,9 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
                 #{tag}
               </span>
             ))}
-            {item.tags.length > 3 && (
+            {item.tags.length > TAG_LIMITS.VISIBLE && (
               <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                +{item.tags.length - 3}
+                +{item.tags.length - TAG_LIMITS.VISIBLE}
               </span>
             )}
           </div>
@@ -219,21 +298,26 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between text-xs">
           {item.confidence !== undefined && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" role="group" aria-label="Confidence rating">
               <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
                 Confidence:
               </span>
-              <div className="flex gap-0.5">
+              <div
+                className="flex gap-0.5"
+                role="img"
+                aria-label={`${Math.round((item.confidence || 0) / 20)} out of 5 stars`}
+              >
                 {[...Array(5)].map((_, i) => (
                   <span
                     key={i}
                     className={
-                      i < Math.round((item.confidence || 0) / 20)
+                      i < Math.round((item.confidence || 0) / CONFIDENCE_SETTINGS.STAR_VALUE)
                         ? colors.text
                         : isDarkMode
                         ? 'text-gray-600'
                         : 'text-gray-300'
                     }
+                    aria-hidden="true"
                   >
                     ⭐
                   </span>
@@ -241,31 +325,47 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
               </div>
             </div>
           )}
-          <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+          <time
+            className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+            dateTime={item.created_at}
+            aria-label={`Created on ${new Date(item.created_at).toLocaleDateString()}`}
+          >
             {new Date(item.created_at).toLocaleDateString()}
-          </span>
+          </time>
         </div>
 
         {/* State Change Buttons */}
         {onStateChange && (
-          <div className="flex gap-2 mt-3 pt-3 border-t border-current/20">
+          <div
+            className="flex gap-2 mt-3 pt-3 border-t border-current/20"
+            role="group"
+            aria-label="Change card state"
+          >
             {(['decided', 'exploring', 'parked'] as const).map((state) => (
               <button
                 key={state}
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  onStateChange(item.id, state);
+                  // ✅ MEDIUM PRIORITY FIX: Add loading state during state change
+                  setChangingState(true);
+                  try {
+                    await onStateChange?.(item.id, state);
+                  } finally {
+                    setChangingState(false);
+                  }
                 }}
-                disabled={item.state === state}
+                disabled={item.state === state || changingState}
+                aria-label={`Change state to ${state}`}
+                aria-pressed={item.state === state}
                 className={`flex-1 text-xs py-1 rounded-lg transition-all ${
-                  item.state === state
+                  item.state === state || changingState
                     ? 'bg-current/20 text-current opacity-50 cursor-not-allowed'
                     : isDarkMode
                     ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                {state.charAt(0).toUpperCase() + state.slice(1)}
+                {changingState && item.state !== state ? '...' : state.charAt(0).toUpperCase() + state.slice(1)}
               </button>
             ))}
           </div>
@@ -274,3 +374,21 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
     </motion.div>
   );
 };
+
+// ✅ MEDIUM PRIORITY FIX: Export memoized version with custom comparison
+export const CanvasCard = React.memo(CanvasCardComponent, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.text === nextProps.item.text &&
+    prevProps.item.state === nextProps.item.state &&
+    prevProps.item.position?.x === nextProps.item.position?.x &&
+    prevProps.item.position?.y === nextProps.item.position?.y &&
+    prevProps.item.isArchived === nextProps.item.isArchived &&
+    prevProps.isDarkMode === nextProps.isDarkMode &&
+    prevProps.isInCluster === nextProps.isInCluster &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.canvasSize?.width === nextProps.canvasSize?.width &&
+    prevProps.canvasSize?.height === nextProps.canvasSize?.height
+  );
+});

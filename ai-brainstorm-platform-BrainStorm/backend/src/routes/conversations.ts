@@ -3,9 +3,11 @@ import { supabase } from '../services/supabase';
 import { AgentCoordinationService } from '../services/agentCoordination';
 import { EmbeddingService } from '../services/embeddingService';
 import { updatesCache } from '../services/updatesCache';
+import { ChatOrchestrator } from '../orchestrators/ChatOrchestrator';
 
 const router = Router();
 const coordinationService = new AgentCoordinationService();
+const chatOrchestrator = new ChatOrchestrator();
 const embeddingService = new EmbeddingService(supabase);
 
 // Helper to send SSE events
