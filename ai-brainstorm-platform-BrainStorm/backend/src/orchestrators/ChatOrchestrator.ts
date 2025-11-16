@@ -73,7 +73,10 @@ export class ChatOrchestrator {
       const intentClassification = {
         type: intent,
         confidence: intentMetadata.confidence || 0.8,
-        context: intentMetadata.context || {}
+        stateChange: intentMetadata.stateChange || undefined,
+        conflicts: intentMetadata.conflicts,
+        needsClarification: intentMetadata.needsClarification || false,
+        reasoning: intentMetadata.reasoning || ''
       };
 
       const workflow = await this.integrationOrchestrator.determineWorkflow(

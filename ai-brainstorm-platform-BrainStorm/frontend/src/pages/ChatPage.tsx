@@ -8,6 +8,7 @@ import { useSessionStore } from '../store/sessionStore';
 import { useAgentStore } from '../store/agentStore';
 import { useChat, useMessageLoader } from '../hooks';
 import { showToast } from '../utils/toast';
+import { AgentQuestion, isAgentQuestionArray } from '../types';
 import '../styles/homepage.css';
 import {
   ChatPageHeader,
@@ -73,7 +74,7 @@ export const ChatPage: React.FC = () => {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isSuggestionsPanelOpen, setIsSuggestionsPanelOpen] = useState(false);
   const [suggestionCount, setSuggestionCount] = useState(0);
-  const [agentQuestions, setAgentQuestions] = useState<any[]>([]);
+  const [agentQuestions, setAgentQuestions] = useState<AgentQuestion[]>([]);
   const [isQuestionBubbleOpen, setIsQuestionBubbleOpen] = useState(false);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
   const [showArchiveAllConfirm, setShowArchiveAllConfirm] = useState(false);
@@ -244,23 +245,24 @@ export const ChatPage: React.FC = () => {
     });
 
     // Collect ALL questions from ALL messages (not just latest)
-    const allQuestions: any[] = [];
+    const allQuestions: AgentQuestion[] = [];
 
     messages.forEach((msg) => {
-      if (msg.metadata?.agentQuestions && msg.metadata.agentQuestions.length > 0) {
-        console.log(`[ChatPage] ✅ Found ${msg.metadata.agentQuestions.length} questions in message ${msg.id}:`, {
+      const questions = msg.metadata?.agentQuestions;
+      if (questions && isAgentQuestionArray(questions) && questions.length > 0) {
+        console.log(`[ChatPage] ✅ Found ${questions.length} questions in message ${msg.id}:`, {
           agent: msg.metadata?.agent,
-          questions: msg.metadata.agentQuestions.map((q: any) => q.question?.substring(0, 60))
+          questions: questions.map((q) => q.question?.substring(0, 60))
         });
 
-        msg.metadata.agentQuestions.forEach((q: any, qIndex: number) => {
+        questions.forEach((q, qIndex) => {
           // Create unique ID for each question based on message and question index
           const questionId = `${msg.id}-${qIndex}`;
           allQuestions.push({
             ...q,
             id: questionId,
             messageId: msg.id,
-            timestamp: msg.created_at,
+            timestamp: msg.created_at as any, // Cast to ISODateString
             answered: answeredQuestionIds.has(questionId),
           });
         });

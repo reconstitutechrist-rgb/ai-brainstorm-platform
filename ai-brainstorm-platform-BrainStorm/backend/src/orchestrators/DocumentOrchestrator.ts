@@ -5,8 +5,13 @@
  * Provides two modes: Quick Generate (fast) and Verify & Generate (quality-checked).
  */
 
-import { QualityAuditorAgent } from '../agents/qualityAuditor';
+import { BaseOrchestrator, ProjectItem } from './BaseOrchestrator';
 import { supabase } from '../services/supabase';
+import {
+  extractVerificationResult,
+  extractAssumptionScanResult,
+  extractConsistencyCheckResult,
+} from '../utils/typeGuards';
 
 interface DocumentContext {
   projectId: string;
@@ -28,27 +33,28 @@ interface DocumentResult {
   qualityReport?: {
     verified: boolean;
     issues: string[];
-    assumptions: string[];
-    conflicts: any[];
+    assumptions: Array<{
+      detail: string;
+      severity: 'critical' | 'high' | 'medium';
+      recommendation?: string;
+    }>;
+    conflicts: Array<{
+      type: string;
+      description: string;
+      severity?: string;
+      explanation?: string;
+      resolutionOptions?: string[];
+    }>;
     gapsDetected: string[];
   };
 }
 
-interface ProjectItem {
-  id: string;
-  title: string;
-  description: string;
-  state: 'decided' | 'exploring' | 'parked' | 'rejected';
-  tags: string[];
-  confidence: number;
-  created_at: Date;
-}
 
-export class DocumentOrchestrator {
-  private qualityAuditor: QualityAuditorAgent;
+export class DocumentOrchestrator extends BaseOrchestrator {
+
 
   constructor() {
-    this.qualityAuditor = new QualityAuditorAgent();
+    super('DocumentOrchestrator');
   }
 
   /**
@@ -57,11 +63,11 @@ export class DocumentOrchestrator {
    */
   async generateDocument(context: DocumentContext): Promise<DocumentResult> {
     try {
-      console.log('[DocumentOrchestrator] Generating document:', context.documentType, 'verify:', context.verify);
+      this.log('Generating document', { type: context.documentType, verify: context.verify });
 
       // Step 1: Fetch project items
       const projectItems = await this.getProjectItems(context.projectId);
-      console.log(`[DocumentOrchestrator] Found ${projectItems.length} project items`);
+      this.log(`Found ${projectItems.length} project items`);
 
       if (projectItems.length === 0) {
         throw new Error('No project items found. Start a conversation on the Chat page to build your project first.');
@@ -72,7 +78,7 @@ export class DocumentOrchestrator {
       const exploringItems = projectItems.filter(item => item.state === 'exploring');
       const parkedItems = projectItems.filter(item => item.state === 'parked');
 
-      console.log(`[DocumentOrchestrator] Items breakdown: ${decidedItems.length} decided, ${exploringItems.length} exploring, ${parkedItems.length} parked`);
+      this.log(`Items breakdown: ${decidedItems.length} decided, ${exploringItems.length} exploring, ${parkedItems.length} parked`);
 
       // Step 3: Generate document content
       const documentContent = await this.generateDocumentContent(
@@ -114,11 +120,11 @@ export class DocumentOrchestrator {
         qualityReport
       };
 
-      console.log('[DocumentOrchestrator] Document generated successfully:', documentId);
+      this.log('Document generated successfully', documentId);
 
       return result;
     } catch (error) {
-      console.error('[DocumentOrchestrator] Error generating document:', error);
+      this.logError('Error generating document', error);
       throw error;
     }
   }
@@ -137,43 +143,6 @@ export class DocumentOrchestrator {
    */
   async verifyAndGenerate(context: DocumentContext): Promise<DocumentResult> {
     return this.generateDocument({ ...context, verify: true });
-  }
-
-  /**
-   * Get project items from database
-   */
-  private async getProjectItems(projectId: string): Promise<ProjectItem[]> {
-    try {
-      const { data: project, error } = await supabase
-        .from('projects')
-        .select('items')
-        .eq('id', projectId)
-        .single();
-
-      if (error) throw error;
-
-      const items = project?.items || [];
-
-      // Convert to ProjectItem format and sort
-      const projectItems: ProjectItem[] = items.map((item: any) => ({
-        id: item.id,
-        title: item.text || item.title || '',
-        description: item.text || item.description || '',
-        state: item.state || 'exploring',
-        tags: item.tags || item.metadata?.tags || [],
-        confidence: item.citation?.confidence || item.confidence || 85,
-        created_at: new Date(item.created_at || Date.now()),
-      }));
-
-      // Sort by state priority
-      return projectItems.sort((a, b) => {
-        const statePriority: Record<string, number> = { decided: 1, exploring: 2, parked: 3 };
-        return (statePriority[a.state] || 4) - (statePriority[b.state] || 4);
-      });
-    } catch (error) {
-      console.error('[DocumentOrchestrator] Error fetching project items:', error);
-      throw error;
-    }
   }
 
   /**
@@ -370,11 +339,21 @@ export class DocumentOrchestrator {
   ): Promise<{
     verified: boolean;
     issues: string[];
-    assumptions: string[];
-    conflicts: any[];
+    assumptions: Array<{
+      detail: string;
+      severity: 'critical' | 'high' | 'medium';
+      recommendation?: string;
+    }>;
+    conflicts: Array<{
+      type: string;
+      description: string;
+      severity?: string;
+      explanation?: string;
+      resolutionOptions?: string[];
+    }>;
     gapsDetected: string[];
   }> {
-    console.log('[DocumentOrchestrator] Running quality checks on document');
+    this.log('Running quality checks on document');
 
     // Run quality checks in parallel
     const [verification, assumptionScan, consistencyCheck] = await Promise.all([
@@ -395,15 +374,20 @@ export class DocumentOrchestrator {
     // Detect gaps in the document
     const gapsDetected = this.detectDocumentGaps(documentContent, projectItems);
 
+    // Extract results using type-safe helper functions
+    const verificationResult = extractVerificationResult(verification);
+    const assumptionResult = extractAssumptionScanResult(assumptionScan);
+    const consistencyResult = extractConsistencyCheckResult(consistencyCheck);
+
     const qualityReport = {
-      verified: verification.metadata?.approved !== false,
-      issues: verification.metadata?.issues || [],
-      assumptions: assumptionScan.metadata?.assumptions || [],
-      conflicts: consistencyCheck.metadata?.conflicts || [],
+      verified: verificationResult.approved,
+      issues: verificationResult.issues,
+      assumptions: assumptionResult.assumptions,
+      conflicts: consistencyResult.conflicts,
       gapsDetected
     };
 
-    console.log('[DocumentOrchestrator] Quality report:', qualityReport);
+    this.log('Quality report', qualityReport);
 
     return qualityReport;
   }
@@ -469,7 +453,7 @@ export class DocumentOrchestrator {
 
       return data.id;
     } catch (error) {
-      console.error('[DocumentOrchestrator] Error saving document:', error);
+      this.logError('Error saving document', error);
       throw error;
     }
   }
@@ -534,7 +518,7 @@ export class DocumentOrchestrator {
         completeness
       };
     } catch (error) {
-      console.error('[DocumentOrchestrator] Error analyzing document gaps:', error);
+      this.logError('Error analyzing document gaps', error);
       throw error;
     }
   }

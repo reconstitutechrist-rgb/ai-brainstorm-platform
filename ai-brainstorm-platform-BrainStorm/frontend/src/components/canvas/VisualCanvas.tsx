@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import type { ProjectItem } from '../../types';
+import type { ProjectItem, ClusterMetadata } from '../../types';
+import { isClusterMetadata, isProjectItem } from '../../types';
 import { CanvasCard } from './CanvasCard';
 import { ClusterContainer } from './ClusterContainer';
 import { CanvasErrorBoundary } from './CanvasErrorBoundary';
@@ -57,13 +58,20 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   };
 
   // Group items by cluster
-  const { clusteredItems, unclusteredItems } = useMemo(() => {
-    const clusters = currentProject?.clusters || [];
+  // ✅ TypeScript best practice: Validate cluster metadata at runtime
+  const { clusteredItems, unclusteredItems, validatedClusters } = useMemo(() => {
+    const rawClusters = currentProject?.clusters || [];
 
-    if (clusters.length === 0) {
+    // ✅ Type guard: Only include clusters that pass validation
+    const validClusters = rawClusters.filter((cluster): cluster is ClusterMetadata =>
+      isClusterMetadata(cluster)
+    );
+
+    if (validClusters.length === 0) {
       return {
         clusteredItems: new Map<string, ProjectItem[]>(),
         unclusteredItems: items,
+        validatedClusters: [] as ClusterMetadata[],
       };
     }
 
@@ -71,6 +79,12 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
     const unclustered: ProjectItem[] = [];
 
     items.forEach((item) => {
+      // ✅ Runtime validation: Ensure item structure is valid before processing
+      if (!isProjectItem(item)) {
+        console.warn('[VisualCanvas] Invalid ProjectItem detected:', item);
+        return;
+      }
+
       if (item.clusterId) {
         const existing = grouped.get(item.clusterId) || [];
         grouped.set(item.clusterId, [...existing, item]);
@@ -82,11 +96,12 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
     return {
       clusteredItems: grouped,
       unclusteredItems: unclustered,
+      validatedClusters: validClusters,
     };
   }, [items, currentProject?.clusters]);
 
-  // Get cluster metadata
-  const clusters = currentProject?.clusters || [];
+  // Get cluster metadata (already validated)
+  const clusters = validatedClusters;
 
   return (
     <div

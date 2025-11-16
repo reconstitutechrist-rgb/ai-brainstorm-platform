@@ -52,6 +52,33 @@ type SuggestionActionData =
   | LayoutActionData
   | MessageActionData;
 
+// Type guards for discriminated union - enables proper type narrowing
+function isClusterAction(data: SuggestionActionData): data is ClusterActionData {
+  return 'action' in data && data.action === 'cluster-cards';
+}
+
+function isArchiveAction(data: SuggestionActionData): data is ArchiveActionData {
+  return 'action' in data && data.action === 'archive-cards';
+}
+
+function isLayoutAction(data: SuggestionActionData): data is LayoutActionData {
+  return 'action' in data && data.action === 'optimize-layout';
+}
+
+function isMessageAction(data: SuggestionActionData): data is MessageActionData {
+  return 'suggestedMessage' in data && typeof data.suggestedMessage === 'string';
+}
+
+// Assertion function for non-null suggestion data
+function assertSuggestionActionData(
+  data: SuggestionActionData | undefined,
+  message?: string
+): asserts data is SuggestionActionData {
+  if (!data) {
+    throw new Error(message || 'Suggestion action data is undefined');
+  }
+}
+
 interface Suggestion {
   id: string;
   type: 'action' | 'decision' | 'insight' | 'question' | 'canvas-organize' | 'canvas-layout' | 'canvas-cleanup';
@@ -61,6 +88,21 @@ interface Suggestion {
   priority: 'low' | 'medium' | 'high';
   agentType: string;
   actionData?: SuggestionActionData;
+}
+
+// Type guard for Suggestion
+function isSuggestion(value: unknown): value is Suggestion {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.title === 'string' &&
+    typeof obj.description === 'string' &&
+    typeof obj.reasoning === 'string' &&
+    (obj.priority === 'low' || obj.priority === 'medium' || obj.priority === 'high') &&
+    typeof obj.agentType === 'string'
+  );
 }
 
 interface SuggestionsSidePanelProps {

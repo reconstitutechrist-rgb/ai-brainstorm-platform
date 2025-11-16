@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, CheckCircle2, Minimize2 } from 'lucide-react';
-
-interface AgentQuestion {
-  id: string;
-  question: string;
-  importance: 'critical' | 'high' | 'medium' | 'low';
-  category: string;
-  showInBubble: boolean;
-  answered?: boolean;
-  timestamp?: string;
-}
+import { AgentQuestion } from '../types';
 
 interface AgentQuestionBubbleProps {
   questions: AgentQuestion[];

@@ -463,8 +463,15 @@ Return ONLY valid JSON:
       g.importance === 'critical' || g.importance === 'high'
     ) || [];
 
-    // Format questions for agent bubble
-    const agentQuestions = bubbleGaps.map((gap: any) => ({
+    // Format questions for agent bubble with proper typing
+    interface AgentQuestionItem {
+      question: string;
+      importance: string;
+      category: string;
+      showInBubble: boolean;
+    }
+
+    const agentQuestions: AgentQuestionItem[] = bubbleGaps.map((gap: any) => ({
       question: gap.question,
       importance: gap.importance,
       category: gap.category,
@@ -473,13 +480,7 @@ Return ONLY valid JSON:
 
     // FIX #2: Add comprehensive logging
     const highCount = gaps.gaps?.filter((g: any) => g.importance === 'high').length || 0;
-    this.log(`Gap Analysis for Bubble:`, {
-      totalGaps: gaps.gaps?.length || 0,
-      criticalCount: gaps.criticalCount || 0,
-      highCount,
-      bubbleGapsCount: bubbleGaps.length,
-      questionsSummary: agentQuestions.map(q => `[${q.importance}] ${q.question.substring(0, 50)}...`)
-    });
+    this.log(`Gap Analysis for Bubble: totalGaps=${gaps.gaps?.length || 0}, criticalCount=${gaps.criticalCount || 0}, highCount=${highCount}, bubbleGapsCount=${bubbleGaps.length}, questions=${agentQuestions.map((q: AgentQuestionItem) => `[${q.importance}] ${q.question.substring(0, 50)}...`).join('; ')}`);
     // Analysis is SILENT - only returns structured data for orchestrator
     return {
       agent: 'ConversationAgent',

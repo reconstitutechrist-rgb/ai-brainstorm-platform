@@ -5,9 +5,13 @@
  * Separates new ideas from already-decided items to prevent duplicates.
  */
 
+import { BaseOrchestrator, ProjectItem } from './BaseOrchestrator';
 import { UnifiedResearchAgent } from '../agents/unifiedResearchAgent';
-import { QualityAuditorAgent } from '../agents/qualityAuditor';
 import { supabase } from '../services/supabase';
+import {
+  extractVerificationResult,
+  extractAssumptionScanResult,
+} from '../utils/typeGuards';
 
 interface ResearchContext {
   projectId: string;
@@ -44,22 +48,14 @@ interface ResearchItem {
   };
 }
 
-interface ProjectItem {
-  id: string;
-  title: string;
-  description: string;
-  state: string;
-  tags: string[];
-  created_at: Date;
-}
 
-export class ResearchOrchestrator {
+export class ResearchOrchestrator extends BaseOrchestrator {
   private researchAgent: UnifiedResearchAgent;
-  private qualityAuditor: QualityAuditorAgent;
+
 
   constructor() {
+    super('ResearchOrchestrator');
     this.researchAgent = new UnifiedResearchAgent();
-    this.qualityAuditor = new QualityAuditorAgent();
   }
 
   /**
@@ -68,11 +64,11 @@ export class ResearchOrchestrator {
    */
   async processResearchQuery(context: ResearchContext): Promise<ResearchResult> {
     try {
-      console.log('[ResearchOrchestrator] Processing research query:', context.query);
+      this.log('Processing research query', context.query);
 
       // Step 1: Get existing project items (decided context)
       const projectItems = await this.getProjectItems(context.projectId);
-      console.log(`[ResearchOrchestrator] Found ${projectItems.length} existing project items`);
+      this.log(`Found ${projectItems.length} existing project items`);
 
       // Step 2: Perform research using UnifiedResearchAgent
       const researchResult = await this.researchAgent.research(
@@ -115,7 +111,7 @@ export class ResearchOrchestrator {
         duplicatesFound: alreadyDecided.length
       };
 
-      console.log('[ResearchOrchestrator] Research complete:', metadata);
+      this.log('Research complete', metadata);
 
       return {
         synthesis,
@@ -124,41 +120,10 @@ export class ResearchOrchestrator {
         metadata
       };
     } catch (error) {
-      console.error('[ResearchOrchestrator] Error processing research:', error);
+      this.logError('Error processing research', error);
       throw error;
     }
   }
-
-  /**
-   * Get all project items (decided context) from database
-   */
-  private async getProjectItems(projectId: string): Promise<ProjectItem[]> {
-    try {
-      const { data: project, error } = await supabase
-        .from('projects')
-        .select('items')
-        .eq('id', projectId)
-        .single();
-
-      if (error) throw error;
-
-      const items = project?.items || [];
-
-      // Convert to ProjectItem format
-      return items.map((item: any) => ({
-        id: item.id,
-        title: item.text || item.title || '',
-        description: item.text || item.description || '',
-        state: item.state || 'exploring',
-        tags: item.tags || item.metadata?.tags || [],
-        created_at: new Date(item.created_at || Date.now()),
-      }));
-    } catch (error) {
-      console.error('[ResearchOrchestrator] Error fetching project items:', error);
-      return [];
-    }
-  }
-
   /**
    * Extract research items from UnifiedResearchAgent result
    */
@@ -220,7 +185,7 @@ export class ResearchOrchestrator {
 
     // Check each research item against project items
     for (const researchItem of researchItems) {
-      const match = this.findBestMatch(researchItem, projectItems);
+      const match = this.findBestProjectMatch(researchItem, projectItems);
 
       if (match && match.similarity > 0.7) {
         // High similarity - likely already decided
@@ -241,7 +206,7 @@ export class ResearchOrchestrator {
    * Find best matching project item for a research item
    * Uses simple text similarity (could be enhanced with embeddings)
    */
-  private findBestMatch(
+  private findBestProjectMatch(
     researchItem: ResearchItem,
     projectItems: ProjectItem[]
   ): { id: string; title: string; similarity: number } | null {
@@ -267,23 +232,6 @@ export class ResearchOrchestrator {
     return bestMatch;
   }
 
-  /**
-   * Calculate text similarity using simple word overlap
-   * TODO: Replace with proper embedding-based similarity
-   */
-  private calculateTextSimilarity(text1: string, text2: string): number {
-    const words1 = new Set(
-      text1.toLowerCase().split(/\s+/).filter(w => w.length > 3)
-    );
-    const words2 = new Set(
-      text2.toLowerCase().split(/\s+/).filter(w => w.length > 3)
-    );
-
-    const intersection = new Set([...words1].filter(w => words2.has(w)));
-    const union = new Set([...words1, ...words2]);
-
-    return intersection.size / union.size;
-  }
 
   /**
    * Generate synthesis with project context awareness
@@ -304,9 +252,11 @@ export class ResearchOrchestrator {
       synthesis += `Found ${alreadyDecided.length} research result(s) that match items you've already decided on:\n\n`;
 
       alreadyDecided.slice(0, 5).forEach((item, index) => {
-        synthesis += `${index + 1}. **${item.matchedDecidedItem?.title}** (${Math.round(item.matchedDecidedItem!.similarity * 100)}% match)\n`;
-        synthesis += `   - Research: "${item.content.substring(0, 100)}..."\n`;
-        synthesis += `   - Source: ${item.source}\n\n`;
+        if (item.matchedDecidedItem) {
+          synthesis += `${index + 1}. **${item.matchedDecidedItem.title}** (${Math.round(item.matchedDecidedItem.similarity * 100)}% match)\n`;
+          synthesis += `   - Research: "${item.content.substring(0, 100)}..."\n`;
+          synthesis += `   - Source: ${item.source}\n\n`;
+        }
       });
 
       if (alreadyDecided.length > 5) {
@@ -385,11 +335,15 @@ export class ResearchOrchestrator {
         )
       ]);
 
+      // Extract results using type-safe helper functions
+      const verificationResult = extractVerificationResult(verification);
+      const assumptionResult = extractAssumptionScanResult(assumptionScan);
+
       qualityReport = {
-        verified: verification.metadata?.approved !== false,
-        issues: verification.metadata?.issues || [],
-        assumptions: assumptionScan.metadata?.assumptions || [],
-        assumptionCount: assumptionScan.metadata?.assumptions?.length || 0
+        verified: verificationResult.approved,
+        issues: verificationResult.issues,
+        assumptions: assumptionResult.assumptions,
+        assumptionCount: assumptionResult.assumptions.length
       };
 
       console.log('[ResearchOrchestrator] Quality report:', qualityReport);

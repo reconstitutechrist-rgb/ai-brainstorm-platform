@@ -177,7 +177,13 @@ export interface ConversationMetadata {
     showInBubble: boolean;
   }>;
   showAgentBubble?: boolean;
-// Input analysis for adaptive responses  inputAnalysis?: {    detailLevel: 'high' | 'medium' | 'low';    wordCount: number;    specificsDetected: number;    mentionedTech?: string[];  };
+  // Input analysis for adaptive responses
+  inputAnalysis?: {
+    detailLevel: 'high' | 'medium' | 'low';
+    wordCount: number;
+    specificsDetected: number;
+    mentionedTech?: string[];
+  };
 }
 
 export interface ConversationAgentResponse {
@@ -258,6 +264,21 @@ export interface QualityAuditorMetadata {
   approved?: boolean;
   confidence?: number;
   reasoning?: string;
+  recommendation?: string;
+
+  // Assumption scanning fields
+  assumptionsDetected?: boolean;
+  assumptions?: Array<{
+    detail: string;
+    explicitStatement?: string;
+    severity: 'critical' | 'high' | 'medium';
+    recommendation?: string;
+  }>;
+
+  // Audit fields
+  overallStatus?: 'accurate' | 'needs_review' | 'has_errors';
+  auditTimestamp?: string;
+  recordsAudited?: number;
 
   // Consistency check fields
   conflictDetected?: boolean;
@@ -265,6 +286,12 @@ export interface QualityAuditorMetadata {
     type: string;
     description: string;
     severity?: string;
+    newItem?: string;
+    conflictsWith?: string;
+    source?: string;
+    referenceFile?: string;
+    explanation?: string;
+    resolutionOptions?: string[];
   }>;
 
   // Reference integration fields

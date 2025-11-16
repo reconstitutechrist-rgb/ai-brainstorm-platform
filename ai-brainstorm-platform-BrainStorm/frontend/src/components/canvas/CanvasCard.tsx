@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
+import { assertNever } from '../../types';
 import {
   CANVAS_DIMENSIONS,
   CARD_DIMENSIONS,
@@ -57,6 +58,7 @@ const CanvasCardComponent: React.FC<CanvasCardProps> = ({
   }, [canvasSize.width, canvasSize.height]);
 
   // ✅ MEDIUM PRIORITY FIX: Memoize color calculation to prevent re-renders
+  // ✅ TypeScript best practice: Exhaustive switch with assertNever for compile-time safety
   const colors = useMemo(() => {
     const getStateColor = (state: ProjectItem['state']) => {
       switch (state) {
@@ -113,16 +115,8 @@ const CanvasCardComponent: React.FC<CanvasCardProps> = ({
             leftBorder: 'border-l-4 border-l-red-500',
           };
         default:
-          return {
-            border: 'border-gray-400/60',
-            bg: isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/90',
-            text: 'text-gray-400',
-            badgeBg: isDarkMode ? 'bg-gray-500/20' : 'bg-gray-100',
-            badgeText: isDarkMode ? 'text-gray-300' : 'text-gray-700',
-            glow: '',
-            hoverGlow: '',
-            leftBorder: 'border-l-4 border-l-gray-500',
-          };
+          // ✅ Exhaustive check: TypeScript will error if new states are added without handling them
+          return assertNever(state, `Unknown ProjectItem state: ${state}`);
       }
     };
     return getStateColor(item.state);

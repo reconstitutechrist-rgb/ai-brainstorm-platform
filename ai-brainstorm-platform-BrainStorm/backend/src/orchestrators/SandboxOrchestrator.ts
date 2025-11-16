@@ -5,8 +5,12 @@
  * Prevents bad ideas from polluting the main project.
  */
 
-import { QualityAuditorAgent } from '../agents/qualityAuditor';
+import { BaseOrchestrator } from './BaseOrchestrator';
 import { supabase } from '../services/supabase';
+import {
+  extractAssumptionScanResult,
+  extractConsistencyCheckResult,
+} from '../utils/typeGuards';
 
 interface SandboxContext {
   sandboxId: string;
@@ -37,8 +41,18 @@ interface ExtractionResult {
   extractedItems: any[];
   validationReport?: {
     duplicates: DuplicateMatch[];
-    conflicts: any[];
-    assumptions: string[];
+    conflicts: Array<{
+      type: string;
+      description: string;
+      severity?: string;
+      explanation?: string;
+      resolutionOptions?: string[];
+    }>;
+    assumptions: Array<{
+      detail: string;
+      severity: 'critical' | 'high' | 'medium';
+      recommendation?: string;
+    }>;
     verified: boolean;
   };
   metadata: {
@@ -58,11 +72,11 @@ interface DuplicateMatch {
   recommendation: 'skip' | 'merge' | 'extract_anyway';
 }
 
-export class SandboxOrchestrator {
-  private qualityAuditor: QualityAuditorAgent;
+export class SandboxOrchestrator extends BaseOrchestrator {
+
 
   constructor() {
-    this.qualityAuditor = new QualityAuditorAgent();
+    super('SandboxOrchestrator');
   }
 
   /**
@@ -71,7 +85,7 @@ export class SandboxOrchestrator {
    */
   async extractIdeas(context: ExtractionContext): Promise<ExtractionResult> {
     try {
-      console.log('[SandboxOrchestrator] Extracting ideas:', {
+      this.log('Extracting ideas', {
         sandboxId: context.sandboxId,
         selectedCount: context.selectedIdeaIds.length,
         verify: context.verify,
@@ -89,7 +103,7 @@ export class SandboxOrchestrator {
       // Step 3: Detect duplicates
       const duplicates = await this.detectDuplicates(selectedIdeas, projectItems);
 
-      console.log('[SandboxOrchestrator] Found', duplicates.length, 'potential duplicates');
+      this.log('Found potential duplicates', duplicates.length);
 
       // Step 4: Optional quality verification
       let validationReport: ExtractionResult['validationReport'] = undefined;
@@ -124,11 +138,11 @@ export class SandboxOrchestrator {
         },
       };
 
-      console.log('[SandboxOrchestrator] Extraction complete:', result.metadata);
+      this.log('Extraction complete', result.metadata);
 
       return result;
     } catch (error) {
-      console.error('[SandboxOrchestrator] Error extracting ideas:', error);
+      this.logError('Error extracting ideas', error);
       throw error;
     }
   }
@@ -175,28 +189,8 @@ export class SandboxOrchestrator {
 
       return { sandbox, selectedIdeas };
     } catch (error) {
-      console.error('[SandboxOrchestrator] Error fetching sandbox ideas:', error);
+      this.logError('Error fetching sandbox ideas', error);
       throw error;
-    }
-  }
-
-  /**
-   * Get project items for comparison
-   */
-  private async getProjectItems(projectId: string): Promise<any[]> {
-    try {
-      const { data: project, error } = await supabase
-        .from('projects')
-        .select('items')
-        .eq('id', projectId)
-        .single();
-
-      if (error) throw error;
-
-      return project?.items || [];
-    } catch (error) {
-      console.error('[SandboxOrchestrator] Error fetching project items:', error);
-      return [];
     }
   }
 
@@ -213,7 +207,7 @@ export class SandboxOrchestrator {
       const ideaText = `${idea.title} ${idea.description}`.toLowerCase();
 
       for (const item of projectItems) {
-        const itemText = (item.text || '').toLowerCase();
+        const itemText = `${item.title} ${item.description}`.toLowerCase();
         const similarity = this.calculateTextSimilarity(ideaText, itemText);
 
         if (similarity > 0.5) {
@@ -224,7 +218,7 @@ export class SandboxOrchestrator {
             sandboxIdeaId: idea.id,
             sandboxIdeaTitle: idea.title,
             projectItemId: item.id,
-            projectItemText: item.text,
+            projectItemText: `${item.title} ${item.description}`,
             similarity,
             recommendation,
           });
@@ -235,38 +229,6 @@ export class SandboxOrchestrator {
     return duplicates;
   }
 
-  /**
-   * Calculate text similarity using simple word overlap
-   * TODO: Replace with proper embedding-based similarity
-   */
-  private calculateTextSimilarity(text1: string, text2: string): number {
-    const words1 = new Set(text1.split(/\s+/).filter((w) => w.length > 3));
-    const words2 = new Set(text2.split(/\s+/).filter((w) => w.length > 3));
-
-    const intersection = new Set([...words1].filter((w) => words2.has(w)));
-    const union = new Set([...words1, ...words2]);
-
-    return intersection.size / union.size;
-  }
-
-  /**
-   * Get recommendation based on similarity and item state
-   */
-  private getRecommendation(
-    similarity: number,
-    itemState: string
-  ): 'skip' | 'merge' | 'extract_anyway' {
-    if (similarity > 0.8) {
-      // Very high similarity
-      return itemState === 'decided' ? 'skip' : 'merge';
-    } else if (similarity > 0.65) {
-      // High similarity
-      return 'merge';
-    } else {
-      // Moderate similarity
-      return 'extract_anyway';
-    }
-  }
 
   /**
    * Verify extraction with quality checks
@@ -278,11 +240,21 @@ export class SandboxOrchestrator {
     projectId: string
   ): Promise<{
     duplicates: DuplicateMatch[];
-    conflicts: any[];
-    assumptions: string[];
+    conflicts: Array<{
+      type: string;
+      description: string;
+      severity?: string;
+      explanation?: string;
+      resolutionOptions?: string[];
+    }>;
+    assumptions: Array<{
+      detail: string;
+      severity: 'critical' | 'high' | 'medium';
+      recommendation?: string;
+    }>;
     verified: boolean;
   }> {
-    console.log('[SandboxOrchestrator] Running quality checks on extraction');
+    this.log('Running quality checks on extraction');
 
     // Build extraction summary for quality check
     const extractionSummary = sandboxIdeas
@@ -304,12 +276,16 @@ export class SandboxOrchestrator {
       ),
     ]);
 
-    const assumptions = assumptionScan.metadata?.assumptions || [];
-    const conflicts = consistencyCheck.metadata?.conflicts || [];
+    // Extract results using type-safe helper functions
+    const assumptionResult = extractAssumptionScanResult(assumptionScan);
+    const consistencyResult = extractConsistencyCheckResult(consistencyCheck);
+
+    const assumptions = assumptionResult.assumptions;
+    const conflicts = consistencyResult.conflicts;
 
     const verified = assumptions.length === 0 && conflicts.length === 0;
 
-    console.log('[SandboxOrchestrator] Quality check results:', {
+    this.log('Quality check results', {
       assumptions: assumptions.length,
       conflicts: conflicts.length,
       verified,
@@ -395,9 +371,9 @@ export class SandboxOrchestrator {
 
       if (updateError) throw updateError;
 
-      console.log('[SandboxOrchestrator] Added', newItems.length, 'items to project');
+      this.log('Added items to project', newItems.length);
     } catch (error) {
-      console.error('[SandboxOrchestrator] Error adding items to project:', error);
+      this.logError('Error adding items to project', error);
       throw error;
     }
   }
@@ -412,7 +388,7 @@ export class SandboxOrchestrator {
     recommendations: string[];
   }> {
     try {
-      console.log('[SandboxOrchestrator] Analyzing sandbox conflicts');
+      this.log('Analyzing sandbox conflicts');
 
       // Get all sandbox ideas
       const { data: sandbox, error } = await supabase
@@ -446,7 +422,9 @@ export class SandboxOrchestrator {
         []
       );
 
-      const conflicts = consistencyCheck.metadata?.conflicts || [];
+      // Extract results using type-safe helper function
+      const consistencyResult = extractConsistencyCheckResult(consistencyCheck);
+      const conflicts = consistencyResult.conflicts;
 
       // Generate recommendations
       const recommendations: string[] = [];
@@ -474,7 +452,7 @@ export class SandboxOrchestrator {
         recommendations,
       };
     } catch (error) {
-      console.error('[SandboxOrchestrator] Error analyzing conflicts:', error);
+      this.logError('Error analyzing conflicts', error);
       throw error;
     }
   }
@@ -501,7 +479,7 @@ export class SandboxOrchestrator {
       duplicatesRemoved: number;
     };
   }> {
-    console.log('[SandboxOrchestrator] Generating context-aware ideas');
+    this.log('Generating context-aware ideas');
 
     // This would call IdeaGeneratorAgent with project context
     // For now, returning structure for integration

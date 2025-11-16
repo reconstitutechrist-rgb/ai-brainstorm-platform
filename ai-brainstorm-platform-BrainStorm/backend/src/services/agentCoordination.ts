@@ -269,7 +269,10 @@ export class AgentCoordinationService {
 
       console.log(`[Coordination] ✅ Saving ${responsesWithQuestions.length} background responses with questions`);
       responsesWithQuestions.forEach(r => {
-        console.log(`[Coordination] - ${r.agent}: ${r.metadata.agentQuestions?.length} questions`);
+        // ✅ TypeScript best practice: Use type guard to access ConversationMetadata-specific properties
+        if (isConversationAgentResponse(r)) {
+          console.log(`[Coordination] - ${r.agent}: ${r.metadata.agentQuestions?.length} questions`);
+        }
       });
 
       // Get user ID from the project (we'll need this for message creation)
