@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { sessionsApi } from '../services/api';
-import type { SessionSummary, SuggestedStep, Blocker } from '../types';
+import type { SessionSummary, SuggestedStep, Blocker, UserSession } from '../types';
 
 interface SessionState {
   // State
@@ -10,12 +10,15 @@ interface SessionState {
   isLoading: boolean;
   error: string | null;
   inactivityTimer: NodeJS.Timeout | null;
+  currentSession: UserSession | null;
+  isSessionActive: boolean;
 
   // Actions
   loadSessionSummary: (userId: string, projectId: string) => Promise<void>;
   loadSuggestedSteps: (projectId: string) => Promise<void>;
   loadBlockers: (projectId: string) => Promise<void>;
   loadAllSessionData: (userId: string, projectId: string) => Promise<void>;
+  fetchActiveSession: (userId: string, projectId: string) => Promise<UserSession | null>;
   startSession: (userId: string, projectId: string) => Promise<void>;
   endSession: (userId: string, projectId: string) => Promise<void>;
   trackActivity: (userId: string, projectId: string) => void;
@@ -33,6 +36,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   isLoading: false,
   error: null,
   inactivityTimer: null,
+  currentSession: null,
+  isSessionActive: false,
 
   // Load session summary
   loadSessionSummary: async (userId: string, projectId: string) => {
@@ -124,6 +129,41 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     }
   },
 
+  // Fetch active session from backend
+  fetchActiveSession: async (userId: string, projectId: string) => {
+    try {
+      const response = await sessionsApi.getActiveSession(userId, projectId);
+      
+      if (response.success && response.session) {
+        console.log('[SessionStore] ✅ Active session found:', response.session.id);
+        set({
+          currentSession: response.session,
+          isSessionActive: true
+        });
+        
+        // Start inactivity timer for existing session
+        const { startInactivityTimer } = get();
+        startInactivityTimer(userId, projectId);
+        
+        return response.session;
+      } else {
+        console.log('[SessionStore] No active session found');
+        set({
+          currentSession: null,
+          isSessionActive: false
+        });
+        return null;
+      }
+    } catch (error) {
+      console.error('[SessionStore] Error fetching active session:', error);
+      set({
+        currentSession: null,
+        isSessionActive: false
+      });
+      return null;
+    }
+  },
+
   // Start a new session
   startSession: async (userId: string, projectId: string) => {
     try {
@@ -141,8 +181,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
       console.log('[SessionStore] ✅ Session started successfully');
 
+      // Update local state with the new session
+      set({
+        currentSession: response.data,
+        isSessionActive: true,
+        error: null
+      });
+
       // Load fresh session data
-      const { loadAllSessionData, startInactivityTimer } = useSessionStore.getState();
+      const { loadAllSessionData, startInactivityTimer } = get();
       await loadAllSessionData(userId, projectId);
 
       // Start inactivity timer
@@ -170,9 +217,17 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     try {
       await sessionsApi.endSession(userId, projectId);
 
+      // Update local state
+      set({
+        currentSession: null,
+        isSessionActive: false
+      });
+
       // Clear inactivity timer
       const { clearInactivityTimer } = get();
       clearInactivityTimer();
+
+      console.log('[SessionStore] ✅ Session ended successfully');
     } catch (error) {
       console.error('Error ending session:', error);
     }
@@ -191,7 +246,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       suggestedSteps: [],
       blockers: [],
       isLoading: false,
-      error: null
+      error: null,
+      currentSession: null,
+      isSessionActive: false
     });
   },
 

@@ -26,52 +26,53 @@ For comprehensive agent documentation, see: AGENTS_DOCUMENTATION.md
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The system implements a sophisticated AI-powered brainstorming and research platform with several key business domains:
+Core Business Logic Architecture:
 
-## Core Agent Infrastructure
-The Integration Orchestrator (backend/src/agents/orchestrator.ts) manages complex workflows between specialized AI agents:
-- Context-aware agent selection and sequencing
-- Dynamic workflow adjustment based on intent
-- Parallel execution patterns
-- Cross-agent context sharing
+## AI Agent Orchestration Layer
+- Multi-agent system coordinating specialized AI roles:
+  - Research synthesis
+  - Decision validation
+  - Context management 
+  - Quality auditing
+  - Gap detection
+- Intelligent model selection based on operation complexity
+- Agent-specific response caching and context pruning
 
-## Session Management Domain 
-The Session Management System coordinates multi-stage brainstorming workflows:
+## Session Management Core
+- Multi-stage brainstorming workflow
 - Natural language decision parsing
 - Topic-based idea grouping
-- Multi-document synchronization
-- State transitions with project context
+- State transition tracking (decided/exploring/parked)
+- Real-time analytics and blocker detection
+- Session completion with document generation
 
-## Research Pipeline 
-The Research System combines multiple information sources:
-- Multi-perspective synthesis with confidence scoring
-- Contradiction detection between sources 
-- Temporal information extraction
-- Automated quality assessment
-- Gap analysis with domain topic detection
+## Research Intelligence System
+- Multi-source research orchestration
+- Source credibility scoring
+- Content extraction and synthesis
+- Reference management
+- Context-aware question generation
+- Intelligent chunking of research results
 
-## Conversational Intelligence
-The Idea Generation System implements contextual conversation modes:
-- Dynamic mode switching (exploration/clarification/generation/refinement)
-- Idea extraction with confidence scoring
-- Cross-reference analysis
-- Innovation assessment
-- Version history tracking
+## Canvas Organization System
+- Capacity management with tiered thresholds
+- Dynamic clustering of related items
+- Auto-positioning algorithms
+- State-based visual transitions
+- Custom archival workflows
 
-## Canvas Management
-The Canvas System handles specialized workspace organization:
-- Capacity thresholds with warning tiers
-- Cluster management for related items
-- Position memory for expanded/collapsed states
-- Visual categorization rules
+## Document Generation Engine
+- Template-based generation
+- Project-specific content synthesis
+- Quality scoring system
+- Automated regeneration triggers
+- Version control with reasoning tracking
 
-Key Integration Points:
-- Agent orchestration drives overall workflow
-- Session system maintains state and transitions
-- Research pipeline feeds into conversation system
-- Canvas provides visualization and organization
-
-This represents a unique implementation focused on AI-assisted brainstorming and research synthesis, with sophisticated coordination between specialized components.
+Integration Points:
+- Agent coordination drives research and ideation
+- Session analytics inform document generation
+- Canvas state influences agent workflows
+- Research results feed into session context
 
 $END$
 

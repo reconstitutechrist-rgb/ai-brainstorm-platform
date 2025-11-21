@@ -1,5 +1,5 @@
 ---
-description: Handles conversation state management including decision tracking, mode transitions, and context-aware approval detection
+description: Handles conversation state tracking, decision modeling, and context management for AI-assisted brainstorming sessions
 ---
 
 # === USER INSTRUCTIONS ===
@@ -355,65 +355,57 @@ For intent classification details, see: [intent-classification-system.mdc](.giga
 
 # conversation-state-model
 
-## State Machine Implementation
-Handles three core conversation states with specific transition rules:
+## Decision State Management
+Importance Score: 95/100
 
-1. DECIDED State
-- Triggered by explicit approval phrases or strong agreement patterns
-- Requires confidence score > 85% for automatic transition
-- Maintains decision metadata including source messages and context
-- Implements verification modes for critical decisions
+Core states for conversation items:
+- DECIDED: Confirmed decisions with verification triggers
+- EXPLORING: Active items under consideration 
+- PARKED: Temporarily deferred items for later review
 
-2. EXPLORING State
-- Default state for new conversation threads
-- Tracks exploration depth and branch points
-- Maintains topic relationship graph
-- Implements context pruning for long exploration chains
+State transition rules:
+- Natural language parsing detects state changes
+- Confidence scoring determines transition validity
+- Multi-step verification for DECIDED state
+- Automated state rollback on conflicting decisions
 
-3. PARKED State
-- Handles explicitly deferred items
-- Tracks parking reason and revival conditions
-- Maintains priority queue for parked items
-- Implements automatic revival triggers based on context
+## Conversation Context System
+Importance Score: 90/100
 
-## Context-Aware Approval Detection
-Implements sophisticated natural language understanding for decisions:
+Context tracking model:
+- Topic-based clustering of related messages
+- Thread isolation per decision context
+- Hierarchical context relationships
+- Smart context pruning based on relevance scores
+- Automatic context switching triggers
 
-1. Direct Approval Patterns
-- Explicit confirmation phrases ("yes", "approved", "let's do it")
-- Agreement indicators with confidence scoring
-- Multi-message confirmation chains
+## Verification Framework
+Importance Score: 85/100
 
-2. Implicit Approval Detection
-- Context-based approval inference
-- Historical pattern matching
-- Semantic similarity scoring against previous decisions
+Verification modes:
+- EXPLICIT: Direct confirmation phrases
+- IMPLICIT: Context-based approval detection
+- CONDITIONAL: State changes with dependencies
+- TEMPORARY: Time-bound decisions
 
-## State Transition Rules
-Manages conversation flow with specific business rules:
+## Cache Management
+Importance Score: 80/100
 
-1. Decision Progression
-- EXPLORING → DECIDED requires explicit approval or high confidence
-- EXPLORING → PARKED requires deferral trigger or timeout
-- PARKED → EXPLORING requires context match or manual trigger
+Cache invalidation rules:
+- State transitions trigger selective invalidation
+- Context changes force partial cache updates
+- Decision confidence affects cache lifetime
+- Hierarchical cache dependencies track context relationships
 
-2. State Verification
-- Double confirmation for critical decisions
-- Automatic rollback for low confidence transitions
-- Cache invalidation on state changes
+## Context Awareness Rules
+Importance Score: 75/100
 
-## Session Context Management
-Implements conversation context tracking:
-
-1. Context Hierarchy
-- Global session context
-- Topic-specific sub-contexts
-- Decision-specific metadata
-
-2. Context Invalidation
-- Time-based expiration rules
-- Topic boundary detection
-- State-change triggered pruning
+Smart detection system for:
+- Topic switches requiring context changes
+- Related decision groups
+- Conflicting state transitions
+- Context-dependent verification requirements
+- Cross-reference validation between contexts
 
 $END$
 

@@ -48,12 +48,22 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
   };
 
   const calculateSessionStats = (session: UserSession) => {
-    const snapshot = session.snapshot_at_start;
+    const startSnapshot = session.snapshot_at_start;
+    const endSnapshot = session.snapshot_at_end || startSnapshot; // Fallback to start if session is still active
+    
+    // Calculate deltas (changes during this session)
+    const decidedDelta = endSnapshot.decided.length - startSnapshot.decided.length;
+    const exploringDelta = endSnapshot.exploring.length - startSnapshot.exploring.length;
+    const parkedDelta = endSnapshot.parked.length - startSnapshot.parked.length;
+    
     return {
-      decided: snapshot.decided.length,
-      exploring: snapshot.exploring.length,
-      parked: snapshot.parked.length,
-      total: snapshot.decided.length + snapshot.exploring.length + snapshot.parked.length
+      decided: decidedDelta,
+      exploring: exploringDelta,
+      parked: parkedDelta,
+      totalStart: startSnapshot.decided.length + startSnapshot.exploring.length + startSnapshot.parked.length,
+      totalEnd: endSnapshot.decided.length + endSnapshot.exploring.length + endSnapshot.parked.length,
+      totalDelta: (endSnapshot.decided.length + endSnapshot.exploring.length + endSnapshot.parked.length) - 
+                  (startSnapshot.decided.length + startSnapshot.exploring.length + startSnapshot.parked.length)
     };
   };
 

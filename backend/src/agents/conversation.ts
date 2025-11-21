@@ -17,11 +17,101 @@ import { AI_MODELS } from '../config/aiModels';
  * AND asks for clarification in a single response.
  */
 export class ConversationAgent extends BaseAgent {
+  /**
+   * Analyze user input to determine detail level and specifics mentioned
+   */
+  private analyzeUserInput(userMessage: string): {
+    detailLevel: 'high' | 'medium' | 'low';
+    wordCount: number;
+    specificsDetected: number;
+    mentionedTech: string[];
+    hasMetrics: boolean;
+    hasRequirements: boolean;
+    hasConstraints: boolean;
+  } {
+    const words = userMessage.trim().split(/\s+/);
+    const wordCount = words.length;
+
+    // Tech stack detection
+    const techPatterns = [
+      /react/i, /vue/i, /angular/i, /next\.?js/i, /nuxt/i, /svelte/i,
+      /node/i, /express/i, /fastify/i, /nest\.?js/i,
+      /python/i, /django/i, /flask/i, /fastapi/i,
+      /postgres/i, /mysql/i, /mongodb/i, /redis/i, /supabase/i,
+      /aws/i, /azure/i, /gcp/i, /vercel/i, /netlify/i,
+      /stripe/i, /auth0/i, /firebase/i, /graphql/i, /rest\s*api/i,
+      /typescript/i, /javascript/i, /tailwind/i, /bootstrap/i
+    ];
+
+    const mentionedTech: string[] = [];
+    for (const pattern of techPatterns) {
+      const match = userMessage.match(pattern);
+      if (match) {
+        mentionedTech.push(match[0].toLowerCase());
+      }
+    }
+
+    // Metrics detection (numbers, timelines, budgets)
+    const hasMetrics = /\d+/.test(userMessage) ||
+                      /timeline|deadline|budget|users|months|weeks/i.test(userMessage);
+
+    // Requirements detection
+    const hasRequirements = /need|must|should|require|want|looking for/i.test(userMessage);
+
+    // Constraints detection
+    const hasConstraints = /budget|deadline|timeline|constraint|limitation/i.test(userMessage);
+
+    // Calculate specifics
+    const specificsDetected = mentionedTech.length +
+                             (hasMetrics ? 1 : 0) +
+                             (hasConstraints ? 1 : 0);
+
+    // Determine detail level
+    let detailLevel: 'high' | 'medium' | 'low';
+    if (wordCount > 50 || specificsDetected >= 3) {
+      detailLevel = 'high';
+    } else if (wordCount > 15 || specificsDetected >= 1) {
+      detailLevel = 'medium';
+    } else {
+      detailLevel = 'low';
+    }
+
+    return {
+      detailLevel,
+      wordCount,
+      specificsDetected,
+      mentionedTech,
+      hasMetrics,
+      hasRequirements,
+      hasConstraints
+    };
+  }
+
   constructor() {
     const systemPrompt = `Conversation Agent - Generative Brainstorming Partner
 
 YOUR PURPOSE:
 You are a generative brainstorming partner who BUILDS ON user ideas by suggesting possibilities, implications, and related concepts. Your job is to REDUCE COGNITIVE LOAD by offering concrete options for the user to react to (accept/reject/park/explore).
+
+═══ ADAPT TO USER'S DETAIL LEVEL ═══
+
+IF user provides HIGH detail (>50 words OR mentions specific tech/metrics):
+  ✓ ACKNOWLEDGE what they specifically mentioned
+  ✓ BUILD ON their specifics with deep, targeted suggestions (2-4 options)
+  ✓ Go DEEP - assume they know basics, focus on architecture/decisions
+  ✓ DON'T suggest things they already covered or basic setup
+  ✓ Reference their tech stack explicitly
+
+IF user provides MEDIUM detail (15-50 words OR some requirements):
+  ✓ Reflect understanding briefly
+  ✓ Ask 1-2 clarifying questions
+  ✓ Offer 3-5 concrete suggestions
+  ✓ Balance questions + possibilities
+
+IF user provides LOW detail (<15 words, vague):
+  ✓ Ask 1-2 foundational questions to understand direction
+  ✓ DON'T overwhelm with tactics or features yet
+  ✓ Help them articulate what they want first
 
 CORE BEHAVIOR - BE GENERATIVE:
 
@@ -103,6 +193,11 @@ Be generative, reduce cognitive load, and help users discover possibilities they
   async respond(userMessage: string, conversationHistory: any[], projectState: any, projectReferences: any[] = []): Promise<AgentResponse> {
     this.log('Processing conversation');
 
+    // NEW: Analyze user input for detail level
+    const inputAnalysis = this.analyzeUserInput(userMessage);
+    this.log(`Input analysis: ${inputAnalysis.detailLevel} detail, ${inputAnalysis.wordCount} words, ${inputAnalysis.specificsDetected} specifics` +
+             (inputAnalysis.mentionedTech.length > 0 ? `, mentioned: ${inputAnalysis.mentionedTech.join(', ')}` : ''));
+
     // NEW: Detect simple approvals early and return brief acknowledgment
     const simpleApprovals = /^(yes|yeah|yep|yup|sure|ok|okay|right|correct|exactly|perfect|great|love it|sounds good|got it|that's right|i agree|nice|agreed|absolutely|definitely)([!.?]*)$/i;
 
@@ -119,7 +214,8 @@ Be generative, reduce cognitive load, and help users discover possibilities they
         showToUser: true,
         metadata: {
           hasQuestion: false,
-          isSimpleApproval: true
+          isSimpleApproval: true,
+          inputAnalysis
         }
       };
     }
@@ -152,10 +248,26 @@ Be generative, reduce cognitive load, and help users discover possibilities they
       this.log(`Including ${projectReferences.length} references in context`);
     }
 
+    // Build adaptive guidance based on detail level
+    let detailGuidance = '';
+    if (inputAnalysis.detailLevel === 'high') {
+      const techMentioned = inputAnalysis.mentionedTech.length > 0
+        ? ` They mentioned: ${inputAnalysis.mentionedTech.join(', ')}`
+        : '';
+      detailGuidance = `\n[User provided HIGH detail - ${inputAnalysis.wordCount} words, ${inputAnalysis.specificsDetected} specifics.${techMentioned}]
+[BUILD ON their specifics with 2-4 deep, targeted suggestions. DON'T suggest basics they already covered. Go deep on architecture/decisions.]`;
+    } else if (inputAnalysis.detailLevel === 'medium') {
+      detailGuidance = `\n[User provided MEDIUM detail - ${inputAnalysis.wordCount} words]
+[Reflect understanding briefly, ask 1-2 clarifying questions, offer 3-5 concrete suggestions. Balance questions + possibilities.]`;
+    } else {
+      detailGuidance = `\n[User provided LOW detail - ${inputAnalysis.wordCount} words, just starting]
+[Ask 1-2 foundational questions to understand direction. DON'T overwhelm with tactics. Help them articulate what they want first.]`;
+    }
+
     const messages = [
       {
         role: 'user',
-        content: `You are a generative brainstorming partner helping expand the user's ideas.
+        content: `You are a generative brainstorming partner helping expand the user's ideas.${detailGuidance}
 
 User's message: "${userMessage}"${contextStr}${referenceStr}
 
@@ -244,6 +356,7 @@ DO NOT ASK ANY QUESTIONS during corrections. Just acknowledge and restate correc
         isCorrection,
         hasQuestion: questionCount > 0,
         isGenerative: true,
+        inputAnalysis,
       },
     };
   }

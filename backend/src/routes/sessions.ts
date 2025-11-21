@@ -72,6 +72,36 @@ router.post('/end', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/sessions/active/:userId/:projectId
+ * Get active session for a user and project
+ */
+router.get('/active/:userId/:projectId', async (req: Request, res: Response) => {
+  try {
+    const { userId, projectId } = req.params;
+
+    if (!userId || !projectId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId and projectId are required'
+      });
+    }
+
+    const session = await sessionService.getActiveSession(userId, projectId);
+
+    res.json({
+      success: true,
+      session: session || null
+    });
+  } catch (error) {
+    console.error('Error getting active session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get active session'
+    });
+  }
+});
+
+/**
  * GET /api/sessions/history/:projectId
  * Get session history for a project
  */

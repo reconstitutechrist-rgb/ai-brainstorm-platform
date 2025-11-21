@@ -235,43 +235,56 @@ export const ChatPage: React.FC = () => {
     }
   }, [messages, answeredQuestionIds]);
 
-  // Auto-start and auto-end sessions
+  // Auto-start session with active session check (Option 2: Auto-Start with Manual End)
   useEffect(() => {
-    let sessionStarted = false;
+    const initializeSession = async () => {
+      if (!currentProject || !user) return;
 
-    const startSession = async () => {
-      if (currentProject && user) {
-        try {
-          console.log('[ChatPage] Starting session for project:', currentProject.id);
-          const response = await sessionsApi.startSession(user.id, currentProject.id);
-          if (response.success) {
-            sessionStarted = true;
-            console.log('[ChatPage] Session started successfully:', response.data);
-          }
-        } catch (error) {
-          console.error('[ChatPage] Failed to start session:', error);
+      const { fetchActiveSession, startSession } = useSessionStore.getState();
+
+      try {
+        // Check if there's already an active session for this project
+        const activeSession = await fetchActiveSession(user.id, currentProject.id);
+
+        if (!activeSession) {
+          // No active session found, start a new one
+          console.log('[ChatPage] No active session found, starting new session');
+          await startSession(user.id, currentProject.id);
+        } else {
+          // Active session exists, reusing it
+          console.log('[ChatPage] Active session found, continuing session:', activeSession.id);
         }
+      } catch (error) {
+        console.error('[ChatPage] Error initializing session:', error);
       }
     };
 
-    const endSession = async () => {
-      if (sessionStarted && currentProject && user) {
-        try {
-          console.log('[ChatPage] Ending session for project:', currentProject.id);
-          await sessionsApi.endSession(user.id, currentProject.id);
-          console.log('[ChatPage] Session ended successfully');
-        } catch (error) {
-          console.error('[ChatPage] Failed to end session:', error);
-        }
-      }
-    };
+    initializeSession();
 
-    // Start session when component mounts or project changes
-    startSession();
-
-    // End session on unmount or when project changes
+    // Cleanup: End session when switching projects
     return () => {
-      endSession();
+      const previousProjectId = currentProject?.id;
+      
+      // Only end session if we're actually switching projects (not just unmounting)
+      if (previousProjectId && user) {
+        // Use a small delay to distinguish between unmount and project switch
+        const timer = setTimeout(async () => {
+          const { currentSession } = useSessionStore.getState();
+          
+          // Check if we're still on the same project
+          const currentProjectNow = useProjectStore.getState().currentProject;
+          
+          // If project has changed, end the old session
+          if (currentSession && currentProjectNow?.id !== previousProjectId) {
+            console.log('[ChatPage] Project switched, ending old session');
+            const { endSession } = useSessionStore.getState();
+            await endSession(user.id, previousProjectId);
+          }
+        }, 100);
+
+        // Return cleanup that clears the timer
+        setTimeout(() => {}, 0); // Dummy to ensure we have a cleanup path
+      }
     };
   }, [currentProject?.id, user?.id]);
 

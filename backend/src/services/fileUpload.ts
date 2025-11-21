@@ -7,6 +7,13 @@ import sharp from 'sharp';
 import mammoth from 'mammoth';
 import { PDFExtract } from 'pdf.js-extract';
 
+// Allowed file extensions
+const ALLOWED_EXTENSIONS = {
+  image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'],
+  video: ['.mp4', '.mov', '.avi', '.webm'],
+  document: ['.pdf', '.txt', '.md', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.csv'],
+};
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const ALLOWED_MIME_TYPES = {
@@ -39,10 +46,19 @@ export const upload = multer({
       ...ALLOWED_MIME_TYPES.document,
     ];
 
-    if (allAllowedTypes.includes(file.mimetype)) {
+    const allAllowedExtensions = [
+      ...ALLOWED_EXTENSIONS.image,
+      ...ALLOWED_EXTENSIONS.video,
+      ...ALLOWED_EXTENSIONS.document,
+    ];
+
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    // Validate both MIME type and file extension
+    if (allAllowedTypes.includes(file.mimetype) && allAllowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error('Invalid file type or extension'));
     }
   },
 });
@@ -68,7 +84,8 @@ export class FileUploadService {
 
       // Compress images if needed
       if (this.getFileCategory(file.mimetype) === 'image') {
-        fileBuffer = await this.compressImage(fileBuffer);
+        const compressed = await this.compressImage(fileBuffer);
+        fileBuffer = Buffer.from(compressed);
       }
 
       // Upload to Supabase Storage
@@ -106,13 +123,15 @@ export class FileUploadService {
    */
   private async compressImage(buffer: Buffer): Promise<Buffer> {
     try {
-      return await sharp(buffer)
+      const compressed = await sharp(buffer)
         .resize(2000, 2000, {
           fit: 'inside',
           withoutEnlargement: true
         })
         .jpeg({ quality: 85 })
         .toBuffer();
+      // Ensure proper Buffer type for Supabase upload
+      return Buffer.from(compressed);
     } catch (error) {
       console.error('Image compression error:', error);
       return buffer; // Return original if compression fails

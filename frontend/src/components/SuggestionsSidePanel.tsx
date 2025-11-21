@@ -196,9 +196,18 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
   const handleAccept = async (suggestion: Suggestion) => {
     if (!currentProject || !user) return;
 
+    console.log('[SuggestionsSidePanel] handleAccept called with suggestion:', {
+      id: suggestion.id,
+      type: suggestion.type,
+      title: suggestion.title,
+      hasActionData: !!suggestion.actionData,
+      actionDataKeys: suggestion.actionData ? Object.keys(suggestion.actionData) : []
+    });
+
     try {
       // Handle canvas organization suggestions
       if (suggestion.type === 'canvas-organize' || suggestion.type === 'canvas-layout' || suggestion.type === 'canvas-cleanup') {
+        console.log('[SuggestionsSidePanel] Routing to handleCanvasAction for canvas suggestion');
         await handleCanvasAction(suggestion);
         return;
       }
@@ -347,6 +356,15 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
               </div>
 
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => showToast('Test Toast! 🎉 The notification system is working!', 'success')}
+                  className={`px-3 py-1 text-xs rounded-lg ${
+                    isDarkMode ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  } transition-colors font-medium`}
+                  title="Test Toast Notifications"
+                >
+                  Test Toast
+                </button>
                 <button
                   onClick={onClose}
                   className={`p-2 rounded-lg ${

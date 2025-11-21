@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useProjectStore } from '../../store/projectStore';
 import { useUserStore } from '../../store/userStore';
@@ -58,10 +58,25 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
   const [inputMessage, setInputMessage] = useState('');
   const [showReferenceLibrary, setShowReferenceLibrary] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [pollingQueryId, setPollingQueryId] = useState<string | null>(null);
+  const [pollingIntent, setPollingIntent] = useState<'research' | 'document_discovery' | 'gap_analysis' | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to add messages (must be defined before useEffects that use it)
+  const addMessage = useCallback((role: Message['role'], content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role,
+        content,
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -72,6 +87,78 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Poll for research query results
+  useEffect(() => {
+    if (!pollingQueryId || !pollingIntent) return;
+
+    const pollForResults = async () => {
+      try {
+        const result = await unifiedResearchApi.getQuery(pollingQueryId);
+
+        if (result.query?.status === 'completed') {
+          // Stop polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setPollingQueryId(null);
+
+          // Process results based on intent
+          if (pollingIntent === 'document_discovery' && result.query.metadata?.suggestedDocuments?.length > 0) {
+            const firstDoc = result.query.metadata.suggestedDocuments[0];
+            addMessage('assistant', '✓ Document generated! View in the preview panel →');
+            onDocumentGenerated({
+              title: firstDoc.title || 'Generated Document',
+              content: firstDoc.content || '',
+              format: firstDoc.format || 'markdown',
+              metadata: firstDoc.metadata || {},
+            });
+          } else {
+            addMessage('assistant', '✓ Research complete! Results loaded in work area →');
+            onResearchComplete({
+              query: result.query.query || '',
+              synthesis: result.query.metadata?.synthesis,
+              webSources: result.query.metadata?.webSources,
+              documentSources: result.query.metadata?.documentSources,
+              suggestedDocuments: result.query.metadata?.suggestedDocuments,
+              identifiedGaps: result.query.metadata?.identifiedGaps,
+              searchStrategy: result.query.metadata?.searchStrategy,
+              duration: result.query.metadata?.duration,
+            });
+          }
+
+          setPollingIntent(null);
+        } else if (result.query?.status === 'failed') {
+          // Stop polling on failure
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setPollingQueryId(null);
+          setPollingIntent(null);
+          addMessage('assistant', '❌ Research failed. Please try again.');
+        }
+        // If still processing, continue polling
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    };
+
+    // Start polling immediately
+    pollForResults();
+
+    // Then poll every 3 seconds
+    pollingIntervalRef.current = setInterval(pollForResults, 3000);
+
+    // Cleanup on unmount or when polling stops
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [pollingQueryId, pollingIntent, onDocumentGenerated, onResearchComplete, addMessage]);
 
   // Handle document regeneration requests
   useEffect(() => {
@@ -99,24 +186,12 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
           saveResults: true,
         });
 
-        if (data.success) {
+        if (data.success && data.queryId) {
           setMessages((prev) => prev.slice(0, -1));
-          addMessage('assistant', '✓ Document regenerated! View the new version in the preview →');
-
-          // Trigger document preview with regenerated content
-          if (data.query?.metadata?.suggestedDocuments && data.query.metadata.suggestedDocuments.length > 0) {
-            const firstDoc = data.query.metadata.suggestedDocuments[0];
-            onDocumentGenerated({
-              title: regenerateContext.title,
-              content: firstDoc.content || 'Regenerated content',
-              format: regenerateContext.format,
-              metadata: {
-                ...regenerateContext.metadata,
-                regeneratedAt: new Date().toISOString(),
-                previousVersion: regenerateContext.content,
-              },
-            });
-          }
+          addMessage('assistant', '✓ Document regeneration in progress...');
+          // Start polling for results
+          setPollingQueryId(data.queryId);
+          setPollingIntent('document_discovery');
         } else {
           setMessages((prev) => prev.slice(0, -1));
           addMessage('assistant', '❌ Regeneration failed. Please try again.');
@@ -132,18 +207,7 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
     };
 
     handleRegeneration();
-  }, [regenerateContext]);
-
-  const addMessage = (role: Message['role'], content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role,
-        content,
-        timestamp: new Date(),
-      },
-    ]);
-  };
+  }, [regenerateContext, currentProject, user, isProcessing, onRegenerateContextCleared, addMessage]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,36 +244,20 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
         saveResults: true,
       });
 
-      if (data.success) {
+      if (data.success && data.queryId) {
         // Remove processing message
         setMessages((prev) => prev.slice(0, -1));
 
-        // Check if this is a document generation request
-        if (intent === 'document_discovery' && data.query?.metadata?.suggestedDocuments) {
-          addMessage('assistant', '📝 I can generate these documents for you. View suggestions in the work area →');
-
-          // Trigger research results view for now (will be enhanced to show document preview)
-          onResearchComplete({
-            query: userMessage,
-            synthesis: data.query.metadata.synthesis,
-            suggestedDocuments: data.query.metadata.suggestedDocuments,
-            identifiedGaps: data.query.metadata.identifiedGaps,
-          });
+        // Research is processing asynchronously - start polling
+        if (intent === 'document_discovery') {
+          addMessage('assistant', '📝 Discovering relevant documents...');
         } else {
-          addMessage('assistant', '✓ Research complete! View results in the work area →');
-
-          // Trigger research results view
-          onResearchComplete({
-            query: userMessage,
-            synthesis: data.query.metadata?.synthesis,
-            webSources: data.query.metadata?.webSources,
-            documentSources: data.query.metadata?.documentSources,
-            suggestedDocuments: data.query.metadata?.suggestedDocuments,
-            identifiedGaps: data.query.metadata?.identifiedGaps,
-            searchStrategy: data.query.metadata?.searchStrategy,
-            duration: data.query.metadata?.duration,
-          });
+          addMessage('assistant', '🔍 Processing research request...');
         }
+
+        // Start polling for results
+        setPollingQueryId(data.queryId);
+        setPollingIntent(intent);
       } else {
         setMessages((prev) => prev.slice(0, -1));
         addMessage('assistant', '❌ Research failed. Please try again.');
@@ -288,7 +336,64 @@ const ResearchChatPanel: React.FC<ResearchChatPanelProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e as any);
+      // Submit the message directly without relying on form event
+      const submitMessage = async () => {
+        if (!inputMessage.trim() || !currentProject || !user || isProcessing) return;
+
+        const userMessage = inputMessage.trim();
+        setInputMessage('');
+        addMessage('user', userMessage);
+        setIsProcessing(true);
+
+        try {
+          // Determine intent from message
+          let intent: 'research' | 'document_discovery' | 'gap_analysis' = 'research';
+          const lowerMessage = userMessage.toLowerCase();
+
+          if (lowerMessage.includes('generate') || lowerMessage.includes('create document') || lowerMessage.includes('write')) {
+            intent = 'document_discovery';
+          } else if (lowerMessage.includes('gap') || lowerMessage.includes('missing') || lowerMessage.includes('what do i need')) {
+            intent = 'gap_analysis';
+          }
+
+          // Show processing message
+          addMessage('assistant', '🔍 Researching...');
+
+          // Call unified research API
+          const data = await unifiedResearchApi.submitQuery({
+            query: userMessage,
+            projectId: currentProject.id,
+            userId: user.id,
+            sources: 'auto',
+            intent,
+            maxWebSources: 5,
+            maxDocumentSources: 10,
+            saveResults: true,
+          });
+
+          if (data.success && data.queryId) {
+            setMessages((prev) => prev.slice(0, -1));
+            if (intent === 'document_discovery') {
+              addMessage('assistant', '📝 Discovering relevant documents...');
+            } else {
+              addMessage('assistant', '🔍 Processing research request...');
+            }
+            setPollingQueryId(data.queryId);
+            setPollingIntent(intent);
+          } else {
+            setMessages((prev) => prev.slice(0, -1));
+            addMessage('assistant', '❌ Research failed. Please try again.');
+          }
+        } catch (error) {
+          console.error('Research error:', error);
+          setMessages((prev) => prev.slice(0, -1));
+          addMessage('assistant', '❌ An error occurred. Please try again.');
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+
+      submitMessage();
     }
   };
 

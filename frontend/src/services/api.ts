@@ -443,6 +443,23 @@ export const documentsApi = {
     );
     return response.data;
   },
+
+  // Toggle document selection for generation
+  toggleSelection: async (documentId: string, selected: boolean) => {
+    const response = await api.patch<{ success: boolean; document: Document; message: string }>(
+      `/documents/${documentId}/toggle-selection`,
+      { selected }
+    );
+    return response.data;
+  },
+
+  // Get selected documents for a project
+  getSelected: async (projectId: string) => {
+    const response = await api.get<{ success: boolean; documents: Document[] }>(
+      `/documents/project/${projectId}/selected`
+    );
+    return response.data;
+  },
 };
 
 // Sessions API
@@ -461,6 +478,14 @@ export const sessionsApi = {
     const response = await api.post<{ success: boolean; message: string }>(
       '/sessions/end',
       { userId, projectId }
+    );
+    return response.data;
+  },
+
+  // Get active session for a user and project
+  getActiveSession: async (userId: string, projectId: string) => {
+    const response = await api.get<{ success: boolean; session: UserSession | null }>(
+      `/sessions/active/${userId}/${projectId}`
     );
     return response.data;
   },

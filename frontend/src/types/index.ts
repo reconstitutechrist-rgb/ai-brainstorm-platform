@@ -137,6 +137,7 @@ export interface UserSession {
   session_end?: string;
   is_active: boolean;
   snapshot_at_start: ProjectState;
+  snapshot_at_end?: ProjectState; // Added for tracking session deltas
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;

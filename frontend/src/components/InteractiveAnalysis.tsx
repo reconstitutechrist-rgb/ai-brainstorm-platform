@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Lightbulb,
 } from 'lucide-react';
-import { api } from '../services/api';
+import api from '../services/api';
 import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {

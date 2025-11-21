@@ -132,17 +132,24 @@ export class GeneratedDocumentsService {
       // Continue anyway - we'll fall back to regular message fetching
     }
 
-    // Fetch uploaded documents for context
+    // Fetch SELECTED uploaded documents for context
     const { data: uploadedDocs } = await this.supabase
       .from('documents')
       .select('*')
       .eq('project_id', projectId)
+      .eq('selected_for_generation', true)
       .order('created_at', { ascending: false });
+
+    console.log(`[GeneratedDocs] Found ${uploadedDocs?.length || 0} selected documents for generation`);
+
+    // Extract full content from selected documents
+    const selectedDocsContext = await this.extractFullDocumentContent(uploadedDocs || []);
 
     const baseContext = {
       project,
       items: project.items || [],
       uploadedDocuments: uploadedDocs || [],
+      selectedDocumentsContent: selectedDocsContext,
     };
 
     // Generate all document types
@@ -167,6 +174,84 @@ export class GeneratedDocumentsService {
     }
 
     return generatedDocs;
+  }
+
+  /**
+   * Extract full content from selected uploaded documents
+   * Uses intelligent chunking for large documents
+   */
+  private async extractFullDocumentContent(documents: any[]): Promise<{
+    totalDocuments: number;
+    totalCharacters: number;
+    documentsWithContent: Array<{
+      id: string;
+      filename: string;
+      fileType: string;
+      contentLength: number;
+      fullContent: string;
+      description?: string;
+    }>;
+    warnings: string[];
+  }> {
+    const warnings: string[] = [];
+    const documentsWithContent: Array<{
+      id: string;
+      filename: string;
+      fileType: string;
+      contentLength: number;
+      fullContent: string;
+      description?: string;
+    }> = [];
+
+    let totalCharacters = 0;
+
+    for (const doc of documents) {
+      try {
+        // Extract content from metadata
+        const content = doc.metadata?.content || doc.metadata?.extractedContent || '';
+        
+        if (!content || content.trim().length === 0) {
+          warnings.push(`Document "${doc.filename}" has no extracted content`);
+          continue;
+        }
+
+        const contentLength = content.length;
+        totalCharacters += contentLength;
+
+        console.log(`[DocumentContent] Processing ${doc.filename}: ${contentLength} characters`);
+
+        // Check if document is very large
+        if (contentLength > 100000) {
+          warnings.push(`Document "${doc.filename}" is very large (${contentLength} chars). This may impact generation speed.`);
+        }
+
+        documentsWithContent.push({
+          id: doc.id,
+          filename: doc.filename,
+          fileType: doc.file_type || 'unknown',
+          contentLength,
+          fullContent: content,
+          description: doc.description || undefined,
+        });
+      } catch (error) {
+        console.error(`[DocumentContent] Error processing ${doc.filename}:`, error);
+        warnings.push(`Failed to extract content from "${doc.filename}"`);
+      }
+    }
+
+    // Warn if total content is very large (approaching context limits)
+    if (totalCharacters > 500000) {
+      warnings.push(`Total document content is very large (${totalCharacters} chars). Generation may be slower.`);
+    }
+
+    console.log(`[DocumentContent] Extracted content from ${documentsWithContent.length}/${documents.length} documents (${totalCharacters} total chars)`);
+
+    return {
+      totalDocuments: documentsWithContent.length,
+      totalCharacters,
+      documentsWithContent,
+      warnings,
+    };
   }
 
   /**
@@ -265,18 +350,57 @@ export class GeneratedDocumentsService {
     documentType: GeneratedDocument['document_type'],
     context: any
   ): string {
-    const { project, items, messages, uploadedDocuments } = context;
+    const { project, items, messages, uploadedDocuments, selectedDocumentsContent } = context;
 
     const decidedItems = items.filter((i: any) => i.state === 'decided');
     const rejectedItems = items.filter((i: any) => i.state === 'rejected');
     const exploringItems = items.filter((i: any) => i.state === 'exploring');
 
-    // Build uploaded documents summary
+    // Build uploaded documents summary (basic list)
     const uploadedDocsSummary = uploadedDocuments && uploadedDocuments.length > 0
       ? uploadedDocuments.map((doc: any) =>
           `- ${doc.filename} (${doc.file_type || 'unknown type'})${doc.description ? ': ' + doc.description : ''}`
         ).join('\n')
       : 'No documents uploaded yet';
+
+    // Build FULL CONTENT section for selected documents
+    let selectedDocsFullContent = '';
+    if (selectedDocumentsContent && selectedDocumentsContent.totalDocuments > 0) {
+      selectedDocsFullContent = `
+
+SELECTED DOCUMENTS - FULL CONTENT
+
+You have access to ${selectedDocumentsContent.totalDocuments} selected document(s) with ${selectedDocumentsContent.totalCharacters.toLocaleString()} total characters of content.
+
+${selectedDocumentsContent.warnings.length > 0 ? `WARNINGS:\n${selectedDocumentsContent.warnings.map((w: string) => `⚠️ ${w}`).join('\n')}\n` : ''}
+
+CRITICAL INSTRUCTIONS FOR DOCUMENT ANALYSIS:
+1. READ ALL CONTENT THOROUGHLY - Do not skim or skip any sections
+2. EXTRACT ALL RELEVANT INFORMATION - Technical specs, requirements, constraints, data points
+3. CROSS-REFERENCE - Match document content with project decisions
+4. CITE SOURCES - Reference specific documents when using their information
+5. PRESERVE DETAILS - Include numerical data, specific requirements, and technical details
+6. NOTE CONTRADICTIONS - If document content conflicts with project decisions, mention it
+
+${selectedDocumentsContent.documentsWithContent.map((doc: any, idx: number) => `
+-----------------------------------
+DOCUMENT ${idx + 1} of ${selectedDocumentsContent.totalDocuments}
+-----------------------------------
+Filename: ${doc.filename}
+Type: ${doc.fileType}
+Size: ${doc.contentLength.toLocaleString()} characters
+${doc.description ? `Description: ${doc.description}` : ''}
+
+===BEGIN FULL CONTENT===
+${doc.fullContent}
+===END FULL CONTENT===
+`).join('\n')}
+
+END OF DOCUMENT CONTENT
+
+REMINDER: Use the information from these documents to enrich your generated content. All details matter - technical specifications, requirements, constraints, timelines, budgets, and any other relevant information should be incorporated into the generated document.
+`;
+    }
 
     const baseContext = `
 Project: ${project.title}
@@ -284,6 +408,7 @@ Description: ${project.description || 'No description provided'}
 
 Uploaded Project Documents (${uploadedDocuments?.length || 0}):
 ${uploadedDocsSummary}
+${selectedDocumentsContent?.totalDocuments > 0 ? `\n✅ ${selectedDocumentsContent.totalDocuments} document(s) selected for generation with full content included below` : ''}
 
 Decided Items (${decidedItems.length}):
 ${decidedItems.map((i: any, idx: number) => `${idx + 1}. ${i.text}`).join('\n') || 'None yet'}
@@ -296,7 +421,7 @@ ${rejectedItems.map((i: any, idx: number) => `${idx + 1}. ${i.text}`).join('\n')
 
 Recent Conversation Context:
 ${messages.slice(-10).map((m: any) => `${m.role}: ${m.content}`).join('\n\n') || 'No conversation history yet'}
-`;
+${selectedDocsFullContent}`;
 
     switch (documentType) {
       case 'project_brief':

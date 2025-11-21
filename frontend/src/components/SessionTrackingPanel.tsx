@@ -26,44 +26,41 @@ export const SessionTrackingPanel: React.FC = () => {
     loadAllSessionData,
     startSession,
     endSession,
+    currentSession,
+    isSessionActive,
   } = useSessionStore();
 
-  const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionDuration, setSessionDuration] = useState('');
   const [activeTab, setActiveTab] = useState<'decided' | 'exploring' | 'parked'>('decided');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   // Load session data when component mounts or project changes
   useEffect(() => {
     if (currentProject && user) {
       loadAllSessionData(user.id, currentProject.id);
     }
-  }, [currentProject?.id, user?.id]);
+  }, [currentProject?.id, user?.id, loadAllSessionData]);
 
   // Update session duration every second
   useEffect(() => {
-    if (!isSessionActive || !sessionStartTime) return;
+    if (!isSessionActive || !currentSession) return;
 
     const interval = setInterval(() => {
-      setSessionDuration(formatDistanceToNow(sessionStartTime, { includeSeconds: true }));
+      const startTime = new Date(currentSession.session_start);
+      setSessionDuration(formatDistanceToNow(startTime, { includeSeconds: true }));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isSessionActive, sessionStartTime]);
+  }, [isSessionActive, currentSession]);
 
   if (!currentProject || !user) return null;
 
   const handleStartSession = async () => {
     await startSession(user.id, currentProject.id);
-    setIsSessionActive(true);
-    setSessionStartTime(new Date());
   };
 
   const handleEndSession = async () => {
     await endSession(user.id, currentProject.id);
-    setIsSessionActive(false);
-    setSessionStartTime(null);
   };
 
   const toggleItemExpansion = (itemId: string) => {
@@ -78,7 +75,9 @@ export const SessionTrackingPanel: React.FC = () => {
 
   // Filter items created during current session
   const getSessionItems = (state: 'decided' | 'exploring' | 'parked'): ProjectItem[] => {
-    if (!currentProject.items || !sessionStartTime) return [];
+    if (!currentProject.items || !currentSession) return [];
+    
+    const sessionStartTime = new Date(currentSession.session_start);
     
     return currentProject.items.filter(item => {
       const itemCreated = new Date(item.created_at);

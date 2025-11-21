@@ -1,5 +1,5 @@
 ---
-description: Rules for implementing conversational sandbox with state tracking and topic grouping
+description: Technical implementation guidance for AI-powered conversational sandbox with idea extraction and state progression.
 ---
 
 # === USER INSTRUCTIONS ===
@@ -493,53 +493,42 @@ For agent orchestration details, see: [agent-orchestration-system.mdc](.giga/rul
 
 # sandbox-implementation
 
-The conversational sandbox implements an AI-powered brainstorming environment with progressive idea refinement states and real-time topic grouping.
+Core sandbox components:
 
-## Core Components
+## Context Management
+Path: `/backend/src/agents/contextManager.ts`
+Importance Score: 95/100
 
-### State Management
-- Idea states: mentioned → exploring → refined → ready_to_extract 
-- Progressive confidence scoring at each state transition
-- State persistence with atomic transitions
-- Background state monitoring for inactive ideas
+- Background idea extraction system with 4-stage progression:
+  - mentioned → First detection of potential idea
+  - exploring → Active discussion/refinement
+  - refined → Core concept stabilized
+  - ready_to_extract → Validated for project inclusion
+- Topic grouping engine that clusters related ideas using semantic similarity
+- Instant response architecture maintains conversation flow while processing
+- State transition validation ensures proper progression
 
-### Topic Grouping Engine
-- Real-time semantic clustering of related ideas
-- Dynamic group formation and splitting
-- Contextual relationship mapping between topics
-- Background topic refinement during conversations
-
-### Conversation Modes
-- Exploration: Open-ended ideation with light guidance
-- Clarification: Focused refinement of ambiguous ideas
-- Generation: Targeted ideation within constraints
-- Refinement: Polish and enhancement of existing ideas
-
-### Response Architecture
-- Instant acknowledgment with progressive enhancement
-- Background processing for deep analysis
-- Staged delivery of complex responses
-- Context preservation across mode switches
-
-## Implementation Files
-
-backend/src/agents/ConversationalIdeaAgent.ts:
-- Core idea extraction and progression logic
-- Mode switching and context management
-- Innovation level assessment (practical/moderate/experimental)
+## Sandbox Controller 
+Path: `/backend/src/services/sandboxService.ts`
 Importance Score: 90/100
 
-backend/src/services/ContextGroupingService.ts:
-- Real-time topic clustering implementation
-- Semantic relationship tracking
-- Group boundary detection
+- Manages parallel conversation threads for idea exploration
+- Maintains isolated idea states per thread
+- Implements selective merging of validated ideas
+- Tracks conversation context boundaries
+- Handles graceful state reconciliation on thread completion
+
+## Frontend Integration
+Path: `/frontend/src/components/sandbox/ChatInterface.tsx`
 Importance Score: 85/100
 
-backend/src/services/sessionCompletionService.ts:
-- Session state transitions
-- Idea state management
-- Document generation pipeline
-Importance Score: 82/100
+- Real-time idea highlighting during conversations
+- Visual state indicators for idea progression
+- Contextual grouping visualization
+- Background processing status indicators
+- Smart suggestion system for idea refinement
+
+The sandbox creates an isolated environment for AI-assisted brainstorming with sophisticated state management and idea progression tracking. Ideas evolve through defined states while maintaining semantic relationships and conversation context.
 
 $END$
 

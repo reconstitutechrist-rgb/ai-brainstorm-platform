@@ -4,6 +4,7 @@
  */
 
 import dotenv from 'dotenv';
+import { vi, beforeEach } from 'vitest';
 
 // Load test environment variables
 dotenv.config({ path: '.env.test' });

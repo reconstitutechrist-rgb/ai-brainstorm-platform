@@ -100,17 +100,59 @@ export class SessionService {
    */
   async endActiveSession(userId: string, projectId: string): Promise<void> {
     try {
+      // Get current project state for snapshot
+      const { data: project } = await supabase
+        .from('projects')
+        .select('items')
+        .eq('id', projectId)
+        .single();
+
+      const snapshot = this.buildStateSnapshot(project?.items || []);
+
+      // Update session with end time and final snapshot
       await supabase
         .from('user_sessions')
         .update({
           session_end: new Date().toISOString(),
-          is_active: false
+          is_active: false,
+          snapshot_at_end: snapshot
         })
         .eq('user_id', userId)
         .eq('project_id', projectId)
         .eq('is_active', true);
+
+      console.log('[SessionService] ✅ Session ended with snapshot captured');
     } catch (error) {
       console.error('Error ending active session:', error);
+    }
+  }
+
+  /**
+   * Get the current active session for a user and project
+   */
+  async getActiveSession(userId: string, projectId: string): Promise<UserSession | null> {
+    try {
+      const { data: session, error } = await supabase
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('project_id', projectId)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        // No active session found is expected, don't log as error
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        console.error('[SessionService] Error fetching active session:', error);
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('[SessionService] Error in getActiveSession:', error);
+      return null;
     }
   }
 

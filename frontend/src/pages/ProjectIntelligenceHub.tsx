@@ -1907,10 +1907,15 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [isTogglingSelection, setIsTogglingSelection] = useState(false);
 
-  // Sync with shared documents
+  // Sync with shared documents and load selection state
   useEffect(() => {
     setDocuments(sharedDocuments);
+    // Load selection state from documents
+    const selected = new Set(sharedDocuments.filter((d: any) => d.selected_for_generation).map((d: any) => d.id));
+    setSelectedDocIds(selected);
   }, [sharedDocuments]);
 
   // Fetch folders and documents
@@ -1992,6 +1997,69 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
       setError('Failed to upload document');
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Toggle document selection
+  const handleToggleSelection = async (documentId: string) => {
+    setIsTogglingSelection(true);
+    try {
+      const currentlySelected = selectedDocIds.has(documentId);
+      const result = await documentsApi.toggleSelection(documentId, !currentlySelected);
+      
+      if (result.success) {
+        setSelectedDocIds(prev => {
+          const next = new Set(prev);
+          if (currentlySelected) {
+            next.delete(documentId);
+          } else {
+            next.add(documentId);
+          }
+          return next;
+        });
+        await onDocumentsUpdate(); // Refresh to sync
+      }
+    } catch (err) {
+      console.error('Failed to toggle selection:', err);
+      setError('Failed to update selection');
+    } finally {
+      setIsTogglingSelection(false);
+    }
+  };
+
+  // Select all documents
+  const handleSelectAll = async () => {
+    setIsTogglingSelection(true);
+    try {
+      await Promise.all(
+        filteredDocuments.filter(doc => !selectedDocIds.has(doc.id)).map(doc => 
+          documentsApi.toggleSelection(doc.id, true)
+        )
+      );
+      await onDocumentsUpdate();
+    } catch (err) {
+      console.error('Failed to select all:', err);
+      setError('Failed to select all documents');
+    } finally {
+      setIsTogglingSelection(false);
+    }
+  };
+
+  // Clear all selections
+  const handleClearAll = async () => {
+    setIsTogglingSelection(true);
+    try {
+      await Promise.all(
+        Array.from(selectedDocIds).map(id => 
+          documentsApi.toggleSelection(id, false)
+        )
+      );
+      await onDocumentsUpdate();
+    } catch (err) {
+      console.error('Failed to clear selections:', err);
+      setError('Failed to clear selections');
+    } finally {
+      setIsTogglingSelection(false);
     }
   };
 
@@ -2093,7 +2161,7 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
 
         {/* Documents List */}
         <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-2xl p-6 shadow-glass lg:col-span-3`}>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               Your Documents
             </h3>
@@ -2125,6 +2193,48 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
             </div>
           </div>
 
+          {/* Selection Controls */}
+          {documents.length > 0 && (
+            <div className={`mb-4 p-4 rounded-xl ${isDarkMode ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-semibold ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
+                    📄 {selectedDocIds.size} document{selectedDocIds.size !== 1 ? 's' : ''} selected for AI generation
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSelectAll}
+                    disabled={isTogglingSelection || selectedDocIds.size === filteredDocuments.length}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      isDarkMode
+                        ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 disabled:opacity-50'
+                        : 'bg-cyan-100 hover:bg-cyan-200 text-cyan-700 disabled:opacity-50'
+                    }`}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={handleClearAll}
+                    disabled={isTogglingSelection || selectedDocIds.size === 0}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      isDarkMode
+                        ? 'bg-white/5 hover:bg-white/10 text-gray-300 disabled:opacity-50'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50'
+                    }`}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+              {selectedDocIds.size > 0 && (
+                <p className={`text-xs mt-2 ${isDarkMode ? 'text-cyan-400/70' : 'text-cyan-600'}`}>
+                  ℹ️ Selected documents will be used to update "Regenerate All Docs" in the Generated Docs tab
+                </p>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 text-sm">
               {error}
@@ -2144,7 +2254,10 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
                 <DocumentItem
                   key={doc.id}
                   document={doc}
+                  isSelected={selectedDocIds.has(doc.id)}
+                  onToggleSelection={() => handleToggleSelection(doc.id)}
                   onDelete={() => handleDeleteDocument(doc.id)}
+                  isDarkMode={isDarkMode}
                 />
               ))}
             </div>
@@ -2210,9 +2323,11 @@ const UserDocsTab: React.FC<UserDocsTabProps> = ({ sharedDocuments, onDocumentsU
 // Document Item Component
 const DocumentItem: React.FC<{
   document: Document;
+  isSelected: boolean;
+  onToggleSelection: () => void;
   onDelete: () => void;
-}> = ({ document, onDelete }) => {
-  const { isDarkMode } = useThemeStore();
+  isDarkMode: boolean;
+}> = ({ document, isSelected, onToggleSelection, onDelete, isDarkMode }) => {
 
   const getFileIcon = () => {
     const filename = document.filename.toLowerCase();
@@ -2248,9 +2363,19 @@ const DocumentItem: React.FC<{
 
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border ${
-      isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'
+      isSelected
+        ? isDarkMode ? 'bg-cyan-500/20 border-cyan-500' : 'bg-cyan-50 border-cyan-500'
+        : isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-white/30'
     } hover:border-cyan-primary/50 transition-all`}>
       <div className="flex items-center space-x-3 flex-1 min-w-0">
+        {/* Selection Checkbox */}
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelection}
+          className="w-5 h-5 rounded cursor-pointer text-cyan-primary focus:ring-2 focus:ring-cyan-primary"
+          title={isSelected ? "Deselect for generation" : "Select for generation"}
+        />
         <span className="text-2xl">{getFileIcon()}</span>
         <div className="flex-1 min-w-0">
           <div className={`font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -2494,7 +2619,7 @@ const SearchTab: React.FC = () => {
                 )}
                 <p className="whitespace-pre-wrap">{message.content.substring(0, 300)}{message.content.length > 300 ? '...' : ''}</p>
                 {message.role === 'assistant' && message.content.length > 300 && (
-                  <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-cyan-100' : 'opacity-70'}`}>
+                  <p className="text-xs mt-2 opacity-70">
                     View full response in the preview panel →
                   </p>
                 )}

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import type { ProjectItem } from '../../types';
 
@@ -11,9 +13,11 @@ interface CanvasCardProps {
   isInCluster?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (itemId: string) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
-export const CanvasCard: React.FC<CanvasCardProps> = ({
+export const CanvasCard: React.FC<CanvasCardProps> = memo(({
   item,
   isDarkMode,
   onArchive,
@@ -22,9 +26,15 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
   isInCluster = false,
   isSelected = false,
   onToggleSelection,
+  onDragStart,
+  onDragEnd,
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+    disabled: isInCluster,
+  });
 
   const getStateColor = (state: ProjectItem['state']) => {
     switch (state) {
@@ -96,40 +106,34 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
 
   const colors = getStateColor(item.state);
 
+  const handleMouseEnter = useCallback(() => setIsHovered(true), []);
+  const handleMouseLeave = useCallback(() => setIsHovered(false), []);
+
+  // Calculate the final position including drag transform
+  const style: React.CSSProperties = isInCluster
+    ? { position: 'relative' }
+    : {
+        position: 'absolute',
+        left: item.position?.x || 0,
+        top: item.position?.y || 0,
+        transform: CSS.Translate.toString(transform),
+        willChange: isDragging ? 'transform' : 'auto',
+        zIndex: isDragging ? 50 : 10,
+        cursor: isInCluster ? 'default' : isDragging ? 'grabbing' : 'grab',
+        transition: isDragging ? 'none' : 'box-shadow 0.3s',
+      };
+
   return (
-    <motion.div
-      drag={!isInCluster}
-      dragMomentum={false}
-      dragElastic={0}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-      dragConstraints={{ left: 0, top: 0, right: 1700, bottom: 1700 }}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={(_, info) => {
-        setIsDragging(false);
-        const newX = (item.position?.x || 0) + info.offset.x;
-        const newY = (item.position?.y || 0) + info.offset.y;
-        onPositionChange(item.id, { x: newX, y: newY });
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={
-        isInCluster
-          ? { position: 'relative' }
-          : {
-              position: 'absolute',
-              left: item.position?.x || 0,
-              top: item.position?.y || 0,
-              willChange: 'transform',
-            }
-      }
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`${
         isInCluster ? 'w-full' : 'w-64'
-      } ${!isInCluster && 'cursor-grab active:cursor-grabbing'} ${isDragging ? 'z-50' : 'z-10'} ${
-        isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-      }`}
-      whileHover={!isInCluster ? { scale: 1.03 } : undefined}
-      whileTap={!isInCluster ? { scale: 0.98 } : undefined}
-      animate={!isInCluster && !isDragging ? { x: 0, y: 0 } : undefined}
+      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
     >
       {/* Selection Checkbox - Only show if not in cluster and has onToggleSelection */}
       {!isInCluster && onToggleSelection && (isHovered || isSelected) && (
@@ -272,6 +276,22 @@ export const CanvasCard: React.FC<CanvasCardProps> = ({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo - only re-render if these specific props change
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.text === nextProps.item.text &&
+    prevProps.item.state === nextProps.item.state &&
+    prevProps.item.position?.x === nextProps.item.position?.x &&
+    prevProps.item.position?.y === nextProps.item.position?.y &&
+    prevProps.item.confidence === nextProps.item.confidence &&
+    prevProps.isDarkMode === nextProps.isDarkMode &&
+    prevProps.isInCluster === nextProps.isInCluster &&
+    prevProps.isSelected === nextProps.isSelected &&
+    JSON.stringify(prevProps.item.tags) === JSON.stringify(nextProps.item.tags)
+  );
+});
+
+CanvasCard.displayName = 'CanvasCard';

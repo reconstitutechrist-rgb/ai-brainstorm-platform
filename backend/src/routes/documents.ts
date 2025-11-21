@@ -490,6 +490,74 @@ router.post('/:documentId/extract-content', async (req: Request, res: Response) 
 });
 
 /**
+ * Toggle document selection for generation
+ */
+router.patch('/:documentId/toggle-selection', async (req: Request, res: Response) => {
+  try {
+    const { documentId } = req.params;
+    const { selected } = req.body;
+
+    if (typeof selected !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'selected field must be a boolean'
+      });
+    }
+
+    console.log(`[DocumentSelection] Toggling document ${documentId} selection to: ${selected}`);
+
+    const { data, error } = await supabase
+      .from('documents')
+      .update({ selected_for_generation: selected })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ 
+      success: true, 
+      document: data,
+      message: `Document ${selected ? 'selected' : 'deselected'} for generation`
+    });
+  } catch (error) {
+    console.error('Toggle selection error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to toggle document selection'
+    });
+  }
+});
+
+/**
+ * Get selected documents for a project
+ */
+router.get('/project/:projectId/selected', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('selected_for_generation', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    console.log(`[DocumentSelection] Found ${data?.length || 0} selected documents for project ${projectId}`);
+
+    res.json({ success: true, documents: data || [] });
+  } catch (error) {
+    console.error('Get selected documents error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch selected documents'
+    });
+  }
+});
+
+/**
  * Batch re-extract content for all documents in a project
  */
 router.post('/project/:projectId/extract-all-content', async (req: Request, res: Response) => {
