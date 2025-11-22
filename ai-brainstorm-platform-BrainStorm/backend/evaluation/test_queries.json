@@ -1,0 +1,26 @@
+[
+  {
+    "query": "I have an idea for a fitness app that gamifies walking. Can you help me brainstorm features?"
+  },
+  {
+    "query": "Generate a Product Requirements Document (PRD) for the fitness app we discussed."
+  },
+  {
+    "query": "Research top 3 competitors for gamified fitness apps and summarize their key features."
+  },
+  {
+    "query": "I want to extract the 'social leaderboard' feature to the sandbox for further refinement."
+  },
+  {
+    "query": "What are the technical requirements for implementing a real-time chat feature in this app?"
+  },
+  {
+    "query": "Create a 3-month roadmap for the MVP launch of the fitness app."
+  },
+  {
+    "query": "Review the current plan and identify any potential risks or assumptions we've made."
+  },
+  {
+    "query": "Suggest a marketing strategy for the initial user acquisition."
+  }
+]
