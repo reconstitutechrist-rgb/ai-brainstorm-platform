@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { CheckSquare, Archive, Trash2 } from 'lucide-react';
-import { useThemeStore } from '../store/themeStore';
-import { useUserStore } from '../store/userStore';
-import { useProjectStore } from '../store/projectStore';
-import { useChatStore } from '../store/chatStore';
-import { useSessionStore } from '../store/sessionStore';
-import { useAgentStore } from '../store/agentStore';
-import { useChat, useMessageLoader } from '../hooks';
-import { showToast } from '../utils/toast';
-import { AgentQuestion, isAgentQuestionArray } from '../types';
-import '../styles/homepage.css';
+import React, { useState, useEffect, useRef } from "react";
+import { CheckSquare, Archive, Trash2 } from "lucide-react";
+import { useThemeStore } from "../store/themeStore";
+import { useUserStore } from "../store/userStore";
+import { useProjectStore } from "../store/projectStore";
+import { useChatStore } from "../store/chatStore";
+import { useSessionStore } from "../store/sessionStore";
+import { useAgentStore } from "../store/agentStore";
+import { useChat, useMessageLoader, useRealtimeUpdates } from "../hooks";
+import { showToast } from "../utils/toast";
+import { AgentQuestion, isAgentQuestionArray } from "../types";
+import "../styles/homepage.css";
 import {
   ChatPageHeader,
   ChatContainer,
@@ -20,25 +20,25 @@ import {
   ChatMessages,
   ChatInput,
   UploadModal,
-} from '../components/chat';
+} from "../components/chat";
 import {
   VisualCanvas,
   CardCounter,
   CapacityWarning,
   ArchiveSidebar,
-} from '../components/canvas';
-import { SessionSummaryModal } from '../components/SessionSummaryModal';
-import { SessionHistoryModal } from '../components/SessionHistoryModal';
-import { SessionTrackingPanel } from '../components/SessionTrackingPanel';
-import { FloatingAgentBubbles } from '../components/FloatingAgentBubbles';
-import { AgentChatWindow } from '../components/AgentChatWindow';
-import { SuggestionsSidePanel } from '../components/SuggestionsSidePanel';
-import { SuggestionsToggleButton } from '../components/SuggestionsToggleButton';
-import { AgentQuestionBubble } from '../components/AgentQuestionBubble';
-import { useCardCapacity } from '../hooks/useCardCapacity';
-import { useArchive } from '../hooks/useArchive';
-import { useMemo } from 'react';
-import { projectsApi, canvasApi } from '../services/api';
+} from "../components/canvas";
+import { SessionSummaryModal } from "../components/SessionSummaryModal";
+import { SessionHistoryModal } from "../components/SessionHistoryModal";
+import { SessionTrackingPanel } from "../components/SessionTrackingPanel";
+import { FloatingAgentBubbles } from "../components/FloatingAgentBubbles";
+import { AgentChatWindow } from "../components/AgentChatWindow";
+import { SuggestionsSidePanel } from "../components/SuggestionsSidePanel";
+import { SuggestionsToggleButton } from "../components/SuggestionsToggleButton";
+import { AgentQuestionBubble } from "../components/AgentQuestionBubble";
+import { useCardCapacity } from "../hooks/useCardCapacity";
+import { useArchive } from "../hooks/useArchive";
+import { useMemo } from "react";
+import { projectsApi, canvasApi } from "../services/api";
 
 export const ChatPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -50,13 +50,18 @@ export const ChatPage: React.FC = () => {
     selectedCardIds,
     selectAllCards,
     clearSelection,
-    archiveMultipleItems
+    archiveMultipleItems,
   } = useProjectStore();
+
+  // Initialize real-time updates via SharedWorker (replaces 2s polling)
+  useRealtimeUpdates(currentProject?.id, user?.id);
   const { messages, isTyping } = useChatStore();
   // Use selectors to avoid re-rendering when unrelated session state changes
-  const sessionSummary = useSessionStore(state => state.sessionSummary);
-  const startSession = useSessionStore(state => state.startSession);
-  const resetInactivityTimer = useSessionStore(state => state.resetInactivityTimer);
+  const sessionSummary = useSessionStore((state) => state.sessionSummary);
+  const startSession = useSessionStore((state) => state.startSession);
+  const resetInactivityTimer = useSessionStore(
+    (state) => state.resetInactivityTimer
+  );
   const {
     agentWindows,
     openAgentWindow,
@@ -67,7 +72,7 @@ export const ChatPage: React.FC = () => {
   } = useAgentStore();
 
   // Local state
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -76,7 +81,9 @@ export const ChatPage: React.FC = () => {
   const [suggestionCount, setSuggestionCount] = useState(0);
   const [agentQuestions, setAgentQuestions] = useState<AgentQuestion[]>([]);
   const [isQuestionBubbleOpen, setIsQuestionBubbleOpen] = useState(false);
-  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(
+    new Set()
+  );
   const [showArchiveAllConfirm, setShowArchiveAllConfirm] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const hasShownSummaryRef = useRef(false);
@@ -84,30 +91,36 @@ export const ChatPage: React.FC = () => {
 
   // Apply homepage background
   useEffect(() => {
-    document.body.classList.add('homepage-background');
+    document.body.classList.add("homepage-background");
     return () => {
-      document.body.classList.remove('homepage-background');
+      document.body.classList.remove("homepage-background");
     };
   }, []);
 
   // Debug: Log current project when it changes
   useEffect(() => {
     if (currentProject) {
-      console.log('[ChatPage] Current project updated:', {
+      console.log("[ChatPage] Current project updated:", {
         id: currentProject.id,
         title: currentProject.title,
         itemsCount: currentProject.items?.length || 0,
-        decidedCount: currentProject.items?.filter(i => i.state === 'decided').length || 0,
-        exploringCount: currentProject.items?.filter(i => i.state === 'exploring').length || 0,
+        decidedCount:
+          currentProject.items?.filter((i) => i.state === "decided").length ||
+          0,
+        exploringCount:
+          currentProject.items?.filter((i) => i.state === "exploring").length ||
+          0,
       });
     } else {
-      console.log('[ChatPage] No current project');
+      console.log("[ChatPage] No current project");
     }
   }, [currentProject]);
 
   // Custom hooks
   const { sendMessage, isSending } = useChat(currentProject?.id);
-  const { loadMoreMessages, isLoading, hasMore } = useMessageLoader(currentProject?.id);
+  const { loadMoreMessages, isLoading, hasMore } = useMessageLoader(
+    currentProject?.id
+  );
 
   // Canvas-specific hooks
   const projectItems = currentProject?.items || [];
@@ -115,14 +128,17 @@ export const ChatPage: React.FC = () => {
   // Get active items (decided + exploring, non-archived)
   const activeItems = useMemo(() => {
     const filtered = projectItems.filter(
-      item => (item.state === 'decided' || item.state === 'exploring') && !item.isArchived
+      (item) =>
+        (item.state === "decided" || item.state === "exploring") &&
+        !item.isArchived
     );
-    console.log('[ChatPage] Active items for canvas:', {
+    console.log("[ChatPage] Active items for canvas:", {
       totalProjectItems: projectItems.length,
       activeItemsCount: filtered.length,
-      decidedCount: projectItems.filter(i => i.state === 'decided').length,
-      exploringCount: projectItems.filter(i => i.state === 'exploring').length,
-      archivedCount: projectItems.filter(i => i.isArchived).length,
+      decidedCount: projectItems.filter((i) => i.state === "decided").length,
+      exploringCount: projectItems.filter((i) => i.state === "exploring")
+        .length,
+      archivedCount: projectItems.filter((i) => i.isArchived).length,
     });
     return filtered;
   }, [projectItems]);
@@ -131,12 +147,23 @@ export const ChatPage: React.FC = () => {
   const archive = useArchive(projectItems);
 
   // Capacity tracking
-  const capacity = useCardCapacity(activeItems.length, archive.archivedCards.length);
+  const capacity = useCardCapacity(
+    activeItems.length,
+    archive.archivedCards.length
+  );
 
   // Show summary modal when session data loads
   useEffect(() => {
-    if (sessionSummary && !hasShownSummaryRef.current && currentProject && user) {
-      if (sessionSummary.lastSession && sessionSummary.lastSession !== 'first session') {
+    if (
+      sessionSummary &&
+      !hasShownSummaryRef.current &&
+      currentProject &&
+      user
+    ) {
+      if (
+        sessionSummary.lastSession &&
+        sessionSummary.lastSession !== "first session"
+      ) {
         setShowSummaryModal(true);
       }
       hasShownSummaryRef.current = true;
@@ -157,14 +184,17 @@ export const ChatPage: React.FC = () => {
       if (currentProject && user) {
         try {
           // Include userId to filter dismissed suggestions
-          const response = await projectsApi.getSuggestions(currentProject.id, user.id);
+          const response = await projectsApi.getSuggestions(
+            currentProject.id,
+            user.id
+          );
 
           // Only update state if still mounted
           if (isMounted && response.success && response.suggestions) {
             setSuggestionCount(response.suggestions.length);
           }
         } catch (error) {
-          console.error('Failed to load suggestion count:', error);
+          console.error("Failed to load suggestion count:", error);
         }
       }
     };
@@ -183,13 +213,16 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (messages.length > 0 && currentProject && user) {
       const timer = setTimeout(() => {
-        projectsApi.getSuggestions(currentProject.id, user.id)
-          .then(response => {
+        projectsApi
+          .getSuggestions(currentProject.id, user.id)
+          .then((response) => {
             if (response.success && response.suggestions) {
               setSuggestionCount(response.suggestions.length);
             }
           })
-          .catch(error => console.error('Failed to load suggestion count:', error));
+          .catch((error) =>
+            console.error("Failed to load suggestion count:", error)
+          );
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -202,7 +235,8 @@ export const ChatPage: React.FC = () => {
       if (!currentProject || !user) return;
 
       const activeCount = activeItems.length;
-      const hasClusters = currentProject.clusters && currentProject.clusters.length > 0;
+      const hasClusters =
+        currentProject.clusters && currentProject.clusters.length > 0;
 
       // Skip if already attempted for this project or conditions not met
       if (hasAttemptedClusteringRef.current) return;
@@ -210,38 +244,51 @@ export const ChatPage: React.FC = () => {
       if (hasClusters) return; // Early exit - clusters already exist
 
       // Trigger clustering
-      console.log(`[ChatPage] Auto-clustering triggered: ${activeCount} cards detected`);
+      console.log(
+        `[ChatPage] Auto-clustering triggered: ${activeCount} cards detected`
+      );
       hasAttemptedClusteringRef.current = true;
 
       try {
         const result = await canvasApi.autoCluster(currentProject.id, 12);
 
-          if (result.success && result.clustered) {
-            console.log(`[ChatPage] Auto-clustering completed: ${result.clustersCreated} clusters created`);
+        if (result.success && result.clustered) {
+          console.log(
+            `[ChatPage] Auto-clustering completed: ${result.clustersCreated} clusters created`
+          );
 
-            // Update project store with clustered data
-            if (result.project) {
-              setCurrentProject(result.project);
-              console.log('[ChatPage] Canvas clustered successfully - project updated');
-            }
-          } else {
-            console.log(`[ChatPage] Auto-clustering skipped: ${result.message}`);
+          // Update project store with clustered data
+          if (result.project) {
+            setCurrentProject(result.project);
+            console.log(
+              "[ChatPage] Canvas clustered successfully - project updated"
+            );
           }
+        } else {
+          console.log(`[ChatPage] Auto-clustering skipped: ${result.message}`);
+        }
       } catch (error) {
-        console.error('[ChatPage] Auto-clustering failed:', error);
+        console.error("[ChatPage] Auto-clustering failed:", error);
       }
     };
 
     attemptAutoClustering();
-  }, [activeItems.length, currentProject?.id, currentProject?.clusters, user?.id]);
+  }, [
+    activeItems.length,
+    currentProject?.id,
+    currentProject?.clusters,
+    user?.id,
+  ]);
 
   // Extract and accumulate all agent questions from messages
   useEffect(() => {
     // FIX #3: Enhanced logging for question extraction
-    console.log('[ChatPage] Extracting questions from messages:', {
+    console.log("[ChatPage] Extracting questions from messages:", {
       totalMessages: messages.length,
-      messagesWithMetadata: messages.filter(m => m.metadata).length,
-      messagesWithQuestions: messages.filter(m => m.metadata?.agentQuestions?.length > 0).length
+      messagesWithMetadata: messages.filter((m) => m.metadata).length,
+      messagesWithQuestions: messages.filter(
+        (m) => m.metadata?.agentQuestions?.length > 0
+      ).length,
     });
 
     // Collect ALL questions from ALL messages (not just latest)
@@ -249,11 +296,18 @@ export const ChatPage: React.FC = () => {
 
     messages.forEach((msg) => {
       const questions = msg.metadata?.agentQuestions;
-      if (questions && isAgentQuestionArray(questions) && questions.length > 0) {
-        console.log(`[ChatPage] ✅ Found ${questions.length} questions in message ${msg.id}:`, {
-          agent: msg.metadata?.agent,
-          questions: questions.map((q) => q.question?.substring(0, 60))
-        });
+      if (
+        questions &&
+        isAgentQuestionArray(questions) &&
+        questions.length > 0
+      ) {
+        console.log(
+          `[ChatPage] ✅ Found ${questions.length} questions in message ${msg.id}:`,
+          {
+            agent: msg.metadata?.agent,
+            questions: questions.map((q) => q.question?.substring(0, 60)),
+          }
+        );
 
         questions.forEach((q, qIndex) => {
           // Create unique ID for each question based on message and question index
@@ -269,19 +323,23 @@ export const ChatPage: React.FC = () => {
       }
     });
 
-    console.log('[ChatPage] Total questions extracted:', {
+    console.log("[ChatPage] Total questions extracted:", {
       count: allQuestions.length,
-      unanswered: allQuestions.filter(q => !q.answered).length,
-      answered: allQuestions.filter(q => q.answered).length
+      unanswered: allQuestions.filter((q) => !q.answered).length,
+      answered: allQuestions.filter((q) => q.answered).length,
     });
 
     // Update questions list
     setAgentQuestions(allQuestions);
 
     // Auto-open bubble if there are new unanswered questions
-    const hasNewQuestions = allQuestions.some(q => !q.answered);
+    const hasNewQuestions = allQuestions.some((q) => !q.answered);
     if (hasNewQuestions && allQuestions.length > 0) {
-      console.log('[ChatPage] 🔔 Auto-opening question bubble -', allQuestions.filter(q => !q.answered).length, 'unanswered questions');
+      console.log(
+        "[ChatPage] 🔔 Auto-opening question bubble -",
+        allQuestions.filter((q) => !q.answered).length,
+        "unanswered questions"
+      );
       setIsQuestionBubbleOpen(true);
     }
   }, [messages, answeredQuestionIds]);
@@ -290,7 +348,10 @@ export const ChatPage: React.FC = () => {
   // Sessions persist across page navigations - backend handles session reuse
   useEffect(() => {
     if (currentProject && user) {
-      console.log('[ChatPage] Auto-starting session for project:', currentProject.id);
+      console.log(
+        "[ChatPage] Auto-starting session for project:",
+        currentProject.id
+      );
       startSession(user.id, currentProject.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,7 +363,7 @@ export const ChatPage: React.FC = () => {
     }
 
     const messageText = inputMessage.trim();
-    setInputMessage('');
+    setInputMessage("");
 
     // Reset inactivity timer on message send
     if (user && currentProject) {
@@ -312,7 +373,7 @@ export const ChatPage: React.FC = () => {
     const result = await sendMessage(messageText);
 
     if (!result.success && result.error) {
-      showToast(result.error, 'error');
+      showToast(result.error, "error");
       setInputMessage(messageText); // Re-add message on error
     }
   };
@@ -327,7 +388,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -337,13 +398,17 @@ export const ChatPage: React.FC = () => {
     openAgentWindow(agentType);
   };
 
-  const handleAgentQuestionAnswer = async (questionId: string, question: string, answer: string) => {
+  const handleAgentQuestionAnswer = async (
+    questionId: string,
+    question: string,
+    answer: string
+  ) => {
     // Send the answer as a regular message in the chat
     if (answer.trim() && currentProject) {
       await sendMessage(answer);
 
       // Mark this question as answered
-      setAnsweredQuestionIds(prev => new Set(prev).add(questionId));
+      setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
 
       // Don't close the bubble - keep it accessible for viewing past questions
     }
@@ -355,7 +420,7 @@ export const ChatPage: React.FC = () => {
     // Add user response to agent thread
     addUserResponse(agentType, {
       id: `user-${Date.now()}`,
-      role: 'user',
+      role: "user",
       content: message,
       timestamp: new Date().toISOString(),
     });
@@ -367,7 +432,7 @@ export const ChatPage: React.FC = () => {
     const result = await sendMessage(message);
 
     if (!result.success && result.error) {
-      showToast('Failed to send your response. Please try again.', 'error');
+      showToast("Failed to send your response. Please try again.", "error");
     }
   };
 
@@ -380,12 +445,15 @@ export const ChatPage: React.FC = () => {
     if (capacity.canAddCard) {
       toggleItemArchive(itemId);
     } else {
-      showToast('Canvas is at capacity (30 cards). Please archive some cards before restoring.', 'info');
+      showToast(
+        "Canvas is at capacity (30 cards). Please archive some cards before restoring.",
+        "info"
+      );
     }
   };
 
   const handleWarningAction = (action: string) => {
-    if (action.includes('Archive')) {
+    if (action.includes("Archive")) {
       setIsArchiveOpen(true);
     }
     capacity.dismissWarning();
@@ -404,8 +472,8 @@ export const ChatPage: React.FC = () => {
       await archiveMultipleItems(Array.from(selectedCardIds));
       clearSelection();
     } catch (error) {
-      console.error('Failed to archive selected cards:', error);
-      showToast('Failed to archive selected cards. Please try again.', 'error');
+      console.error("Failed to archive selected cards:", error);
+      showToast("Failed to archive selected cards. Please try again.", "error");
     } finally {
       setIsArchiving(false);
     }
@@ -421,12 +489,12 @@ export const ChatPage: React.FC = () => {
     setIsArchiving(true);
 
     try {
-      const allActiveIds = activeItems.map(item => item.id);
+      const allActiveIds = activeItems.map((item) => item.id);
       await archiveMultipleItems(allActiveIds);
       clearSelection();
     } catch (error) {
-      console.error('Failed to archive all cards:', error);
-      showToast('Failed to archive all cards. Please try again.', 'error');
+      console.error("Failed to archive all cards:", error);
+      showToast("Failed to archive all cards. Please try again.", "error");
     } finally {
       setIsArchiving(false);
     }
@@ -436,11 +504,19 @@ export const ChatPage: React.FC = () => {
   if (!currentProject) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className={`${isDarkMode ? 'glass-dark' : 'glass'} rounded-3xl p-12 text-center shadow-glass`}>
-          <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div
+          className={`${
+            isDarkMode ? "glass-dark" : "glass"
+          } rounded-3xl p-12 text-center shadow-glass`}
+        >
+          <h2
+            className={`text-2xl font-bold mb-4 ${
+              isDarkMode ? "text-white" : "text-gray-800"
+            }`}
+          >
             No Project Selected
           </h2>
-          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
             Please select or create a project to start brainstorming
           </p>
         </div>
@@ -526,11 +602,13 @@ export const ChatPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleSelectAll}
-                    disabled={isArchiving || selectedCardIds.size === activeItems.length}
+                    disabled={
+                      isArchiving || selectedCardIds.size === activeItems.length
+                    }
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
                       isDarkMode
-                        ? 'bg-gradient-to-r from-blue-600/30 to-cyan-600/30 text-blue-300 hover:from-blue-600/40 hover:to-cyan-600/40 border border-blue-500/40'
-                        : 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 border border-blue-300'
+                        ? "bg-gradient-to-r from-blue-600/30 to-cyan-600/30 text-blue-300 hover:from-blue-600/40 hover:to-cyan-600/40 border border-blue-500/40"
+                        : "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 border border-blue-300"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <CheckSquare size={16} />
@@ -543,12 +621,14 @@ export const ChatPage: React.FC = () => {
                       disabled={isArchiving}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
                         isDarkMode
-                          ? 'bg-gradient-to-r from-green-600/30 to-emerald-600/30 text-emerald-300 hover:from-green-600/40 hover:to-emerald-600/40 border border-green-500/40'
-                          : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 border border-green-300'
+                          ? "bg-gradient-to-r from-green-600/30 to-emerald-600/30 text-emerald-300 hover:from-green-600/40 hover:to-emerald-600/40 border border-green-500/40"
+                          : "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 border border-green-300"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       <Archive size={16} />
-                      {isArchiving ? 'Archiving...' : `Archive Selected (${selectedCardIds.size})`}
+                      {isArchiving
+                        ? "Archiving..."
+                        : `Archive Selected (${selectedCardIds.size})`}
                     </button>
                   )}
                 </div>
@@ -558,8 +638,8 @@ export const ChatPage: React.FC = () => {
                   disabled={isArchiving}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-lg ${
                     isDarkMode
-                      ? 'bg-gradient-to-r from-red-600/30 to-rose-600/30 text-red-300 hover:from-red-600/40 hover:to-rose-600/40 border border-red-500/40'
-                      : 'bg-gradient-to-r from-red-100 to-rose-100 text-red-700 hover:from-red-200 hover:to-rose-200 border border-red-300'
+                      ? "bg-gradient-to-r from-red-600/30 to-rose-600/30 text-red-300 hover:from-red-600/40 hover:to-rose-600/40 border border-red-500/40"
+                      : "bg-gradient-to-r from-red-100 to-rose-100 text-red-700 hover:from-red-200 hover:to-rose-200 border border-red-300"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Trash2 size={16} />
@@ -613,23 +693,34 @@ export const ChatPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div
             className={`max-w-md w-full mx-4 p-6 rounded-2xl shadow-2xl ${
-              isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'
+              isDarkMode
+                ? "bg-gray-900 border border-gray-700"
+                : "bg-white border border-gray-200"
             }`}
           >
-            <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h3
+              className={`text-xl font-semibold mb-4 ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
               Archive All Cards?
             </h3>
-            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              This will archive all {activeItems.length} cards currently on the canvas. You can restore them from the
-              archive later. Are you sure you want to continue?
+            <p
+              className={`mb-6 ${
+                isDarkMode ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              This will archive all {activeItems.length} cards currently on the
+              canvas. You can restore them from the archive later. Are you sure
+              you want to continue?
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowArchiveAllConfirm(false)}
                 className={`px-4 py-2 rounded-lg transition-all text-sm font-medium ${
                   isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 Cancel
@@ -638,8 +729,8 @@ export const ChatPage: React.FC = () => {
                 onClick={handleArchiveAllConfirmed}
                 className={`px-4 py-2 rounded-lg transition-all text-sm font-medium ${
                   isDarkMode
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-red-600 text-white hover:bg-red-700'
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-red-600 text-white hover:bg-red-700"
                 }`}
               >
                 Archive All
@@ -654,7 +745,7 @@ export const ChatPage: React.FC = () => {
 
       {/* Agent chat windows */}
       {Object.keys(agentWindows)
-        .filter((agentType) => agentWindows[agentType].state === 'open')
+        .filter((agentType) => agentWindows[agentType].state === "open")
         .map((agentType, index) => (
           <AgentChatWindow
             key={agentType}
@@ -687,7 +778,7 @@ export const ChatPage: React.FC = () => {
         isOpen={isQuestionBubbleOpen}
         onToggle={() => setIsQuestionBubbleOpen(!isQuestionBubbleOpen)}
         onAnswer={handleAgentQuestionAnswer}
-        unansweredCount={agentQuestions.filter(q => !q.answered).length}
+        unansweredCount={agentQuestions.filter((q) => !q.answered).length}
       />
     </div>
   );
