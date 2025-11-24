@@ -1,6 +1,36 @@
 import { useEffect, useRef } from 'react';
 import { SSEWorkerManager } from '../services/sseWorkerManager';
 import { useProjectStore } from '../store/projectStore';
+import type { ProjectItem } from '../types';
+
+// Event data interfaces for type safety
+interface ItemEventData {
+  id?: string;
+  items?: ProjectItem[];
+}
+
+interface ItemMovedEventData {
+  id: string;
+  position: { x: number; y: number };
+}
+
+interface SuggestionsEventData {
+  count: number;
+  suggestions?: Array<{ agentType: string; text: string }>;
+}
+
+interface WorkflowEventData {
+  intent: string;
+  confidence: number;
+}
+
+interface ReconnectingEventData {
+  attempt: number;
+}
+
+interface ErrorEventData {
+  message: string;
+}
 
 /**
  * Hook to connect to real-time SSE updates for a project
@@ -36,39 +66,39 @@ export const useRealtimeUpdates = (projectId?: string, _userId?: string) => {
     // Connect to SSE via SharedWorker
     SSEWorkerManager.connect(projectId);
 
-    // Event handlers
-    const handleItemAdded = (data: any) => {
+    // Event handlers with proper typing
+    const handleItemAdded = (data: ItemEventData | null) => {
       console.log('[useRealtimeUpdates] Item added:', data);
       if (data && Array.isArray(data.items)) {
         addItems(data.items);
       } else if (data && data.id) {
-        addItems([data]);
+        addItems([data as ProjectItem]);
       }
     };
 
-    const handleItemModified = (data: any) => {
+    const handleItemModified = (data: ItemEventData | null) => {
       console.log('[useRealtimeUpdates] Item modified:', data);
       if (data && Array.isArray(data.items)) {
         updateItems(data.items);
       } else if (data && data.id) {
-        updateItems([data]);
+        updateItems([data as ProjectItem]);
       }
     };
 
-    const handleItemMoved = (data: any) => {
+    const handleItemMoved = (data: ItemMovedEventData | null) => {
       console.log('[useRealtimeUpdates] Item moved:', data);
       if (data && data.id && data.position) {
-        updateItems([{ id: data.id, position: data.position }]);
+        updateItems([{ id: data.id, position: data.position } as ProjectItem]);
       }
     };
 
-    const handleSuggestionsUpdated = (data: any) => {
+    const handleSuggestionsUpdated = (data: SuggestionsEventData | null) => {
       console.log('[useRealtimeUpdates] Suggestions updated:', data);
       // Suggestions are handled by the SuggestionsSidePanel component
       // This event is primarily for debugging/logging
     };
 
-    const handleWorkflowComplete = (data: any) => {
+    const handleWorkflowComplete = (data: WorkflowEventData | null) => {
       console.log('[useRealtimeUpdates] Workflow complete:', data);
       // Could trigger a full refresh or notify user
     };
@@ -81,11 +111,11 @@ export const useRealtimeUpdates = (projectId?: string, _userId?: string) => {
       console.log('[useRealtimeUpdates] Disconnected from SSE');
     };
 
-    const handleReconnecting = (data: any) => {
+    const handleReconnecting = (data: ReconnectingEventData | null) => {
       console.log('[useRealtimeUpdates] Reconnecting, attempt:', data?.attempt);
     };
 
-    const handleError = (data: any) => {
+    const handleError = (data: ErrorEventData | null) => {
       console.error('[useRealtimeUpdates] SSE error:', data?.message);
     };
 

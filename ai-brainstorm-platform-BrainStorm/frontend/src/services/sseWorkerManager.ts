@@ -170,7 +170,7 @@ class SSEWorkerManagerClass {
   /**
    * Emit an event to all listeners
    */
-  private emit(eventType: string, data: any): void {
+  private emit(eventType: string, data: unknown): void {
     const callbacks = this.listeners.get(eventType);
     if (callbacks) {
       callbacks.forEach((callback) => {
