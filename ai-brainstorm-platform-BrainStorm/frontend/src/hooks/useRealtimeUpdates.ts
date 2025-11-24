@@ -5,8 +5,11 @@ import { useProjectStore } from '../store/projectStore';
 /**
  * Hook to connect to real-time SSE updates for a project
  * Uses SharedWorker for efficient multi-tab support
+ * 
+ * @param projectId - The project to subscribe to updates for
+ * @param _userId - Reserved for future authentication/filtering (currently unused)
  */
-export const useRealtimeUpdates = (projectId?: string, userId?: string) => {
+export const useRealtimeUpdates = (projectId?: string, _userId?: string) => {
   const isConnected = useRef(false);
   const { addItems, updateItems } = useProjectStore();
 
@@ -114,7 +117,7 @@ export const useRealtimeUpdates = (projectId?: string, userId?: string) => {
 
       SSEWorkerManager.disconnect();
     };
-  }, [projectId, userId, addItems, updateItems]);
+  }, [projectId, addItems, updateItems]);
 
   return {
     isSupported: SSEWorkerManager.isSupported(),

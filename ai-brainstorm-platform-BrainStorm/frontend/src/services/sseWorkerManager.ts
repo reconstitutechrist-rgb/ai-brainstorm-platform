@@ -3,7 +3,22 @@
  * Singleton class for managing SharedWorker communication
  */
 
-type EventCallback = (data: any) => void;
+type EventCallback = (data: unknown) => void;
+
+interface ItemAddedEvent {
+  id: string;
+  items?: unknown[];
+}
+
+interface ItemModifiedEvent {
+  id: string;
+  items?: unknown[];
+}
+
+interface ItemMovedEvent {
+  id: string;
+  position: { x: number; y: number };
+}
 
 interface ConnectionState {
   connected: boolean;
@@ -115,7 +130,10 @@ class SSEWorkerManagerClass {
 
     if (this.worker) {
       this.connectionState.projectId = projectId;
-      this.worker.port.postMessage({ action: 'connect', projectId });
+      // Get API URL from environment or default to localhost
+      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) 
+        || 'http://localhost:3001/api';
+      this.worker.port.postMessage({ action: 'connect', projectId, apiUrl });
     }
   }
 

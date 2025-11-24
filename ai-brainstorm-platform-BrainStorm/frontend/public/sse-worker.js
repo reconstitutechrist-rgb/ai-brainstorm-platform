@@ -7,6 +7,7 @@
 let eventSource = null;
 let connectedPorts = [];
 let currentProjectId = null;
+let apiBaseUrl = null; // Will be set by first connecting client
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RETRY_DELAY = 1000;
@@ -27,7 +28,18 @@ function broadcast(message) {
 /**
  * Connect to SSE endpoint
  */
-function connect(projectId) {
+function connect(projectId, baseUrl) {
+  // Set API base URL if provided
+  if (baseUrl) {
+    apiBaseUrl = baseUrl;
+  }
+  
+  if (!apiBaseUrl) {
+    console.error('[SSEWorker] No API base URL configured');
+    broadcast({ type: 'error', message: 'No API base URL configured' });
+    return;
+  }
+
   if (eventSource && currentProjectId === projectId) {
     console.log('[SSEWorker] Already connected to project:', projectId);
     return;
@@ -41,8 +53,7 @@ function connect(projectId) {
   }
 
   currentProjectId = projectId;
-  const apiUrl = 'http://localhost:3001';
-  const url = `${apiUrl}/api/conversations/${projectId}/updates-stream`;
+  const url = `${apiBaseUrl}/conversations/${projectId}/updates-stream`;
 
   console.log('[SSEWorker] Connecting to SSE:', url);
 
@@ -79,7 +90,7 @@ function connect(projectId) {
         
         setTimeout(() => {
           if (currentProjectId) {
-            connect(currentProjectId);
+            connect(currentProjectId, null); // Use already-set apiBaseUrl
           }
         }, delay);
       } else {
@@ -164,11 +175,11 @@ self.onconnect = (event) => {
   console.log('[SSEWorker] New tab connected. Total tabs:', connectedPorts.length);
 
   port.onmessage = (e) => {
-    const { action, projectId } = e.data;
+    const { action, projectId, apiUrl } = e.data;
 
     switch (action) {
       case 'connect':
-        connect(projectId);
+        connect(projectId, apiUrl);
         break;
       case 'disconnect':
         // Only disconnect if this is the last tab
