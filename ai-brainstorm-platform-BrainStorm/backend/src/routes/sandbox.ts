@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { IdeaGeneratorAgent } from '../agents/IdeaGeneratorAgent';
 import { ConversationalIdeaAgent, ConversationContext, Message } from '../agents/ConversationalIdeaAgent';
-import { ContextGroupingService, ExtractedIdea, TopicGroup } from '../services/ContextGroupingService';
+import { ContextGroupingService, ExtractedIdea, TopicGroup } from '../services/contextGroupingService';
 import { SandboxOrchestrator } from '../orchestrators/SandboxOrchestrator';
 
 const router = Router();

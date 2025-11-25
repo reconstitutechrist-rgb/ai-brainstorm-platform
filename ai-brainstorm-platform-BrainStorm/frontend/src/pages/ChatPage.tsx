@@ -8,7 +8,8 @@ import { useSessionStore } from "../store/sessionStore";
 import { useAgentStore } from "../store/agentStore";
 import { useChat, useMessageLoader, useRealtimeUpdates } from "../hooks";
 import { showToast } from "../utils/toast";
-import { AgentQuestion, isAgentQuestionArray } from "../types";
+import type { AgentQuestion } from "../types";
+import { isAgentQuestionArray } from "../types";
 import "../styles/homepage.css";
 import {
   ChatPageHeader,
@@ -287,7 +288,7 @@ export const ChatPage: React.FC = () => {
       totalMessages: messages.length,
       messagesWithMetadata: messages.filter((m) => m.metadata).length,
       messagesWithQuestions: messages.filter(
-        (m) => m.metadata?.agentQuestions?.length > 0
+        (m) => (m.metadata?.agentQuestions?.length ?? 0) > 0
       ).length,
     });
 
@@ -400,7 +401,7 @@ export const ChatPage: React.FC = () => {
 
   const handleAgentQuestionAnswer = async (
     questionId: string,
-    question: string,
+    _question: string,
     answer: string
   ) => {
     // Send the answer as a regular message in the chat

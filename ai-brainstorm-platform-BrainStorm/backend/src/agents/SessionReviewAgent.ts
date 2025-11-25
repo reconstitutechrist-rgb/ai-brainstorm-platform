@@ -1,5 +1,5 @@
 import { BaseAgent } from './base';
-import { ExtractedIdea, TopicGroup } from '../services/ContextGroupingService';
+import { ExtractedIdea, TopicGroup } from '../services/contextGroupingService';
 
 export interface ParsedDecisions {
   accepted: ExtractedIdea[];
@@ -125,7 +125,7 @@ Return ONLY valid JSON:
 
 ${topicGroups.map(group => `
 ${group.icon} **${group.topic}** (${group.ideas.length} ideas)
-${group.ideas.map((idea, i) => `  ${i + 1}. ${idea.idea.title}`).join('\n')}
+${group.ideas.map((idea: ExtractedIdea, i: number) => `  ${i + 1}. ${idea.idea.title}`).join('\n')}
 `).join('\n')}
 
 Tell me which ideas you want to move forward with and which you'd like to reject.`;
@@ -151,7 +151,7 @@ Tell me which ideas you want to move forward with and which you'd like to reject
     const ideasText = allIdeas.map((idea, i) => `${i + 1}. ${idea.idea.title}: ${idea.idea.description}`).join('\n');
 
     const topicsText = topicGroups.map(group =>
-      `${group.icon} ${group.topic}:\n${group.ideas.map((idea, i) => `  - ${idea.idea.title}`).join('\n')}`
+      `${group.icon} ${group.topic}:\n${group.ideas.map((idea: ExtractedIdea, i: number) => `  - ${idea.idea.title}`).join('\n')}`
     ).join('\n\n');
 
     const prompt = `The user is reviewing ${allIdeas.length} ideas from a brainstorm session and making decisions.

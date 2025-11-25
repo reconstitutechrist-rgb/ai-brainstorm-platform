@@ -12,7 +12,6 @@ import {
   FileText,
   Clock,
   TrendingUp,
-  Eye,
   Download,
   Search,
   FolderOpen,
@@ -30,9 +29,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
-import KeySectionsPanel from '../components/KeySectionsPanel';
-import OverviewQuickInsights from '../components/OverviewQuickInsights';
-import { extractKeySections } from '../utils/markdownSectionExtractor';
 
 // ============================================
 // TYPESCRIPT INTERFACES
@@ -71,8 +67,8 @@ export const ProjectIntelligenceHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'decisions' | 'generated-docs' | 'user-docs' | 'search'>('overview');
 
   // Shared state for documents across all tabs
-  const [allDocuments, setAllDocuments] = useState<any[]>([]);
-  const [userDocuments, setUserDocuments] = useState<any[]>([]);
+  const [allDocuments, setAllDocuments] = useState<GeneratedDocument[]>([]);
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [pinnedDocIds, setPinnedDocIds] = useState<Set<string>>(new Set());
   const [documentSearchQuery, setDocumentSearchQuery] = useState('');
@@ -670,8 +666,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   };
 
   const decidedCount = currentProject?.items?.filter((i: any) => i.state === 'decided').length || 0;
-  const exploringCount = currentProject?.items?.filter((i: any) => i.state === 'exploring').length || 0;
-  const parkedCount = currentProject?.items?.filter((i: any) => i.state === 'parked').length || 0;
 
   const completedDocs = allDocuments.filter(doc => doc.completion_percent === 100);
   const inProgressDocs = allDocuments.filter(doc => doc.completion_percent > 0 && doc.completion_percent < 100);
@@ -974,7 +968,7 @@ const QuickAccessCard: React.FC<QuickAccessCardProps> = ({ icon: Icon, label, co
 const ActivityTab: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const [filter, setFilter] = useState<'all' | 'core' | 'quality' | 'support'>('all');
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentProject } = useProjectStore();
 
@@ -1335,19 +1329,6 @@ const GeneratedDocsTab: React.FC<GeneratedDocsTabProps> = ({ sharedDocuments, on
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const documentTypes = [
-    { type: 'project_establishment', label: '🏗️ Project Establishment', description: 'What you\'ve defined' },
-    { type: 'decision_log', label: '✅ Decision Log', description: 'All decisions' },
-    { type: 'rejection_log', label: '❌ Rejection Log', description: 'What you don\'t want' },
-    { type: 'project_brief', label: '📋 Project Brief', description: 'Complete summary' },
-    { type: 'next_steps', label: '🎯 Next Steps', description: 'Action items' },
-    { type: 'open_questions', label: '❓ Open Questions', description: 'Unanswered questions' },
-    { type: 'risk_assessment', label: '⚠️ Risk Assessment', description: 'Risks & mitigation' },
-    { type: 'technical_specs', label: '⚙️ Technical Specs', description: 'Technical details' },
-    { type: 'rfp', label: '📄 Request for Proposal', description: 'Send to vendors' },
-    { type: 'implementation_plan', label: '🗺️ Implementation Plan', description: 'Execution roadmap' },
-  ];
 
   // Category labels
   const categoryLabels: Record<string, string> = {
@@ -2494,7 +2475,7 @@ const SearchTab: React.FC = () => {
                 )}
                 <p className="whitespace-pre-wrap">{message.content.substring(0, 300)}{message.content.length > 300 ? '...' : ''}</p>
                 {message.role === 'assistant' && message.content.length > 300 && (
-                  <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-cyan-100' : 'opacity-70'}`}>
+                  <p className="text-xs mt-2 opacity-70">
                     View full response in the preview panel →
                   </p>
                 )}

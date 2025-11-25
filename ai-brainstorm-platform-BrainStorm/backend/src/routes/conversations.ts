@@ -640,8 +640,7 @@ router.get(
             res.write(`data: ${JSON.stringify(updates.workflow)}\n\n`);
           }
 
-          // Clear updates after sending
-          updatesCache.clear(projectId);
+          // Note: No need to clear - updatesCache.get() already removes the entry after retrieval
         }
 
         // Send heartbeat every 10 checks (~5 seconds) to keep connection alive

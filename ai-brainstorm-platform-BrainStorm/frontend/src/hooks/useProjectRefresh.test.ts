@@ -6,7 +6,7 @@ import { useProjectStore } from '../store/projectStore';
 // Mock the API
 vi.mock('../services/api', () => ({
   projectsApi: {
-    getByUserId: vi.fn(),
+    getAll: vi.fn(),
   },
 }));
 
@@ -28,7 +28,7 @@ describe('useProjectRefresh', () => {
 
   it('should refresh project data successfully', async () => {
     const { projectsApi } = await import('../services/api');
-    vi.mocked(projectsApi.getByUserId).mockResolvedValue({
+    vi.mocked(projectsApi.getAll).mockResolvedValue({
       success: true,
       projects: [mockProject],
     });
@@ -43,13 +43,13 @@ describe('useProjectRefresh', () => {
       expect(state.currentProject).toEqual(mockProject);
     });
 
-    expect(projectsApi.getByUserId).toHaveBeenCalledWith(mockUserId);
-    expect(projectsApi.getByUserId).toHaveBeenCalledTimes(1);
+    expect(projectsApi.getAll).toHaveBeenCalledWith(mockUserId);
+    expect(projectsApi.getAll).toHaveBeenCalledTimes(1);
   });
 
   it('should handle project not found', async () => {
     const { projectsApi } = await import('../services/api');
-    vi.mocked(projectsApi.getByUserId).mockResolvedValue({
+    vi.mocked(projectsApi.getAll).mockResolvedValue({
       success: true,
       projects: [],
     });
@@ -68,7 +68,7 @@ describe('useProjectRefresh', () => {
   it('should handle API errors gracefully', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { projectsApi } = await import('../services/api');
-    vi.mocked(projectsApi.getByUserId).mockRejectedValue(new Error('API Error'));
+    vi.mocked(projectsApi.getAll).mockRejectedValue(new Error('API Error'));
 
     const { result } = renderHook(() => useProjectRefresh());
     const refreshProject = result.current;

@@ -22,7 +22,7 @@ describe('useMessageLoader', () => {
     },
     {
       id: '2',
-      role: 'agent' as const,
+      role: 'assistant' as const,
       content: 'Hi there!',
       created_at: new Date().toISOString(),
       project_id: mockProjectId,
@@ -119,7 +119,7 @@ describe('useMessageLoader', () => {
     });
 
     // Manually trigger refresh
-    await result.current.loadMessages();
+    await result.current.loadInitialMessages();
 
     await waitFor(() => {
       expect(conversationsApi.getMessages).toHaveBeenCalledTimes(2);

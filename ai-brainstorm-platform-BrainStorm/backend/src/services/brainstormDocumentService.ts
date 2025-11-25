@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
-import { ExtractedIdea } from './ContextGroupingService';
+import { ExtractedIdea } from './contextGroupingService';
 import { GeneratedDocument } from './generatedDocumentsService';
 
 const anthropic = new Anthropic({

@@ -805,8 +805,8 @@ router.post('/synthesize', async (req: Request, res: Response) => {
     res.json({
       success: true,
       synthesis: result.synthesis,
-      conflicts: result.conflicts,
-      keyThemes: result.keyThemes,
+      conflicts: result.contradictions,
+      keyThemes: result.perspectives.map(p => p.theme),
     });
   } catch (error: any) {
     console.error('Synthesis error:', error);

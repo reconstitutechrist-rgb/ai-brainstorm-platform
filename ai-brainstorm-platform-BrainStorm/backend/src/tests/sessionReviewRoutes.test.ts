@@ -3,12 +3,12 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import sessionReviewRoutes from '../routes/session-review';
 import { SessionReviewAgent } from '../agents/SessionReviewAgent';
-import { ContextGroupingService } from '../services/ContextGroupingService';
+import { ContextGroupingService } from '../services/contextGroupingService';
 import { SessionCompletionService } from '../services/sessionCompletionService';
 
 // Mock modules
 vi.mock('../agents/SessionReviewAgent');
-vi.mock('../services/ContextGroupingService');
+vi.mock('../services/contextGroupingService');
 vi.mock('../services/sessionCompletionService');
 vi.mock('../services/supabase', () => ({
   supabase: {
