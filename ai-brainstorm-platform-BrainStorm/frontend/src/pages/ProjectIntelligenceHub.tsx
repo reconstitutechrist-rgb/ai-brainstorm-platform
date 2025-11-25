@@ -1145,11 +1145,11 @@ const GeneratedDocsTab: React.FC<GeneratedDocsTabProps> = ({ sharedDocuments, on
   const { currentProject } = useProjectStore();
   const [documents, setDocuments] = useState<any[]>(sharedDocuments);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatingProgress, setGeneratingProgress] = useState<string>('');
   const [copied, setCopied] = useState(false);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [_recommendations, setRecommendations] = useState<any[]>([]);
   const [qualityScores, setQualityScores] = useState<Map<string, any>>(new Map());
   const [isQualityScoreExpanded, setIsQualityScoreExpanded] = useState(false);
 

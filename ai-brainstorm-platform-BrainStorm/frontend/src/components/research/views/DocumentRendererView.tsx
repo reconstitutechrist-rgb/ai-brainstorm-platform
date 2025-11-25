@@ -13,13 +13,14 @@ const DocumentRendererView: React.FC<DocumentRendererViewProps> = ({ reference }
 
   const renderDocument = () => {
     const type = reference.metadata?.type || '';
+    const fileUrl = reference.url;
 
     // PDF Viewer
     if (type.includes('pdf')) {
       return (
         <div className="w-full h-full">
           <iframe
-            src={reference.file_url}
+            src={fileUrl}
             className="w-full h-full rounded-lg"
             title={reference.filename}
           />
@@ -32,7 +33,7 @@ const DocumentRendererView: React.FC<DocumentRendererViewProps> = ({ reference }
       return (
         <div className="flex items-center justify-center p-8">
           <img
-            src={reference.file_url}
+            src={fileUrl}
             alt={reference.filename}
             className="max-w-full max-h-[calc(100vh-300px)] rounded-lg shadow-lg"
           />
@@ -45,7 +46,7 @@ const DocumentRendererView: React.FC<DocumentRendererViewProps> = ({ reference }
       return (
         <div className="flex items-center justify-center p-8">
           <video
-            src={reference.file_url}
+            src={fileUrl}
             controls
             className="max-w-full max-h-[calc(100vh-300px)] rounded-lg shadow-lg"
           >
@@ -85,9 +86,9 @@ const DocumentRendererView: React.FC<DocumentRendererViewProps> = ({ reference }
         <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           This file type cannot be previewed in the browser
         </p>
-        {reference.file_url && (
+        {reference.url && (
           <a
-            href={reference.file_url}
+            href={reference.url}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 px-4 py-2 rounded-lg bg-cyan-primary text-white hover:bg-cyan-primary/90 transition-colors"

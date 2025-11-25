@@ -5,7 +5,6 @@ import {
   Lightbulb,
   ChevronDown,
   ChevronRight,
-  Tag,
   User,
   Bot,
   Users,
@@ -53,7 +52,7 @@ interface LiveIdeasPanelProps {
 
 export const LiveIdeasPanel: React.FC<LiveIdeasPanelProps> = ({
   ideas,
-  conversationId,
+  conversationId: _conversationId,
   onEndSession,
   onReviewConversation,
 }) => {

@@ -37,7 +37,7 @@ const RawMetadataView: React.FC<RawMetadataViewProps> = ({ reference }) => {
             {formatJSON({
               id: reference.id,
               filename: reference.filename,
-              file_url: reference.file_url,
+              url: reference.url,
               analysis_status: reference.analysis_status,
               is_favorite: reference.is_favorite,
               created_at: reference.created_at,

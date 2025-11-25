@@ -69,7 +69,7 @@ export const SessionReviewModal: React.FC<SessionReviewModalProps> = ({
   summaryText,
   onSubmitDecisions,
   onConfirmFinal,
-  onCancel,
+  onCancel: _onCancel,
 }) => {
   const { isDarkMode } = useThemeStore();
   const [currentStep, setCurrentStep] = useState<ReviewStep>('summary');
