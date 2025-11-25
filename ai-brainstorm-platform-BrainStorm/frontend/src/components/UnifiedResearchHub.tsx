@@ -65,7 +65,7 @@ export interface DocumentPreview {
 const UnifiedResearchHub: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const { currentProject } = useProjectStore();
-  const { user } = useUserStore();
+  const { user: _user } = useUserStore();
 
   // Work area state
   const [activeView, setActiveView] = useState<WorkAreaView>('empty');

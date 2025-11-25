@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { SessionReviewAgent } from '../agents/SessionReviewAgent';
-import { ContextGroupingService, ExtractedIdea, TopicGroup } from '../services/ContextGroupingService';
+import { ContextGroupingService, ExtractedIdea, TopicGroup } from '../services/contextGroupingService';
 import { SessionCompletionService } from '../services/sessionCompletionService';
 
 const router = Router();

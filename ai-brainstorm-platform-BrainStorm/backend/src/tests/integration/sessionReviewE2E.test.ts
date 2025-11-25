@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SessionCompletionService } from '../../services/sessionCompletionService';
-import { ContextGroupingService } from '../../services/ContextGroupingService';
+import { ContextGroupingService, TopicGroup } from '../../services/contextGroupingService';
 import { SessionReviewAgent } from '../../agents/SessionReviewAgent';
 
 /**
@@ -184,7 +184,7 @@ describe.skipIf(!process.env.TEST_SUPABASE_URL)('Session Review E2E Integration 
 
     // Verify grouping
     expect(topicGroups.length).toBeGreaterThan(0);
-    const authGroup = topicGroups.find((g) => g.topic.toLowerCase().includes('auth'));
+    const authGroup = topicGroups.find((g: TopicGroup) => g.topic.toLowerCase().includes('auth'));
     expect(authGroup).toBeDefined();
     expect(authGroup!.ideas.length).toBeGreaterThan(0);
 

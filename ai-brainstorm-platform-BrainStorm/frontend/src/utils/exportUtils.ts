@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import { format } from 'date-fns';
-import { Document as DocxDocument, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document as DocxDocument, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from 'docx';
 import type { Project, Message, Document, AgentActivity } from '../types';
 
 interface GeneratedDocument {
@@ -727,7 +727,7 @@ export const exportToADR = (data: ExportData): void => {
  * Export project to DOCX (Microsoft Word) format
  */
 export const exportToDOCX = async (data: ExportData): Promise<void> => {
-  const { project, messages = [], documents = [], generatedDocuments = [], agentActivities = [] } = data;
+  const { project, messages = [], documents = [], generatedDocuments = [] } = data;
 
   const decidedItems = project.items.filter(i => i.state === 'decided');
   const exploringItems = project.items.filter(i => i.state === 'exploring');
@@ -814,8 +814,8 @@ export const exportToDOCX = async (data: ExportData): Promise<void> => {
       rows: [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph({ text: 'Metric', bold: true })] }),
-            new TableCell({ children: [new Paragraph({ text: 'Count', bold: true })] })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Metric', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Count', bold: true })] })] })
           ]
         }),
         new TableRow({
@@ -889,10 +889,11 @@ export const exportToDOCX = async (data: ExportData): Promise<void> => {
         sections.push(
           new Paragraph({
             children: [
-              new TextRun({ text: 'User Quote: ', italic: true, size: 20 }),
-              new TextRun({ text: `"${item.citation.userQuote}"`, italic: true, size: 20 })
+              new TextRun({ text: 'User Quote: ', italics: true, size: 20 }),
+              new TextRun({ text: `"${item.citation.userQuote}"`, italics: true, size: 20 })
             ],
-            spacing: { left: 360, after: 50 }
+            indent: { left: 360 },
+            spacing: { after: 50 }
           }),
           new Paragraph({
             children: [
@@ -902,7 +903,8 @@ export const exportToDOCX = async (data: ExportData): Promise<void> => {
                 color: '666666'
               })
             ],
-            spacing: { left: 360, after: 150 }
+            indent: { left: 360 },
+            spacing: { after: 150 }
           })
         );
       }
@@ -985,7 +987,8 @@ export const exportToDOCX = async (data: ExportData): Promise<void> => {
         }),
         new Paragraph({
           text: genDoc.content.substring(0, 1000) + (genDoc.content.length > 1000 ? '...' : ''),
-          spacing: { after: 200, left: 360 }
+          indent: { left: 360 },
+          spacing: { after: 200 }
         })
       );
     });

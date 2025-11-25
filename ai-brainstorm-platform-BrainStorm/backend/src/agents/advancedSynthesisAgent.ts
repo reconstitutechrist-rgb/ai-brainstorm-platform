@@ -400,6 +400,64 @@ ${timeline && timeline.events.length > 0 ? `## Timeline\n\n${timeline.events.map
     const score = Math.round(avgQuality + sourceBonus - contradictionPenalty);
     return Math.max(0, Math.min(100, score));
   }
+
+  /**
+   * Compare two references
+   */
+  async compare(
+    ref1: { filename: string; analysis: string },
+    ref2: { filename: string; analysis: string }
+  ): Promise<{
+    similarities: string[];
+    differences: string[];
+    comparison: string;
+    recommendation: string;
+  }> {
+    this.log(`Comparing ${ref1.filename} with ${ref2.filename}`);
+
+    const prompt = `Compare these two analyses and identify similarities and differences.
+
+REFERENCE 1: ${ref1.filename}
+${ref1.analysis}
+
+REFERENCE 2: ${ref2.filename}
+${ref2.analysis}
+
+Provide a structured comparison with:
+1. Key similarities between the references
+2. Key differences between the references
+3. Overall comparison summary
+4. Recommendation for using these sources together
+
+Return ONLY valid JSON:
+{
+  "similarities": ["similarity 1", "similarity 2"],
+  "differences": ["difference 1", "difference 2"],
+  "comparison": "Overall comparison summary",
+  "recommendation": "How to best use these sources together"
+}`;
+
+    try {
+      const response = await this.callClaude([{ role: 'user', content: prompt }], 2000);
+      let cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(cleanResponse);
+      
+      return {
+        similarities: result.similarities || [],
+        differences: result.differences || [],
+        comparison: result.comparison || '',
+        recommendation: result.recommendation || '',
+      };
+    } catch (error) {
+      this.log(`Comparison failed: ${error}`);
+      return {
+        similarities: ['Both sources contain relevant information'],
+        differences: ['Unable to analyze detailed differences'],
+        comparison: 'Automated comparison failed - manual review recommended',
+        recommendation: 'Please review both sources manually',
+      };
+    }
+  }
 }
 
 // Singleton instance

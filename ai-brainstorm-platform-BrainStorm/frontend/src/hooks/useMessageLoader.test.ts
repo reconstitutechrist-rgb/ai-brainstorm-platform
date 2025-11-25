@@ -22,7 +22,7 @@ describe('useMessageLoader', () => {
     },
     {
       id: '2',
-      role: 'agent' as const,
+      role: 'assistant' as const,
       content: 'Hi there!',
       created_at: new Date().toISOString(),
       project_id: mockProjectId,
@@ -40,6 +40,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     renderHook(() => useMessageLoader(mockProjectId));
@@ -67,6 +69,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     const { rerender } = renderHook(
@@ -109,6 +113,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     const { result } = renderHook(() => useMessageLoader(mockProjectId));
@@ -119,7 +125,7 @@ describe('useMessageLoader', () => {
     });
 
     // Manually trigger refresh
-    await result.current.loadMessages();
+    await result.current.loadInitialMessages();
 
     await waitFor(() => {
       expect(conversationsApi.getMessages).toHaveBeenCalledTimes(2);

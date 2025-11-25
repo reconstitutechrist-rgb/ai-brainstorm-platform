@@ -10,9 +10,7 @@ import {
   Tag,
   X,
   RefreshCw,
-  Trash2,
   Copy,
-  Download,
   Loader2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -199,7 +197,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
                 <AlertCircle className="text-red-500 flex-shrink-0 mt-1" size={20} />
                 <div className="flex-1">
                   <h3 className="font-bold text-red-500 mb-2">Conflicts Detected</h3>
-                  {reference.metadata.contextualAnalysis.projectAlignment.conflicts.map((conflict: any, idx: number) => (
+                  {reference.metadata?.contextualAnalysis?.projectAlignment?.conflicts?.map((conflict: any, idx: number) => (
                     <div key={idx} className="mb-4 last:mb-0">
                       <p className={`font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                         {conflict.decidedItem}
@@ -237,7 +235,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
                 <CheckCircle className="text-cyan-500 flex-shrink-0 mt-1" size={20} />
                 <div className="flex-1">
                   <h3 className="font-bold text-cyan-500 mb-2">Confirmations</h3>
-                  {reference.metadata.contextualAnalysis.projectAlignment.confirmations.map((confirmation: any, idx: number) => (
+                  {reference.metadata?.contextualAnalysis?.projectAlignment?.confirmations?.map((confirmation: any, idx: number) => (
                     <div key={idx} className="mb-2 last:mb-0">
                       <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                         ✓ {confirmation.decidedItem}
@@ -256,7 +254,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ reference, onReferenceUpdat
                 <Info className="text-blue-500 flex-shrink-0 mt-1" size={20} />
                 <div className="flex-1">
                   <h3 className="font-bold text-blue-500 mb-2">New Insights</h3>
-                  {reference.metadata.contextualAnalysis.projectAlignment.newInsights.map((insight: any, idx: number) => (
+                  {reference.metadata?.contextualAnalysis?.projectAlignment?.newInsights?.map((insight: any, idx: number) => (
                     <div key={idx} className="mb-2 last:mb-0">
                       <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                         • {insight.insight}
