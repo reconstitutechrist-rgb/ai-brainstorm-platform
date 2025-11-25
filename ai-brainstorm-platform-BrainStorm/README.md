@@ -89,6 +89,8 @@ For detailed architecture documentation, see:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System overview and data flow
 - [ORCHESTRATORS.md](ORCHESTRATORS.md) - Page-specific orchestrator details
 - [AGENTS.md](AGENTS.md) - Agent capabilities and workflows
+- [CHAT_PAGE_ANALYSIS.md](CHAT_PAGE_ANALYSIS.md) - Chat complexity analysis & simplification
+- [SIMPLIFICATION_GUIDE.md](SIMPLIFICATION_GUIDE.md) - Implementation guide for simplified chat
 
 ## 🚀 Getting Started
 

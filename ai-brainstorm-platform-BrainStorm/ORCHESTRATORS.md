@@ -50,39 +50,31 @@ The BrainStorm platform implements a **Hybrid Architecture** with page-specific 
 
 **File:** `backend/src/orchestrators/ChatOrchestrator.ts`
 
-**Purpose:** Coordinates conversational brainstorming workflows with intent-based routing.
+**Status:** ⚠️ **DEPRECATED - NOT IN USE**
 
-**Key Features:**
-- Intent classification (brainstorming, deciding, exploring, etc.)
-- Workflow determination and execution
-- Project state management
-- Next step suggestions
+**Issue:** Analysis revealed this orchestrator adds unnecessary complexity without providing unique value.
 
-**Methods:**
-```typescript
-class ChatOrchestrator {
-  // Main entry point
-  async processChatMessage(message: string, context: ChatContext): Promise<ChatResponse>
+**Current Implementation:** 
+- Chat now uses `AgentCoordinationService` directly
+- Calls `ConversationAgent` for immediate response
+- Processes everything else in background
+- Much faster and simpler
 
-  // Internal helpers
-  private async getProjectState(projectId: string): Promise<ProjectState>
-  private getNextStepsForIntent(intent: string): string[]
-}
-```
+**Why Deprecated:**
+- Redundant wrapper around `IntegrationOrchestrator`
+- Added 1-2s latency without adding functionality
+- Created confusion about which orchestrator to use
+- Duplicated workflow determination logic
 
-**Usage:**
-```typescript
-const orchestrator = new ChatOrchestrator();
-const result = await orchestrator.processChatMessage(
-  "I've decided to use React for the frontend",
-  {
-    projectId: "uuid",
-    conversationHistory: [...],
-    userId: "user-id"
-  }
-);
-// Returns: { response, metadata: { intent, qualityChecks, nextSteps } }
-```
+**Replacement:**
+For chat functionality, use:
+- **Simple chat:** `ConversationAgent` directly (via `AgentCoordinationService`)
+- **Complex workflows:** `IntegrationOrchestrator` directly
+- **Even simpler:** `SimpleChatService` (optional, for reference)
+
+**See Also:**
+- [CHAT_PAGE_ANALYSIS.md](CHAT_PAGE_ANALYSIS.md) - Detailed complexity analysis
+- [SIMPLIFICATION_GUIDE.md](SIMPLIFICATION_GUIDE.md) - Implementation guide
 
 ---
 

@@ -1,11 +1,28 @@
 /**
  * ChatOrchestrator - Page-Specific Orchestrator for ChatPage
+ * 
+ * ⚠️ DEPRECATED - NOT CURRENTLY IN USE
+ * 
+ * This orchestrator was designed to coordinate chat workflows but analysis
+ * revealed it adds unnecessary complexity without providing unique value.
+ * 
+ * ISSUES IDENTIFIED:
+ * 1. Redundant wrapper around IntegrationOrchestrator
+ * 2. Adds latency without adding functionality
+ * 3. Duplicates workflow determination logic
+ * 4. Creates confusion about which orchestrator to use
+ * 
+ * CURRENT STATE:
+ * - AgentCoordinationService directly calls ConversationAgent for speed
+ * - This file is NOT used by conversations.ts routes
+ * - Kept for reference only
+ * 
+ * RECOMMENDATION:
+ * - For simple chat: Use ConversationAgent directly
+ * - For complex workflows: Use IntegrationOrchestrator
+ * - This middle layer is unnecessary
  *
- * Coordinates agent workflows specific to conversational brainstorming.
- * Wraps IntegrationOrchestrator logic with ChatPage-specific context.
- *
- * NOTE: This orchestrator delegates to the existing IntegrationOrchestrator
- * while providing a new interface for future migration.
+ * See CHAT_PAGE_ANALYSIS.md for detailed analysis
  */
 
 import { ContextManagerAgent } from '../agents/contextManager';
