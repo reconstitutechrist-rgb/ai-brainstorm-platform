@@ -40,6 +40,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     renderHook(() => useMessageLoader(mockProjectId));
@@ -67,6 +69,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     const { rerender } = renderHook(
@@ -109,6 +113,8 @@ describe('useMessageLoader', () => {
     vi.mocked(conversationsApi.getMessages).mockResolvedValue({
       success: true,
       messages: mockMessages,
+      hasMore: false,
+      total: mockMessages.length,
     });
 
     const { result } = renderHook(() => useMessageLoader(mockProjectId));

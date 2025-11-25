@@ -69,16 +69,6 @@ function isMessageAction(data: SuggestionActionData): data is MessageActionData 
   return 'suggestedMessage' in data && typeof data.suggestedMessage === 'string';
 }
 
-// Assertion function for non-null suggestion data
-function assertSuggestionActionData(
-  data: SuggestionActionData | undefined,
-  message?: string
-): asserts data is SuggestionActionData {
-  if (!data) {
-    throw new Error(message || 'Suggestion action data is undefined');
-  }
-}
-
 interface Suggestion {
   id: string;
   type: 'action' | 'decision' | 'insight' | 'question' | 'canvas-organize' | 'canvas-layout' | 'canvas-cleanup';
@@ -88,21 +78,6 @@ interface Suggestion {
   priority: 'low' | 'medium' | 'high';
   agentType: string;
   actionData?: SuggestionActionData;
-}
-
-// Type guard for Suggestion
-function isSuggestion(value: unknown): value is Suggestion {
-  if (typeof value !== 'object' || value === null) return false;
-  const obj = value as Record<string, unknown>;
-  return (
-    typeof obj.id === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.title === 'string' &&
-    typeof obj.description === 'string' &&
-    typeof obj.reasoning === 'string' &&
-    (obj.priority === 'low' || obj.priority === 'medium' || obj.priority === 'high') &&
-    typeof obj.agentType === 'string'
-  );
 }
 
 interface SuggestionsSidePanelProps {
@@ -254,8 +229,13 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
     try {
       const { actionData } = suggestion;
 
-      if (!actionData || !actionData.action) {
+      if (!actionData) {
         throw new Error('Invalid canvas action data - missing action');
+      }
+
+      // Check for action-based suggestions (exclude MessageActionData which has suggestedMessage)
+      if (!('action' in actionData)) {
+        throw new Error('Invalid canvas action data - no action property');
       }
 
       let result;
@@ -265,23 +245,25 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
 
       switch (actionType) {
         case 'cluster-cards':
-          if (!actionData.clusters || !Array.isArray(actionData.clusters)) {
+          if (isClusterAction(actionData) && actionData.clusters && Array.isArray(actionData.clusters)) {
+            console.log(`[SuggestionsSidePanel] Clustering ${actionData.clusters.length} groups`);
+            result = await canvasApi.applyClustering(currentProject.id, actionData.clusters);
+          } else {
             throw new Error('Invalid clustering data - clusters array required');
           }
-          console.log(`[SuggestionsSidePanel] Clustering ${actionData.clusters.length} groups`);
-          result = await canvasApi.applyClustering(currentProject.id, actionData.clusters);
           break;
 
         case 'archive-cards':
-          if (!actionData.cardIdsToArchive || !Array.isArray(actionData.cardIdsToArchive)) {
+          if (isArchiveAction(actionData) && actionData.cardIdsToArchive && Array.isArray(actionData.cardIdsToArchive)) {
+            console.log(`[SuggestionsSidePanel] Archiving ${actionData.cardIdsToArchive.length} cards`);
+            result = await canvasApi.archiveCards(currentProject.id, actionData.cardIdsToArchive);
+          } else {
             throw new Error('Invalid archive data - cardIds array required');
           }
-          console.log(`[SuggestionsSidePanel] Archiving ${actionData.cardIdsToArchive.length} cards`);
-          result = await canvasApi.archiveCards(currentProject.id, actionData.cardIdsToArchive);
           break;
 
         case 'optimize-layout': {
-          const layout = actionData.layout || 'grid';
+          const layout = isLayoutAction(actionData) ? (actionData.layout || 'grid') : 'grid';
           console.log(`[SuggestionsSidePanel] Optimizing layout: ${layout}`);
           result = await canvasApi.optimizeLayout(currentProject.id, layout);
           break;
@@ -314,7 +296,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
       }, 500);
     } catch (error) {
       console.error('[SuggestionsSidePanel] Canvas action error:', {
-        action: suggestion.actionData?.action,
+        action: suggestion.actionData && 'action' in suggestion.actionData ? suggestion.actionData.action : undefined,
         error,
         suggestion
       });
@@ -367,7 +349,7 @@ export const SuggestionsSidePanel: React.FC<SuggestionsSidePanelProps> = ({
       }
 
       // Handle regular suggestions with conversation messages
-      if (suggestion.actionData?.suggestedMessage) {
+      if (suggestion.actionData && isMessageAction(suggestion.actionData)) {
         await conversationsApi.sendMessage(
           currentProject.id,
           suggestion.actionData.suggestedMessage,

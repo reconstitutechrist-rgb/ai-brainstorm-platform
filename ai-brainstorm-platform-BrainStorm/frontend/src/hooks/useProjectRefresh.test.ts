@@ -18,7 +18,10 @@ describe('useProjectRefresh', () => {
     title: 'Test Project',
     description: 'Test Description',
     user_id: mockUserId,
+    status: 'exploring' as const,
+    items: [],
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   beforeEach(() => {

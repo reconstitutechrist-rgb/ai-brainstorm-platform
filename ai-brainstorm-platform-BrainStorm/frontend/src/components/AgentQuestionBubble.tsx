@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, CheckCircle2, Minimize2 } from 'lucide-react';
-import { AgentQuestion } from '../types';
+import type { AgentQuestion } from '../types';
 
 interface AgentQuestionBubbleProps {
   questions: AgentQuestion[];
