@@ -21,6 +21,7 @@ import brainstormSessionsRoutes from './routes/brainstorm-sessions';
 import intelligenceHubRoutes from './routes/intelligenceHub';
 import cacheRoutes from './routes/cache';
 import researchStreamRoutes from './routes/research-stream';
+import simpleChatRoutes from './routes/simple-chat'; // Simplified 3-mode system
 import { testConnection } from './services/supabase';
 
 const app: Express = express();
@@ -70,6 +71,7 @@ app.use('/api/brainstorm-sessions', brainstormSessionsRoutes); // Brainstorm ses
 app.use('/api/intelligence-hub', intelligenceHubRoutes); // Intelligence Hub conversational search
 app.use('/api/cache', cacheRoutes); // Cache management endpoints
 app.use('/api/research-stream', researchStreamRoutes); // Streaming research endpoints (SSE)
+app.use('/api/simple-chat', simpleChatRoutes); // Simplified 3-mode system (POC)
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -151,6 +153,10 @@ async function startServer() {
       console.log(`  GET  /api/agents/stats`);
       console.log(`  POST /api/sessions/start`);
       console.log(`  GET  /api/sessions/summary/:userId/:projectId`);
+      console.log(`\n  🆕 SIMPLIFIED MODE SYSTEM (POC):`);
+      console.log(`  POST /api/simple-chat/:projectId/message`);
+      console.log(`  GET  /api/simple-chat/detect-mode?message=...`);
+      console.log(`  GET  /api/simple-chat/stats`);
       console.log('\n✨ Ready to brainstorm!\n');
     });
   } catch (error) {
